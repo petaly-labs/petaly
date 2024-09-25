@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "petaly"
+version = "0.0.2"
+license = {file = "LICENSE.md"}
+description = "Python ETL tool"
+readme = {file = "README.md", content-type = "text/markdown"}
+authors = [{name = "Pavel Rabaev", email = "contact@petaly.org"},]
+maintainers = [{name = "Pavel Rabaev", email = "contact@petaly.org"},]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Database :: Database Engines/Servers",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11"
+]
+requires-python = ">= 3.10"
+keywords = ["petaly", "etl", "ingestion", "database"]
+dependencies =[
+    'cffi==1.17.1',
+    'cryptography==43.0.1',
+    'markdown-it-py==3.0.0',
+    'mdurl==0.1.2',
+    'mysql-connector-python==9.0.0',
+    'numpy==2.1.1',
+    'psycopg==3.2.1',
+    'psycopg-binary==3.2.1',
+    'pyarrow==17.0.0',
+    'pycparser==2.22',
+    'Pygments==2.18.0',
+    'PyMySQL==1.1.1',
+    'PyYAML==6.0.2',
+    'rich==13.8.0',
+    'typing_extensions==4.12.2'
+    ]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*.ini","*.json","*.yaml","petaly/*.txt","*.sql"]
+
+[project.urls]
+Homepage = "https://petaly.org"

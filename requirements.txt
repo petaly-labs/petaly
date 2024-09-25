@@ -1,0 +1,15 @@
+cffi==1.17.1
+cryptography==43.0.1
+markdown-it-py==3.0.0
+mdurl==0.1.2
+mysql-connector-python==9.0.0
+numpy==2.1.1
+psycopg==3.2.1
+psycopg-binary==3.2.1
+pyarrow==17.0.0
+pycparser==2.22
+Pygments==2.18.0
+PyMySQL==1.1.1
+PyYAML==6.0.2
+rich==13.8.0
+typing_extensions==4.12.2

@@ -1,0 +1,8 @@
+{
+    "string": "TEXT",
+    "int32": "INT",
+    "int64": "BIGINT",
+    "date32[day]": "TIMESTAMP",
+    "double": "DOUBLE",
+    "null": "TEXT"
+  }

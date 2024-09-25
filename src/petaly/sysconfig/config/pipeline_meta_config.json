@@ -1,0 +1,36 @@
+{
+  "pipeline_attributes":
+    {
+        "pipeline_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "The name of the pipeline must be unique"},
+        "is_enabled": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "True indicates that the pipeline is enabled. The default is true"},
+        "preferred_load_type": {"preassigned_values": ["full"], "key_type": "String",  "key_comment": "Only full load supported yet"},
+        "data_transition_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Only csv format supported yet"},
+        "load_data_objects_spec_only": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "If true, load only the objects specified in data_objects_spec. If false, load all objects from the specified database_schema"}
+    },
+  "endpoint_attributes":
+    {
+        "platform_type": {"preassigned_values": ["local"], "key_type": "String", "key_comment": "On-premises or local environment"},
+        "endpoint_type": {"preassigned_values": ["postgres", "mysql","csv"], "key_type": "String", "key_comment": "Specify database type"}
+    },
+    "database_attributes":
+    {
+    },
+    "file_attributes":
+    {
+    },
+    "data_object_attributes": {
+        "object_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "Specify a unique data_object name. It can be a table name for database or file/folder name for file export/import"},
+        "target_object_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "Optional! Specify target_object_name only if you want it to be different from source_object_name"},
+        "recreate_target_object": {"preassigned_values": ["false", "true"], "key_type": "Boolean", "key_comment": "If this parameter is true, the target object (table) will be rebuilt. If false, the object/table will be created if it does not exist. The default is false"},
+        "excluded_columns": {"preassigned_values": [null], "key_type": "Array", "key_comment": "Specify a comma-separated list of columns to exclude. Leave empty to include all columns"},
+        "load_type": {"preassigned_values": ["full"], "key_type": "String", "key_comment": "Only full load supported yet"},
+        "load_batch_size": {"preassigned_values": [10000], "key_type": "Integer", "key_comment": "Specify batch size for incremental load. It's not supported yet"},
+        "incremental_load_column": {"preassigned_values": [null], "key_type": "String", "key_comment": "Incremental load column. It's not supported yet"},
+        "skip_leading_rows": {"preassigned_values": [1], "key_type": "Integer", "key_comment": "Skip leading rows, numeric value, usually 1"},
+        "file_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Relevant to file upload only. Currently only CSV format is supported"},
+        "file_dir": {"preassigned_values": [null], "key_type": "String", "key_comment": "Relevant to file upload only. Specify path to file directory"},
+        "file_name_list": {"preassigned_values": [null], "key_type": "Array", "key_comment": "Relevant to file upload only. Specify the filenames to export or leave blank for all files"},
+        "target_file_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Relevant to file extract only. Supports csv format only"},
+        "target_file_dir": {"preassigned_values": [null], "key_type": "String", "key_comment": "Relevant to file extract only. Destination directory after saving data first to output folder"}
+    }
+}

@@ -1,0 +1,39 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "format_file": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        },
+        "format_cons": {
+            "format": "%(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "rich.logging.RichHandler",
+            "formatter": "format_cons",
+            "level": "DEBUG"
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": "petaly.log",
+            "formatter": "format_file",
+            "level": "WARNING",
+            "maxBytes": 104857600,
+            "backupCount": 5
+
+        }
+    },
+    "loggers": {
+        "petaly": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": false
+        }
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG"
+    }
+}

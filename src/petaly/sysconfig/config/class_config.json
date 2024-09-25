@@ -1,0 +1,25 @@
+{
+  "connectors": {
+          "csv": {
+              "connector_category": "file",
+              "connector_dpath": "petaly.connectors.csv",
+              "extractor": {"module_path": "csv_extractor", "class_name": "CsvExtractor"},
+              "loader": {"module_path": "csv_loader", "class_name": "CsvLoader"},
+              "type_mapping": ["petaly.connectors.csv.type_mapping"]
+              },
+          "postgres": {
+              "connector_category": "database",
+              "connector_dpath": "petaly.connectors.postgres",
+              "extractor": {"module_path": "psql_extractor", "class_name": "PsqlExtractor"},
+              "loader":{"module_path": "psql_loader", "class_name": "PsqlLoader"},
+              "type_mapping": ["petaly.connectors.postgres.type_mapping"]
+            },
+          "mysql": {
+              "connector_category": "database",
+              "connector_dpath": "petaly.connectors.mysql",
+              "extractor": {"module_path": "mysql_extractor", "class_name": "MysqlExtractor"},
+              "loader": {"module_path": "mysql_loader", "class_name": "MysqlLoader"},
+              "type_mapping": ["petaly.connectors.mysql.type_mapping"]
+            }
+    }
+}

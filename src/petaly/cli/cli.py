@@ -72,7 +72,6 @@ class Cli():
         """
         self.m_conf.set_main_config_fpath(args.config_file_path)
         self.m_conf.set_base_dpaths()
-
         initialize = CliInitializer(self.m_conf)
 
         if args.workspace:
@@ -190,8 +189,12 @@ class Cli():
             args = self.parser.parse_args()
             args.func(args)
         except:
-            self.console.print("----------------------------------------------------------------------------------------")
-            self.console.print(self.top_level_argument_message)
-            self.console.print("----------------------------------------------------------------------------------------")
-            #self.parser.print_help()
-            sys.exit(0)
+
+            if 'args' not in locals():
+                self.console.print(
+                    "----------------------------------------------------------------------------------------")
+                self.console.print(self.top_level_argument_message)
+                self.console.print(
+                    "----------------------------------------------------------------------------------------")
+                sys.exit(0)
+

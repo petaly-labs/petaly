@@ -132,8 +132,8 @@ class MainConfig:
                 sys.exit()
 
     def get_petaly_config_path_message(self):
-        return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}"
-                   f" To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
+        return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"
+                   f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
 
 
     def get_platform_attributes(self, platform_id):

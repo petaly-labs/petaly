@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import argparse
 import logging
 import sys
@@ -37,29 +36,36 @@ class Cli():
         """
         self.m_conf = MainConfig()
         self.console = Console()
+        self.top_level_argument_message = (
+                                f"Type one of the following top level positional arguments: show, init, run, cleanup."
+                                f"\nUse -h for help"
+        )
+
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument('top_attribute', choices=['show', 'init', 'run', 'cleanup'], help='Type one of the following arguments: show, init, run, cleanup')
+        self.parser.add_argument('top_level_argument', choices=['show', 'init', 'run', 'cleanup'], help=self.top_level_argument_message)
         self.parser.add_argument('-w', '--workspace', action="store_true", help='Provide attribute --workspace. Check exiting workspace_name by show workspace_name')
         self.parser.add_argument('-p', '--pipeline_name', help='Provide pipeline name. Check exiting pipelines by show pipelines')
-        self.parser.add_argument('-o', '--object_name', help='Provide object name  or a comma-separated list without empty space. The pipeline name should be specified with -p paramater too.')
+        self.parser.add_argument('-o', '--object_name', help='Provide object name or a comma-separated list without empty space. The pipeline name should be specified with -p paramater too.')
         self.parser.add_argument('-c', '--config_file_path', nargs='?', type=str, help=self.m_conf.get_petaly_config_path_message())
         self.parser.add_argument('-s', '--source_only', action='store_true', help='This parameter allow to run the extract from the source only.')
         self.parser.add_argument('-t', '--target_only', action='store_true', help='This parameter allow to run the load to the target only.')
         self.parser.set_defaults(func=self.process_p)
 
+
     def process_p(self, args):
         """
         """
-        if args.top_attribute == 'show':
+        if args.top_level_argument == 'show':
             self.show_p(args)
-        elif args.top_attribute == 'init':
+        elif args.top_level_argument == 'init':
             self.init_p(args)
-        elif args.top_attribute == 'run':
+        elif args.top_level_argument == 'run':
             self.run_p(args)
-        elif args.top_attribute == 'cleanup':
+        elif args.top_level_argument == 'cleanup':
             self.cleanup_p(args)
         else:
-            self.exit_with_help(args.config_file_path, 'Provide one of the following arguments: show, init, run, cleanup.')
+            #self.exit_with_help(args.config_file_path, self.top_level_argument_message)
+            pass
 
     def init_p(self, args):
         """
@@ -127,7 +133,7 @@ class Cli():
 
         else:
             self.parser.print_help()
-            self.console.print('Provide -p pipeline name. Check exiting pipelines bellow')
+            self.console.print('Provide -p pipeline name. Check exiting pipelines below')
             sys.exit()
 
     def are_endpoints_identical(self, pipeline):
@@ -166,7 +172,7 @@ class Cli():
                                     f"To remove an object from specific pipeline provide additionaly --object_name: object_name.")
         else:
             self.exit_with_help(args.config_file_path,
-                'Provide one of the following arguments: objects. Check bellow if the pipeline name already exits.')
+                'Provide one of the following arguments: --objects. Check below if the pipeline name already exists.')
 
     def exit_with_help(self, config_file_path, message):
         """
@@ -180,5 +186,12 @@ class Cli():
     def start(self):
         """
         """
-        args = self.parser.parse_args()
-        args.func(args)
+        try:
+            args = self.parser.parse_args()
+            args.func(args)
+        except:
+            self.console.print("----------------------------------------------------------------------------------------")
+            self.console.print(self.top_level_argument_message)
+            self.console.print("----------------------------------------------------------------------------------------")
+            self.parser.print_help()
+            sys.exit(0)

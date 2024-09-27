@@ -28,7 +28,7 @@ class CliCleanup():
     def cleanup_data_objects(self, pipeline_name, object_names):
 
         if pipeline_name is None:
-            pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name', message="Provide pipeline name. Pipeline with this name should already exist.")
+            pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name', message="Provide pipeline name. Pipeline with this name should already exists.")
 
         pipe = Pipeline(pipeline_name, self.m_conf)
         pipeline_all_obj = pipe.get_pipeline_entire_config()

@@ -109,13 +109,13 @@ class CliInitializer():
 			self.init_data_objects(pipeline_name, object_names=None)
 
 	def init_data_objects(self, pipeline_name, object_names):
-		self.console.print(f"Initialization of data-objects started. Before running this step the pipeline {pipeline_name} should already exist.")
+		self.console.print(f"Initialization of data-objects started. Before running this step the pipeline {pipeline_name} should already exists.")
 
 		#self.m_conf.set_base_dpaths(os.path.join(main_config_dpath, self.m_conf.main_config_fname))
 
 		if pipeline_name is None:
 			pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name',
-													message="Provide pipeline name. Pipeline with this name should already exist.")
+													message="Provide pipeline name. Pipeline with this name should already exists.")
 
 		pipe = Pipeline(pipeline_name, self.m_conf)
 

@@ -151,7 +151,7 @@ class DBLoader(ABC):
             column_type = type_mapping.get(column_meta.get('data_type'))
 
             if column_type is None:
-                logger.error(f"Type mapping doesn't exist for source-connector-id: {self.pipeline.source_connector_id}, table: {table_name}, "
+                logger.error(f"Type mapping doesn't exists for source-connector-id: {self.pipeline.source_connector_id}, table: {table_name}, "
                               f"column: {column_name}, data-type: {column_meta.get('data_type')}, "
                               f"target_connector_id {self.pipeline.target_connector_id}."
                               )

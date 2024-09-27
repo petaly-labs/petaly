@@ -51,12 +51,12 @@ class CsvExtractor(FExtractor):
             if len(file_list) == 0 or file_list[0] is None:
                 file_list = self.f_handler.get_all_dir_files(file_dir, file_format, file_names_only=True)
 
-            first_file_fpath = os.path.join(file_dir, file_list[0])
-
             for file in file_list:
                 file_source_fpath = os.path.join(file_dir, file)
                 destination_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
                 self.f_handler.cp_file(file_source_fpath, destination_dir)
+
+            first_file_fpath = os.path.join(destination_dir, file_list[0])
 
             # analyse file structure
             parquet_fpath = self.analyse_file_structure(first_file_fpath, data_object)

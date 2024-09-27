@@ -8,6 +8,7 @@ __pycache__/
 
 # exclude project realted folders or files
 petaly.ini
+!template_petaly.ini
 logs/
 output/
 temp/

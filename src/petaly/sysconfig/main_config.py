@@ -31,7 +31,7 @@ class MainConfig:
 
         self.console = Console()
         self.pipeline_fname = 'pipeline.yaml'
-        self.env_config_fpath = os.getenv('PETALY_CONFIG_DIR')
+        self.env_config_dpath = os.getenv('PETALY_CONFIG_DIR')
         self.main_config_fname = 'petaly.ini'
         self.logging_config_fname = 'logging_config.json'
 
@@ -67,13 +67,12 @@ class MainConfig:
         if config_file_path is None:
             config_file_path = self.main_config_fname
 
-        if os.path.isabs(config_file_path) is False:
-            if self.env_config_fpath is not None:
-                if self.f_handler.check_file_extension(self.env_config_fpath, 'ini'):
-                    config_file_path = self.env_config_fpath
-                else:
+        elif self.f_handler.check_file_extension(config_file_path, 'ini') is False:
+            config_file_path = os.path.join(config_file_path, self.main_config_fname)
 
-                    config_file_path = os.path.join(self.env_config_fpath, self.main_config_fname)
+        if os.path.isabs(config_file_path) is False:
+            if self.env_config_dpath:
+                config_file_path = os.path.join(self.env_config_dpath, config_file_path)
 
             else:
                 self.console.print(self.get_petaly_config_path_message())
@@ -134,7 +133,7 @@ class MainConfig:
 
     def get_petaly_config_path_message(self):
         return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}"
-                   f" \nTo skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
+                   f" To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
 
 
     def get_platform_attributes(self, platform_id):

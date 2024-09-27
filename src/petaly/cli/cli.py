@@ -37,7 +37,7 @@ class Cli():
         self.m_conf = MainConfig()
         self.console = Console()
         self.top_level_argument_message = (
-                                f"Type one of the following top level positional arguments: show, init, run, cleanup."
+                                f"Type one of the following top level positional arguments followed by optional argument: show, init, run, cleanup."
                                 f"\nUse -h for help"
         )
 
@@ -83,8 +83,8 @@ class Cli():
             else:
                 initialize.init_pipeline(args.pipeline_name)
         else:
-            self.console.print('Provide one of the following sub arguments: --workspace, --pipeline_name, --pipeline_name + --object_name.')
-            self.parser.print_help()
+            self.console.print('Provide one of the following sub arguments: --workspace, --pipeline_name, --pipeline_name + --object_name. Use -h for help')
+            #self.parser.print_help()
 
     def show_p(self, args):
         """
@@ -193,5 +193,5 @@ class Cli():
             self.console.print("----------------------------------------------------------------------------------------")
             self.console.print(self.top_level_argument_message)
             self.console.print("----------------------------------------------------------------------------------------")
-            self.parser.print_help()
+            #self.parser.print_help()
             sys.exit(0)

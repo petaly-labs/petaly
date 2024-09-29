@@ -8,8 +8,8 @@ Petaly is designed for seamless data exchange, starting with support for Postgre
 This is an Alpha version of the Petaly project!
 
 ## Getting Started
-- **Explore the Documentation:** Check out our documentation to get started with installation, configuration, and best practices for using Petaly.
-- **Join the Community:** Connect with fellow contributors, share your experiences, and get support in our community channels.
+- **Explore the Documentation:** [UNDER CONSTRUCTION] Check out our documentation to get started with installation, configuration, and best practices for using Petaly.
+- **Join the Community:** [UNDER CONSTRUCTION] Connect with fellow contributors, share your experiences, and get support in our community channels.
 - **Contribute:** We’re continuously improving Petaly, and your feedback and contributions are invaluable. Check out our Contributing Guide to see how you can get involved.
 
 ## Tool Features
@@ -37,29 +37,21 @@ It's possible that the tool will work with other operating systems and other dat
 ### 1. Install with pip
 
 ```
-pip3 install petaly
-
-```
-### 1.a Alternative download and install from GitHub
-
-```
-$ git clone git@github.com:petaly-labs/petaly.git
-
+$ mkdir petaly
 $ cd petaly
-
-# Install venv
 $ python3 -m venv .venv
-
 $ source .venv/bin/activate
+$ pip3 install petaly
 
-$ pip3 install "psycopg[binary]"
-$ pip3 install PyYAML
-$ pip3 install PyMySQL
-$ pip3 install cryptography
-$ pip3 install pyarrow
-$ pip3 install mysql-connector-python
-$ pip3 install rich
+```
+### 1.a Alternatively, download and install from GitHub
 
+```
+$ git clone https://github.com/petaly-labs/petaly.git
+$ cd petaly
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+$ pip3 install -r requirements.txt
 $ cd src/
 
 # Installation step completed
@@ -67,38 +59,40 @@ $ cd src/
 
 ### 2. Init config file and workspace
 ```
+# Check petaly installation
 $ python3 -m petaly --help
 
-# init petaly config file
-$ python -m petaly init -c /YOUR_PATH_TO_PETALY_CONFIG_PATH/petaly.ini
+# Init petaly config file
+$ python -m petaly init -c /YOUR_PATH_TO_PETALY_CONFIG_DIR/petaly.ini
 
-# After file get created use it with [-c]:
-$ python -m petaly init -c /YOUR_PATH_TO_PETALY_CONFIG_PATH/petaly.ini
+# After the config file is created use it with [-c] argument
+$ python -m petaly init -c /YOUR_PATH_TO_PETALY_CONFIG_DIR/petaly.ini
 
-# Alternative you can specify environment variable PETALY_CONFIG_PATH= and skip [-c] argument
-$ export PETALY_CONFIG_PATH=/YOUR_PATH_TO_PETALY_CONFIG_PATH/petaly.ini
+# To skip the [-c] argument, set the environment variable PETALY_CONFIG_DIR
+$ export PETALY_CONFIG_DIR=/YOUR_PATH_TO_PETALY_CONFIG_DIR/petaly.ini
 
-
-# edit petaly.ini file and define three different directories for: pipelines, output and logs
 $ vi petaly.ini
+# Edit the petaly.ini file and define three different folders for: pipelines, logs and output
 [workspace_config]
 pipeline_base_dir_path= /YOUR_FULL_PATH/petaly_pipelines
 logs_base_dir_path= /YOUR_FULL_PATH/petaly_logs
 output_base_dir_path= /YOUR_FULL_PATH/petaly_output
 ...
 
-# init workspace
+# Init workspace
 $ python3 -m petaly init --workspace
 ```
 
-### 3. Init first pipeline
+### 3. Init a pipeline
 ```
-# run following command to initialize a pipeline my_pipeline and follow steps
+# Run the following command and follow the wizard steps to initialize a pipeline my_pipeline
+# No changes will be made to the target endpoint at this point.
 $ python3 -m petaly init -p my_pipeline
 ```
 
-### 4. Run pipeline
+### 4. Run the pipeline
 ```
-# following command will execute pipeline my_pipeline and makes changes in target endpoint (database or folder)
+# Now you can run the pipeline my_pipeline and load data from the specified source. 
+# Note that it will make changes, re/create tables in the target endpoint (database or folders)
 $ python3 -m petaly run -p my_pipeline
 ```

@@ -74,9 +74,9 @@ $ export PETALY_CONFIG_DIR=/YOUR_PATH_TO_PETALY_CONFIG_DIR/petaly.ini
 $ vi petaly.ini
 # Edit the petaly.ini file and define three different folders for: pipelines, logs and output
 [workspace_config]
-pipeline_base_dir_path= /YOUR_FULL_PATH/petaly_pipelines
-logs_base_dir_path= /YOUR_FULL_PATH/petaly_logs
-output_base_dir_path= /YOUR_FULL_PATH/petaly_output
+pipeline_base_dir_path= /YOUR_FULL_PATH_FOR_PIPELINES
+logs_base_dir_path= /YOUR_FULL_PATH_FOR_LOGS
+output_base_dir_path= /YOUR_FULL_PATH_FOR_OUTPUT
 ...
 
 # Init workspace

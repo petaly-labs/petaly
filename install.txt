@@ -1,12 +1,12 @@
-pip install --upgrade pip
+pip3 install --upgrade pip
 
 # OPS
-pip install "psycopg[binary]"
-pip install PyYAML
-pip install PyMySQL
-pip install cryptography
-pip install pyarrow
-pip install mysql-connector-python
-pip install rich
+pip3 install "psycopg[binary]"
+pip3 install PyYAML
+pip3 install PyMySQL
+pip3 install cryptography
+pip3 install pyarrow
+pip3 install mysql-connector-python
+pip3 install rich
 
-pip freeze > requirements.txt
+pip3 freeze > requirements.txt

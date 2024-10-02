@@ -1,7 +1,6 @@
 ![run pipe](docs/tutorial/recording/petaly_run_pipe.gif)
-
-# 🌸 Welcome to Petaly!
-Petaly is an open-source ETL (Extract, Transform, Load) tool designed by data engineers, for data engineers. Our mission is to simplify data movement and transformation across different data platforms with a tool that truly understands the needs of data professionals.
+## Welcome to Petaly!
+Petaly is an open-source ETL (Extract, Transform, Load) tool designed by data engineers, for data people. Our mission is to simplify data movement and transformation across different data platforms with a tool that truly understands the needs of data professionals.
 
 ## Why Petaly?
 Petaly is designed for seamless data exchange, starting with support for PostgreSQL, MySQL, and CSV formats. Our goal is to expand and integrate additional open-source technologies, making it easier to connect and transfer data across various systems effortlessly. Petaly is user-friendly and does not require any programming knowledge; you can set up data pipelines simply by configuring them in YAML format, making it ready to use right after installation.
@@ -24,9 +23,7 @@ In the current version Petaly provides extract and load data between following e
 - PostgresQL (tested version 16)
 
 ## Requirements:
-Petaly was developed on: 
-- Python 3.11
-- Python 3.10 also supported
+- Python 3.10 - 3.12
 
 ## Tested on
 Petaly was tested on: 

@@ -89,7 +89,7 @@ class DBLoader(ABC):
             loader_obj_conf.update({'table_ddl_dict': table_ddl_dict})
 
             # 4. drop and recreate table
-            if data_object.recreate_target_table == True:
+            if data_object.recreate_target_object == True:
                 self.drop_table(loader_obj_conf)
 
             self.create_table(loader_obj_conf)

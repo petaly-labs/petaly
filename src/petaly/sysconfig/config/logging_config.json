@@ -19,7 +19,7 @@
             "class": "logging.handlers.RotatingFileHandler",
             "filename": "petaly.log",
             "formatter": "format_file",
-            "level": "WARNING",
+            "level": "INFO",
             "maxBytes": 104857600,
             "backupCount": 5
 

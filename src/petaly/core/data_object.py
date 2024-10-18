@@ -48,9 +48,9 @@ class DataObject:
         self.file_dir = self.data_object_attr.get('object_attributes').get('file_dir')
         self.file_name_list = self.data_object_attr.get('object_attributes').get('file_name_list')
         self.target_object_name =  self.data_object_attr.get('object_attributes').get('target_object_name')
-        self.recreate_target_table = self.data_object_attr.get('object_attributes').get('recreate_target_table')
-        if self.recreate_target_table is not True:
-            self.recreate_target_table = False
+        self.recreate_target_object = self.data_object_attr.get('object_attributes').get('recreate_target_object')
+        if self.recreate_target_object is not True:
+            self.recreate_target_object = False
         self.target_file_format = self.data_object_attr.get('object_attributes').get('target_file_format')
         self.target_file_dir = self.data_object_attr.get('object_attributes').get('target_file_dir')
 
@@ -66,7 +66,7 @@ class DataObject:
     def get_default_object_spec(self, pipeline, object_name):
         self.object_name = object_name
         self.target_object_name = None
-        self.recreate_target_table = False
+        self.recreate_target_object = False
         self.excluded_columns = None
         self.load_type = pipeline.preferred_load_type
         self.column_for_incremental_load = None

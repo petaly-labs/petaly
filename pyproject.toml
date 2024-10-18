@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "petaly"
-version = "0.0.3.post1"
+version = "0.0.4"
 license = {file = "LICENSE.md"}
 description = "Python ETL tool"
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -16,7 +16,8 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Topic :: Database :: Database Engines/Servers",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11"
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"
 ]
 requires-python = ">= 3.10"
 keywords = ["petaly", "etl", "ingestion", "database"]

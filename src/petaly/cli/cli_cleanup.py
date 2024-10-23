@@ -19,7 +19,7 @@ from petaly.cli.cli_menu import CliMenu
 
 class CliCleanup():
 
-    def __init__(self, main_config, config_file_path):
+    def __init__(self, main_config):
         self.m_conf = main_config
         self.cli_menu = CliMenu(main_config)
         self.console = self.cli_menu.console

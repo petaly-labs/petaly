@@ -31,10 +31,10 @@ from petaly.sysconfig.main_config import MainConfig
 
 class Cli():
 
-    def __init__(self):
+    def __init__(self, main_config=None):
         """
         """
-        self.m_conf = MainConfig()
+        self.m_conf = MainConfig() if main_config == None else main_config
         self.console = Console()
         self.top_level_argument_message = (
                                 f"Type one of the following top level positional arguments followed by optional argument: show, init, run, cleanup."

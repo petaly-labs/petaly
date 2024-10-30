@@ -137,24 +137,32 @@ class MainConfig:
 
 
     def get_platform_attributes(self, platform_id):
-        platform_config = None
-        if platform_id != 'local':
-            platforms_cl_config = self.f_handler.load_json(self.class_sysconfig_fpath).get('platforms')
+        platforms_cl_config = self.f_handler.load_json(self.class_sysconfig_fpath).get('platforms')
+        platform_config = platforms_cl_config.get(platform_id)
 
-            platform_config = platforms_cl_config.get(platform_id)
-
-            if not platform_config:
-                logger.warning(f"The platform {platform_id} in class_config.json is not specified")
-                sys.exit()
+        if platform_config is None:
+            logger.warning(f"The platform {platform_id} in class_config.json is not specified")
+            sys.exit()
 
         return platform_config
+
+    def get_supported_platforms(self, connector_id):
+        platforms_cl_config = self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors")
+        platform_type_list = platforms_cl_config.get(connector_id).get('supported_platforms')
+        if platform_type_list is None or len(platform_type_list)==0:
+            platform_type_list = ['local']
+        return platform_type_list
 
     def set_extractor_paths(self, connector_id):
         connector_dpath = self.get_connector_dpath(connector_id)
         self.connector_metadata_sql_fpath = os.path.join(connector_dpath, self.metadata_sql_fname)
         self.connector_extract_to_stmt_fpath = os.path.join(connector_dpath, 'config', self.extract_to_stmt_fname)
-
         return True
+
+    def get_available_connectors(self):
+        endpoint_types = (self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors").keys())
+        return endpoint_types
+
     def set_loader_paths(self, connector_id):
         connector_dpath = self.get_connector_dpath(connector_id)
         self.connector_load_from_stmt_fpath = os.path.join(connector_dpath, 'config', self.load_from_stmt_fname)

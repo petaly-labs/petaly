@@ -41,9 +41,9 @@ class CliMenu():
 
         self.composed_pipeline_config = [
                                             {"pipeline":
-                                                 {"pipeline_attributes": {"pipeline_name": None},
-                                                  "source_attributes": {"platform_type": None, "endpoint_type": None},
-                                                  "target_attributes": {"platform_type": None, "endpoint_type": None}
+                                                 {"pipeline_attributes": {},
+                                                  "source_attributes": {},
+                                                  "target_attributes": {}
                                                   }
                                             },
                                             {
@@ -82,49 +82,44 @@ class CliMenu():
             f"---------- Specify [bold yellow]{endpoint}[/bold yellow] attributes --------------")
         endpoint_attributes = self.pipeline_meta_config.get("endpoint_attributes")
 
-        # step 1. specify platform type
-        platform_type_list = endpoint_attributes.get('platform_type').get('preassigned_values')
-        if len(platform_type_list)>1:
-            platform_type = prompt.Prompt.ask(f"Specify [bold green]platform_type[/bold green]", choices=platform_type_list)
-        else:
-            platform_type = platform_type_list[0]
-
-        platform_attributes = self.m_conf.get_platform_attributes(platform_id=platform_type)
         predefined_values = {}
-        if platform_attributes:
-            endpoint_types = platform_attributes.get('endpoint_type').get('preassigned_values')
-            # step 2. platform attributes
-            assigned_attributes = self.assign_attributes(platform_attributes, exclude_key_list=['endpoint_type'])
-            self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_attributes)
-
-        else:
-            endpoint_types = endpoint_attributes.get('endpoint_type').get('preassigned_values')
-
-        # step 3. specify storage type
-        endpoint_type = prompt.Prompt.ask(f"Specify [bold yellow]{endpoint} endpoint[/bold yellow] type", choices=endpoint_types)
-
-        predefined_values.update({'platform_type': platform_type})
+        # step 1. specify endpoint type
+        available_connectors = self.m_conf.get_available_connectors()
+        endpoint_type = prompt.Prompt.ask(f"Specify [bold yellow]{endpoint} endpoint[/bold yellow] type", choices=available_connectors)
         predefined_values.update({'endpoint_type': endpoint_type})
 
-        assigned_attributes = self.assign_attributes(endpoint_attributes, predefined_values=predefined_values)
-        self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_attributes)
+        assigned_endpoint_attributes = self.assign_attributes(endpoint_attributes, predefined_values=predefined_values)
+        self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_endpoint_attributes)
 
+        # step 2. get connector category
         connector_category = self.m_conf.get_connector_class_config(endpoint_type).get('connector_category')
 
-        # step 5. specify database parameters
+        # step 3. based on connector category define database or file parameters
         if connector_category == 'database':
             database_attributes = self.m_conf.get_database_attributes(endpoint_type)
-            assigned_attributes = self.assign_attributes(database_attributes, predefined_values=None)
+            assigned_database_attributes = self.assign_attributes(database_attributes, predefined_values=None)
+            self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_database_attributes)
 
-        # step 6. specify file parameters
         elif connector_category == 'file':
             file_attributes = self.pipeline_meta_config.get("file_attributes")
-            assigned_attributes = self.assign_attributes(file_attributes)
+            assigned_file_attributes = self.assign_attributes(file_attributes)
+            self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_file_attributes)
 
-        # step 7. assign database or file parameters
+        # step 4. get and define platform type
+        platform_type_list = self.m_conf.get_supported_platforms(endpoint_type)
 
-        self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_attributes)
-        #OrderedCounter(self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name])
+        if len(platform_type_list) == 1:
+            platform_type = platform_type_list[0]
+        else:
+            platform_type = prompt.Prompt.ask(f"Specify [bold green]platform_type[/bold green]",
+                                              choices=platform_type_list)
+
+        # step 5. assign platform type and platform attributes
+        if platform_type != 'local':
+            predefined_values.update({'platform_type': platform_type})
+            platform_attributes = self.m_conf.get_platform_attributes(platform_id=platform_type)
+            assigned_platform_attributes = self.assign_attributes(platform_attributes, exclude_key_list=['endpoint_type'], predefined_values=predefined_values)
+            self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_platform_attributes)
 
 
     def compose_data_objects(self, object_names):

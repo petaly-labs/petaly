@@ -13,7 +13,8 @@
               "connector_dpath": "petaly.connectors.postgres",
               "extractor": {"module_path": "psql_extractor", "class_name": "PsqlExtractor"},
               "loader":{"module_path": "psql_loader", "class_name": "PsqlLoader"},
-              "type_mapping": ["petaly.connectors.postgres.type_mapping"]
+              "type_mapping": ["petaly.connectors.postgres.type_mapping"],
+              "supported_platforms": ["local"]
             },
           "mysql": {
               "connector_category": "database",

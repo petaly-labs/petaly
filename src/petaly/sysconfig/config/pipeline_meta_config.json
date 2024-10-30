@@ -9,8 +9,6 @@
     },
   "endpoint_attributes":
     {
-        "platform_type": {"preassigned_values": ["local"], "key_type": "String", "key_comment": "On-premises or local environment"},
-        "endpoint_type": {"preassigned_values": ["postgres", "mysql","csv"], "key_type": "String", "key_comment": "Specify database type"}
     },
     "database_attributes":
     {

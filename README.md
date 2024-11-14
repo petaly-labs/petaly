@@ -1,6 +1,7 @@
 ![run pipe](docs/tutorial/recording/petaly_run_pipe.gif)
 
-## Welcome to Petaly!
+## Welcome to Petaly! ![petaly_favicon_small.png](images/logo/petaly_favicon_small.png)
+
 Petaly is an open-source ETL (Extract, Transform, Load) tool designed by data engineers, for data people. Our mission is to simplify data movement and transformation across different data platforms with a tool that truly understands the needs of data professionals.
 
 ## Why Petaly?

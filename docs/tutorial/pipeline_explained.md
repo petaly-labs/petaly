@@ -3,7 +3,7 @@
 After creation of the petaly.ini file<br> 
 `$ python3 -m petaly init -c /path_to_config_dir/petaly.ini`<br> 
 and init the workspace defined in the petaly.ini you can start configuring pipelines<br> 
-`$ python3 -m petaly init workspace -c /path_to_config_dir/petaly.ini`<br> 
+`$ python3 -m petaly init --workspace -c /path_to_config_dir/petaly.ini`<br> 
 
 To initialise pipelines with new endpoints it is recommended to use the pipeline wizard.
 

@@ -1,20 +1,39 @@
 # Tutorial 
 
-After creation of the petaly.ini file<br> 
-`$ python3 -m petaly init -c /path_to_config_dir/petaly.ini`<br> 
-and init the workspace defined in the petaly.ini you can start configuring pipelines<br> 
-`$ python3 -m petaly init --workspace -c /path_to_config_dir/petaly.ini`<br> 
+This tutorial explains the first steps after installation.
 
-To initialise pipelines with new endpoints it is recommended to use the pipeline wizard.
+## Init config file
+
+If the petaly.ini file has already been created, ignore this step. 
+
+`$ python3 -m petaly init -c /path_to_config_dir/petaly.ini`
+
+## Init workspace
+
+This step must be performed once during the installation. 
+If the workspace is already initialised, you can skip the following step and start configuring pipelines.
+
+If the workspace hasn't been initialised yet, first define three predefined parameters in petaly.ini
 
 ```
-$ python3 -m petaly init -p my_pipeline -c /path_to_config_dir/petaly.ini
+pipeline_base_dir_path=/absolute-path-to-pipelines-dir
+logs_base_dir_path=/absolute-path-to-logs-dir
+output_base_dir_path=/absolute-path-to-output-dir
 ```
+And execute:
 
-It can have different configurations depending on the endpoints.<br>  
-Let's take an example of exporting from mysql and importing into postgres<br> 
+`$ python3 -m petaly init --workspace -c /path_to_config_dir/petaly.ini` 
 
-The first document in the pipeline.yaml file is called pipeline and contains 3 main blocks<br> 
+## Pipeline configuration
+
+To avoid mistakes during configuration, it is recommended to use the pipeline wizard. The configuration differs depending on the endpoints.
+
+`$ python3 -m petaly init -p my_pipeline -c /path_to_config_dir/petaly.ini`
+
+Let's take an example of an export table from mysql to postgres
+
+The first document in the pipeline.yaml file is called pipeline and contains 3 main blocks: 
+
 ```
 pipeline:
   pipeline_attributes:
@@ -26,39 +45,39 @@ pipeline:
 ---  
 ```
 
+### Pipeline Key Blocks:
 
+The structure of a pipeline definition is explained in the following sections.
 
-## Key Blocks: 
-### pipeline_attributes
+#### pipeline_attributes
 
 ```
-pipeline:
   pipeline_attributes:
     pipeline_name: mysql_to_psql
     # The name of the pipeline must be unique
     
     is_enabled: true
     # True indicates that the pipeline is enabled. The default is true
-    
+```
+
+Only full load csv format are supported yet
+
+```
     preferred_load_type: full
-    # Only full load is supported yet
-    
     data_transition_format: csv
-    # Only csv format is supported yet
-    
-    load_data_objects_spec_only: true
-    # If true, load only the objects specified in data_objects_spec.
-    # If false, load all objects from the specified database_schema
+```
+
+The `load_data_objects_spec_only` parameter determines whether the `data_objects_spec` document is used.
+If true, only the objects specified in `data_objects_spec` are loaded, otherwise all objects from the specified database_schema are loaded.
+
+`load_data_objects_spec_only: true` [default is true]
+
+#### source_attributes
+
+The source attributes specify the source connections. The connection parameters may differ depending on the endpoint type.
 
 ```
-### source_attributes
-```
-pipeline:
-
   source_attributes:
-    platform_type: local
-    # only local is supported yet
-    
     endpoint_type: mysql 
     # Specify endpoint type: mysql, postgres, csv
     
@@ -69,8 +88,8 @@ pipeline:
     # Specify database user password in plain text
     
     database_host: localhost
-    # Specify database hostname or IP address
-    
+    # Specify the database hostname or IP address. It can also be remote, if access is given to the machine running petaly, or if an ssh tunnel is provided.
+
     database_port: 3306
     # Specify database port
     
@@ -79,13 +98,11 @@ pipeline:
     
 ```    
 ### target_attributes
-```
-pipeline:
 
-  target_attributes:
-    platform_type: local
-    # only local is supported yet
-    
+The target attributes specify the target connections. The connection parameters may differ depending on the endpoint type.
+
+```
+  target_attributes:    
     endpoint_type: postgres
     # Specify endpoint type: mysql, postgres, csv
     
@@ -96,8 +113,8 @@ pipeline:
     # Specify database user password in plain text
     
     database_host: localhost
-    # Specify database hostname or IP address
-    
+    # Specify the database hostname or IP address. It can also be remote, if access is given to the machine running petaly, or if an ssh tunnel is provided.
+
     database_port: 5432
     # Specify database port
     
@@ -108,94 +125,151 @@ pipeline:
     # Specify database schema name
 ```
 ### data_objects_spec
-The second document in the pipeline.yaml file is separated by three hyphen.<br>  
-It can contain multiple objects(tables) or it can be empty if key<br>
-`load_data_objects_spec_only: false`<br>  
-In that case all objects from given schema will be loaded<br> 
+
+The second document `data_objects_spec:` in the pipeline.yaml file, separated by three dashes, contains none, one or more object (table). 
 
 ```
 ---
 data_objects_spec:[]
 ```
-In case the following key `load_data_objects_spec_only: true` has true value, specify each object one by one in pipeline.yaml file
+
+As explained above it is only used when it set to true, which is the default.
+`load_data_objects_spec_only: true`
+
+If it set to false, all tables from the specified schema in Postgres `database_schema:` or in MySQL `database_name` will be loaded. 
+
+`load_data_objects_spec_only: false`
+
+If case the `load_data_objects_spec_only:` was set to true, `data_objects_spec:` will be used.
+
+`load_data_objects_spec_only: true`
+
+Take a look at the `data_objects_spec:` bellow:
+
 ```
 ---
 data_objects_spec:
-- object_name: object-name
+- object_name: object_or_table_name_1
   object_attributes:
     target_object_name:   
     ...
+- object_name: object_or_table_name_2
+  object_attributes:
+    target_object_name:
+    ...     
 ```
-Use wizard to simplify the configuration
+
+The `object_name` has to be unique.
+This can be a source/destination table name.
+Multiple objects can be specified starting with a dash `- object_name:` and followed by `object_attributes:` parameters.
+
+Optionally, the target object/table name can be different. To achieve this specify the parameter `target_object_name`.
 
 ```
-# Three dashes separate the pipeline document from the data_objects_spec.
 ---
 data_objects_spec:
-
-
-- object_name: stocks
-# Specify a unique data_object name.
-# This can be a table name for a database or a file/folder name for file export/import.
-# Multiple objects can be specified starting with a dash - object_name: and followed by object_attributes: parameters.
-  
+- object_name: stocks 
   object_attributes:
     target_object_name: stocksnew
-    # Optional! Specify target_object_name only if you want it to be different from source_object_name
-  
+```
+
+If the `recreate_target_object` parameter is true, the target object (table) will be recreated. 
+Otherwise, the object/table will only be created if it does not exist. The default is false.
+
+```
     recreate_target_object: true
-    # If this parameter is true, the target object (table) will be rebuilt. If false, the object/table will be created if it does not exists. 
-    # The default is false
-    
+```
+
+Use the `excluded_columns` parameter to exclude specific columns, or leave it blank to include all columns for specific table/object. 
+If you want to exclude columns: either specify a comma-separated list of columns to exclude in parentheses [] or use dashes '-', one per line. As shown below:   
+
+To include all
+```    
     excluded_columns:
       - null
-    # Leave empty or specify null to include all columns, at least one hyphen should exists
-    # Specify the column name to exclude specific file or leave blank (put null) to include all columns from the table/object.
-    # At least one hyphen should be present.
-    excluded_columns: [column1, column2]
-    # In case you plan to exclude columns: specify either a comma-separated list of columns in brackets [] to exclude.
-    # or use hyphen charachter one per column as shown below.
+```
+
+To exclude column1, column2
+
+```
     excluded_columns:
       - column1
       - column2
-      
+```
+
+Alternative approach to exclude column1, column2
+
+```
+    excluded_columns: [column1, column2]
+```
+
+The following parameters are not yet implemented and can be ignored.
+
+```
     load_type: full
-    # Only full load is supported yet
-    
     load_batch_size: 10000
-    # Specify batch size for incremental load. It's not supported yet
-    
     incremental_load_column: null
-    # Incremental load column. It's not supported yet
-    
-    skip_leading_rows: 1
-    # Skip leading rows, numeric value, usually 1
-    
-    file_format: csv
-    # Relevant to file upload only. Currently only CSV format is supported
-    
-    file_dir: null
-    # Relevant to file upload only. Specify path to file directory
-    
-    # Relevant to file upload only.
+```
+
+#### Source file
+
+To skip leading rows, for example a header line in csv file, use 1. This is only relevant for file uploads.
+
+`skip_leading_rows: 1`
+
+Currently only the CSV format is supported. This is only relevant for file uploads.
+
+`file_format: csv`
+
+In `file_dir:`, specify the path to the directory where the csv files are stored. This is only relevant for file uploads.
+
+`file_dir: /absolute-path-to-file-dir`
+
+Specify the filenames to load specific file or leave blank/null to include all files from `file_dir:`.
+At least one dash or empty brackets [] should be present.
+If you leave it empty/null, remember that all files in `file_dir:` should have the same metadata structure as they will be loaded into the same table. 
+In case you want to load only a specific file/s from the given `file_dir:` use dash character one per line and filename.
+
+Use one of the following options: 
+1. To load all files from the `file_dir:`    
+```
     file_name_list:
     - null
-    # Specify the filenames to load specific file or leave blank (or put null) to include all files from file_dir.
-    # At least one hyphen should be present.
-    # If you leave empty/null, remember that all files in file_dir should have the same metadata structure as they will be loaded into the same table. 
-    # If you want to load a specific file from the given file_dir use hyphen charachter one per filename as shown below.
+```
+2. Alternatively, to load all the files from the `file_dir:`    
+```
+    file_name_list: []
+```
+3. To load specific files from the `file_dir:` 
+```
+
     file_name_list:
     - file_name.csv
     - file_name_2.csv
     - file_name_3.csv
-    
-    target_file_format: csv
-    # Relevant to file extract only. Supports csv format only
-    
-    target_file_dir: null
-    # Relevant to file extract only. Destination directory after processing data in output folder first
 ```
-# Full Example: MySQL to Postgres
+4. Alternatively, to load specific files from `file_dir:`
+
+```
+    file_name_list: [file_name.csv, file_name_2.csv, file_name_3.csv]
+```
+
+#### Target file
+
+The target_file_format specifies the format of the extract file from the database to a file. [Only the csv format is supported.]
+
+The initial data is loaded into the output folder defined in the petaly.ini file. 
+The target_file_dir defines the target directory after processing the data in the output folder first.
+
+```
+    target_file_format: csv 
+    target_file_dir: null
+```
+
+### Full Example: MySQL to Postgres
+
+The following example exports a table stocks and options from Mysql and loads it into Postgres under the name `stocks` and `optionsnew`
+
 ```
 pipeline:
   pipeline_attributes:
@@ -225,7 +299,23 @@ pipeline:
 data_objects_spec:
 - object_name: stocks
   object_attributes:
-    target_object_name: stocksnew
+    target_object_name:
+    recreate_target_object: false
+    excluded_columns:
+      - adjust_close
+    load_type: full
+    load_batch_size: 10000
+    incremental_load_column: null
+    skip_leading_rows: 1
+    file_format: csv
+    file_dir: null
+    file_name_list:
+    - null
+    target_file_format: csv
+    target_file_dir: null
+- object_name: options
+  object_attributes:
+    target_object_name: optionsnew
     recreate_target_object: true
     excluded_columns:
       - adjust_close

@@ -28,11 +28,22 @@ And execute:
 
 To avoid mistakes during configuration, it is recommended to use the pipeline wizard. The configuration differs depending on the endpoints.
 
+To use pipeline wizard run following command:
+
 `$ python3 -m petaly init -p my_pipeline -c /path_to_config_dir/petaly.ini`
 
-Let's take an example of an export table from mysql to postgres
+### Pipeline structure
+After creating the pipeline, let's review the structure and each parameter.
 
-The first document in the pipeline.yaml file is called pipeline and contains 3 main blocks: 
+Here is an example of an export table from mysql to postgres
+
+The pipeline.yaml file contains two documents `pipeline:` and `data_objects_spec:`.
+
+The `pipeline:` document defines `pipeline_attributes:`, `source_attributes:` and `target_attributes:`.
+
+The second document in the pipeline.yaml file, separated by three dashes, is the `data_objects_spec:` document which contains the definition of each object.
+
+Here is the skeleton of the whole pipeline.yaml document:
 
 ```
 pipeline:
@@ -42,10 +53,11 @@ pipeline:
   ....
   target_attributes:
   ...
----  
+--- 
+data_objects_spec:[] 
 ```
 
-### Pipeline Key Blocks:
+### Pipeline Main Blocks:
 
 The structure of a pipeline definition is explained in the following sections.
 

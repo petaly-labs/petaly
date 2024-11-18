@@ -16,9 +16,9 @@ If the workspace is already initialised, you can skip the following step and sta
 If the workspace hasn't been initialised yet, first define three predefined parameters in petaly.ini
 
 ```
-pipeline_base_dir_path=/absolute-path-to-pipelines-dir
-logs_base_dir_path=/absolute-path-to-logs-dir
-output_base_dir_path=/absolute-path-to-output-dir
+pipeline_dir_path=/absolute-path-to-pipelines-dir
+logs_dir_path=/absolute-path-to-logs-dir
+output_dir_path=/absolute-path-to-output-dir
 ```
 And execute:
 
@@ -79,10 +79,10 @@ Only full load csv format are supported yet
     data_transition_format: csv
 ```
 
-The `load_data_objects_spec_only` parameter determines whether the `data_objects_spec` document is used.
+The `use_data_objects_spec` parameter determines whether the `data_objects_spec` document is used.
 If true, only the objects specified in `data_objects_spec` are loaded, otherwise all objects from the specified database_schema are loaded.
 
-`load_data_objects_spec_only: true` [default is true]
+`use_data_objects_spec: true` [default is true]
 
 #### source_attributes
 
@@ -146,15 +146,15 @@ data_objects_spec:[]
 ```
 
 As explained above it is only used when it set to true, which is the default.
-`load_data_objects_spec_only: true`
+`use_data_objects_spec: true`
 
 If it set to false, all tables from the specified schema in Postgres `database_schema:` or in MySQL `database_name` will be loaded. 
 
-`load_data_objects_spec_only: false`
+`use_data_objects_spec: false`
 
-If case the `load_data_objects_spec_only:` was set to true, `data_objects_spec:` will be used.
+If case the `use_data_objects_spec:` was set to true, `data_objects_spec:` will be used.
 
-`load_data_objects_spec_only: true`
+`use_data_objects_spec: true`
 
 Take a look at the `data_objects_spec:` bellow:
 
@@ -289,7 +289,7 @@ pipeline:
     is_enabled: true
     preferred_load_type: full
     data_transition_format: csv
-    load_data_objects_spec_only: false
+    use_data_objects_spec: false
   source_attributes:
     platform_type: local
     endpoint_type: mysql

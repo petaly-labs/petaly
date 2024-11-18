@@ -5,7 +5,7 @@
         "is_enabled": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "True indicates that the pipeline is enabled. The default is true"},
         "preferred_load_type": {"preassigned_values": ["full"], "key_type": "String",  "key_comment": "Only full load supported yet"},
         "data_transition_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Only csv format supported yet"},
-        "load_data_objects_spec_only": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "If true, load only the objects specified in data_objects_spec. If false, load all objects from the specified database_schema"}
+        "use_data_objects_spec": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "If true, load only the objects specified in data_objects_spec. If false, load all objects from the specified database_schema"}
     },
   "endpoint_attributes":
     {

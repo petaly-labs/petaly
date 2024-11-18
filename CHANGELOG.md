@@ -1,4 +1,31 @@
 # Change Log
+## [v0.0.5-alpha] - 2024-11-18 
+
+### Added
+
+- New tutorial file pipeline_explained.md
+
+### Changed
+
+- renamed petaly.ini parameters:
+  - **pipeline_base_dir_path** renamed to **pipeline_dir_path**
+  - **logs_base_dir_path** renamed to **logs_dir_path**
+  - **output_base_dir_path** renamed to **output_dir_path**
+
+- renamed pipeline.yaml config parameter:
+  - **load_data_objects_spec_only** renamed to **use_data_objects_spec**
+
+### Fixed
+
+- None
+
+## [v0.0.3-alpha] - 2024-10-18 
+### Added
+- None
+### Changed
+- Changed logging_config to INFO level for log files
+### Fixed
+Fixed the recreate_target_object parameter, now it can be controlled from the pipeline definition.
 
 ## [v0.0.3-alpha] - 2024-09-26 
 ### Added

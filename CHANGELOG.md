@@ -19,7 +19,7 @@
 
 - None
 
-## [v0.0.3-alpha] - 2024-10-18 
+## [v0.0.4-alpha] - 2024-10-18 
 ### Added
 - None
 ### Changed

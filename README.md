@@ -2,8 +2,8 @@
 
 ## Welcome to Petaly! ![petaly_favicon_small.png](images/logo/petaly_favicon_small.png)
 
-Petaly is an open-source ETL (Extract, Transform, Load) tool designed by data engineers, for data people. 
-Our mission is to simplify data movement and transformation across different data platforms with a tool that truly understands the needs of data professionals.
+Petaly is an open-source ETL (Extract, Transform, Load) tool designed for data engineers! 
+<br>Our mission is to simplify data movement and transformation across different data platforms with a tool that truly understands the needs of data professionals.
 
 ## Why Petaly?
 Petaly is designed for seamless data exchange, starting with support for PostgreSQL, MySQL, and CSV formats. 

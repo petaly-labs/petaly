@@ -23,7 +23,6 @@ from petaly.utils.file_handler import FileHandler
 
 class Pipeline:
     def __init__(self, pipeline_name, main_config):
-
         logger.info("Load main ConfigHandler")
         self.m_conf = main_config
         self.pipeline_dpath = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name)
@@ -52,7 +51,6 @@ class Pipeline:
         pipeline_all_obj = self.get_pipeline_entire_config()
         pipeline_dict = pipeline_all_obj[0]
 
-
         if pipeline_dict == None:
             logger.warning(f"The pipeline: {pipeline_name} does not exists under: {self.pipeline_fpath}")
             sys.exit()
@@ -70,19 +68,19 @@ class Pipeline:
 
         if self.is_enabled != True:
             logger.warning(f"The pipeline: {pipeline_name} is disabled. To enable pipeline {self.pipeline_dpath} set the parameter is_enabled: true ")
-            sys.exit()
+            #sys.exit()
 
         self.source_connector_id = self.source_attr.get('endpoint_type')
         self.target_connector_id = self.target_attr.get('endpoint_type')
 
-        self.incremental_batch_size = pipeline_attr.get('incremental_batch_size')
-        self.preferred_load_type = pipeline_attr.get('preferred_load_type')
-        self.data_transition_format = pipeline_attr.get('data_transition_format')
-        self.use_data_objects_spec = pipeline_attr.get('use_data_objects_spec')
+        self.data_object_main_config = pipeline_dict.get('pipeline').get('data_object_main_config')
+        #self.incremental_batch_size = pipeline_attr.get('incremental_batch_size')
+        #self.preferred_load_type = self.data_object_main_config.get('preferred_load_type')
+        #self.data_transition_format = self.data_object_main_config.get('data_transition_format')
+        #self.use_data_objects_spec = self.data_object_main_config.get('use_data_objects_spec')
 
-        self.data_objects_attr = pipeline_all_obj[1]
-
-        if self.data_objects_attr is None:
+        self.data_objects_spec = pipeline_all_obj[1]
+        if self.data_objects_spec is None:
             logger.warning(
                 f"The pipeline: {pipeline_name} wasn't specify properly. It is missing following definition\n\n"
                 f"---\n"
@@ -92,8 +90,8 @@ class Pipeline:
             sys.exit()
 
         self.data_objects = []
-        if len(self.data_objects_attr) > 0:
-            for obj in self.data_objects_attr.get('data_objects_spec'):
+        if len(self.data_objects_spec) > 0:
+            for obj in self.data_objects_spec.get('data_objects_spec'):
                 if obj is not None:
                     self.data_objects.append(obj.get('object_name'))
 

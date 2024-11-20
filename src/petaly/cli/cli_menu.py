@@ -43,11 +43,12 @@ class CliMenu():
                                             {"pipeline":
                                                  {"pipeline_attributes": {},
                                                   "source_attributes": {},
-                                                  "target_attributes": {}
+                                                  "target_attributes": {},
+                                                  "data_object_main_config": {}
                                                   }
                                             },
                                             {
-                                                "data_objects_spec": []
+                                              "data_objects_spec": []
                                             }
                                         ]
 
@@ -65,6 +66,7 @@ class CliMenu():
         self.compose_pipeline_attributes(pipeline_name)
         self.compose_endpoint_attributes('source')
         self.compose_endpoint_attributes('target')
+        self.compose_data_object_main_config()
 
     def compose_pipeline_attributes(self, pipeline_name):
         """
@@ -122,22 +124,32 @@ class CliMenu():
             self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_platform_attributes)
 
 
-    def compose_data_objects(self, object_names):
+    def compose_data_object_main_config(self):
+
+        self.console.print(
+            f"---------- Specify [bold]Data Objects Main Config[/bold] --------------")
+
+        data_object_main_config = self.pipeline_meta_config.get("data_object_main_config")
+        assigned_data_object_main_config = self.assign_attributes(data_object_main_config, predefined_values=None, exclude_key_list=[None])
+        self.composed_pipeline_config[0]['pipeline']['data_object_main_config'].update(assigned_data_object_main_config)
+
+
+    def compose_data_objects_spec(self, object_names):
 
         self.use_long_form_wizard = prompt.Confirm.ask("Use data-objects wizard")
 
-        data_object_attributes = self.pipeline_meta_config.get("data_object_attributes")
+        data_objects_spec = self.pipeline_meta_config.get("data_objects_spec")
         data_objects_spec_list = []
 
         if object_names is not None and len(object_names)>0:
             for obj_name in object_names:
 
                 self.console.print(
-                    f"---------- Run initialization of Data-Object: [bold green]{obj_name}[/bold green] --------------")
+                    f"---------- Run initialization of Data-Objects-Spec: [bold green]{obj_name}[/bold green] --------------")
 
                 predefined_values = {'object_name': obj_name}
 
-                assigned_attributes = self.assign_attributes(data_object_attributes, predefined_values=predefined_values, exclude_key_list=['object_name'])
+                assigned_attributes = self.assign_attributes(data_objects_spec, predefined_values=predefined_values, exclude_key_list=['object_name'])
                 assigned_attributes.pop('object_name')
                 tmp_assigned_attributes = {}
                 tmp_assigned_attributes.update({'object_name': obj_name, 'object_attributes': assigned_attributes})

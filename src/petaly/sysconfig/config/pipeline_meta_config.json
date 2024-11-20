@@ -2,10 +2,7 @@
   "pipeline_attributes":
     {
         "pipeline_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "The name of the pipeline must be unique"},
-        "is_enabled": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "True indicates that the pipeline is enabled. The default is true"},
-        "preferred_load_type": {"preassigned_values": ["full"], "key_type": "String",  "key_comment": "Only full load supported yet"},
-        "data_transition_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Only csv format supported yet"},
-        "use_data_objects_spec": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "If true, load only the objects specified in data_objects_spec. If false, load all objects from the specified database_schema"}
+        "is_enabled": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "True indicates that the pipeline is enabled. The default is true"}
     },
   "endpoint_attributes":
     {
@@ -16,7 +13,12 @@
     "file_attributes":
     {
     },
-    "data_object_attributes": {
+    "data_object_main_config": {
+        "preferred_load_type": {"preassigned_values": ["full"], "key_type": "String",  "key_comment": "Only full load supported yet"},
+        "data_transition_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Only csv format supported yet"},
+        "use_data_objects_spec": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "If true, load only the objects specified in data_objects_spec which will be configured in the next step.\nIf false, load all objects from the database_schema (or database_name if no schema exists) in specified in the source_attributes section."}
+    },
+    "data_objects_spec": {
         "object_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "Specify a unique data_object name. It can be a table name for database or file/folder name for file export/import"},
         "target_object_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "Optional! Specify target_object_name only if you want it to be different from source_object_name"},
         "recreate_target_object": {"preassigned_values": ["false", "true"], "key_type": "Boolean", "key_comment": "If this parameter is true, the target object (table) will be rebuilt. If false, the object/table will be created if it does not exists. The default is false"},

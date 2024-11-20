@@ -35,25 +35,24 @@ class Composer():
 	#	return DataObject(self.pipeline, object_name)
 
 	def _deprecated_get_data_objects(self):
-		data_objects_attr = self.pipeline.data_objects_attr
+		data_objects_spec = self.pipeline.data_objects_spec
 		object_name_list = []
 
-		for object in data_objects_attr:
+		for object in data_objects_spec:
 			if object != None:
 				object_name_list.append(object.get('object_name'))
 
 		return object_name_list
 
 	def get_data_object_list(self):
-		data_objects_attr = self.pipeline.data_objects_attr
+		data_objects_spec = self.pipeline.data_objects_spec
 		object_name_list = []
 
-		for data_object in data_objects_attr.get('data_objects_spec'):
+		for data_object in data_objects_spec.get('data_objects_spec'):
 			if data_object != None:
 				object_name_list.append(data_object.get('object_name'))
 
 		pipeline_data_objects = self.pipeline.data_objects
-
 		return self.get_data_objects_intersection(object_name_list, pipeline_data_objects)
 
 	def get_object_list_from_output_dir(self):
@@ -69,10 +68,9 @@ class Composer():
 
 		:return:
 		"""
-
 		return_list = []
 
-		if self.pipeline.use_data_objects_spec is False:
+		if self.pipeline.data_object_main_config.get('use_data_objects_spec') is False:
 			# return the first list without modification
 			return_list = data_objects
 		else:

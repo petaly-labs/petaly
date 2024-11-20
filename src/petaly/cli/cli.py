@@ -114,13 +114,13 @@ class Cli():
         if args.pipeline_name:
 
             main_ctl = MainCtl(self.m_conf)
-            pipe = Pipeline(args.pipeline_name, self.m_conf)
+            pipeline = Pipeline(args.pipeline_name, self.m_conf)
 
-            if self.are_endpoints_identical(pipe):
+            if self.are_endpoints_identical(pipeline):
                 self.console.print(f"In the pipeline {args.pipeline_name} source_attributes and target_attributes are exactly the same. To avoid accidentally recreating the same tables, specify at least a different schema or database name.")
                 sys.exit()
 
-            if pipe:
+            if pipeline:
                 run_endpoint = None
                 if args.source_only:
                     run_endpoint = 'source'
@@ -128,7 +128,7 @@ class Cli():
                 elif args.target_only:
                     run_endpoint = 'target'
                     self.console.print(f"Run target only")
-                main_ctl.run_pipeline(args.pipeline_name, run_endpoint, args.object_name)
+                main_ctl.run_pipeline(pipeline, run_endpoint, args.object_name)
 
         else:
             self.parser.print_help()

@@ -29,14 +29,6 @@ class CliInitializer():
 
 		self.f_handler = FileHandler()
 
-	def deprecated_init_config(self):
-		""" this will create petaly_config.ini in the current directory
-		"""
-
-		if self.f_handler.is_file(self.main_config_fpath) is False:
-			self.f_handler.cp_file(self.m_conf.templates_main_config_fpath, os.path.dirname(self.main_config_fpath), os.path.basename(self.m_conf.main_config_fname))
-
-
 	### Init Workspace
 	def init_workspace(self):
 		"""
@@ -56,7 +48,7 @@ class CliInitializer():
 
 	### Init Pipeline
 	def init_pipeline(self, pipeline_name):
-		""" Initiate sub folder under pipeline directoryy with given pipeline_name
+		""" Initiate sub folder under pipeline directory with given pipeline_name
 		"""
 		self.console.print(f"Init of pipeline-wizard started.")
 
@@ -69,7 +61,7 @@ class CliInitializer():
 		pipeline_fpath = os.path.join(pipeline_dpath, self.m_conf.pipeline_fname)
 		output_pipeline_dpath = os.path.join(self.m_conf.output_base_dpath, pipeline_name)
 
-		# check pipleine directory and pipeline.yaml
+		# check pipeline directory and pipeline.yaml
 		if self.f_handler.is_file(pipeline_fpath):
 			self.console.print (f"Pipeline with the path {pipeline_dpath} already exists.")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration?")
@@ -100,18 +92,29 @@ class CliInitializer():
 		self.cli_menu.compose_pipeline(pipeline_name)
 		self.f_handler.backup_file(pipeline_fpath)
 		self.f_handler.save_dict_to_yaml(pipeline_fpath, self.cli_menu.composed_pipeline_config, dump_all=True)
+
 		self.console.print(f"Pipeline {pipeline_name} is initialized.")
 		self.console.print(f"For further configuration review the yaml file: {pipeline_fpath}")
 		self.console.print(f"Output directory {output_pipeline_dpath} is created.")
 
-		process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue with data-objects definition?")
+		process_continue = self.cli_menu.composed_pipeline_config[0]['pipeline']['data_object_main_config'].get('use_data_objects_spec')
+		if process_continue is False:
+			self.console.print(f"The parameter [bold green]use_data_objects_spec[/bold green] was set to [bold blue]false[/bold blue]")
+			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining the data objects?")
+
 		if process_continue:
+			self.cli_menu.composed_pipeline_config[0]['pipeline']['data_object_main_config'].update({'use_data_objects_spec': True})
+			self.console.print(
+				f"The parameter [bold green]use_data_objects_spec[/bold green] is set now to [bold blue]true[/bold blue]")
 			self.init_data_objects(pipeline_name, object_names=None)
+		else:
+			self.console.print(
+				f"Review the pipeline.yaml file and modify manually if neccessary."
+				)
 
 	def init_data_objects(self, pipeline_name, object_names):
-		self.console.print(f"Initialization of data-objects started. Before running this step the pipeline {pipeline_name} should already exists.")
 
-		#self.m_conf.set_base_dpaths(os.path.join(main_config_dpath, self.m_conf.main_config_fname))
+		self.console.print(f"Initialization of data-objects started. Before running this step the pipeline {pipeline_name} should already exists.")
 
 		if pipeline_name is None:
 			pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name',
@@ -120,15 +123,15 @@ class CliInitializer():
 		pipe = Pipeline(pipeline_name, self.m_conf)
 
 		if object_names is None:
-			object_names = self.cli_menu.force_assign_value(key='objects',
-																message="Provide object name or comma separated list.")
+			object_names = self.cli_menu.force_assign_value(key='object_name_list',
+																message="Specify one or more comma-separated object/table names for extraction.")
 
 		if type(object_names) == str:
 			object_name_arr = [item.strip() for item in object_names.split(',')]
 
 		pipeline_all_obj = pipe.get_pipeline_entire_config()
 
-		data_objects_spec = self.cli_menu.compose_data_objects(object_name_arr)
+		data_objects_spec = self.cli_menu.compose_data_objects_spec(object_name_arr)
 
 		if len(data_objects_spec) > 0:
 			self.save_data_objects(pipeline_all_obj=pipeline_all_obj,
@@ -141,7 +144,6 @@ class CliInitializer():
 				f"Data-Objects weren't specified for pipeline {pipe.pipeline_name}. For further configuration review the yaml file: {pipe.pipeline_fpath} ")
 
 	def save_data_objects(self, pipeline_all_obj, data_objects_spec, pipeline_fpath):
-
 
 		data_object_list = []
 

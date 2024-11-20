@@ -48,11 +48,13 @@ Here is the skeleton of the whole pipeline.yaml document:
 ```
 pipeline:
   pipeline_attributes:
-  ....
+    ....
   source_attributes:
-  ....
+    ....
   target_attributes:
-  ...
+    ....
+  data_object_main_config:
+    ....
 --- 
 data_objects_spec:[] 
 ```
@@ -65,18 +67,27 @@ The structure of a pipeline definition is explained in the following sections.
 
 ```
   pipeline_attributes:
-    pipeline_name: mysql_to_psql
     # The name of the pipeline must be unique
+    pipeline_name: mysql_to_psql
     
-    is_enabled: true
     # True indicates that the pipeline is enabled. The default is true
+    is_enabled: true
+    
 ```
 
-Only full load csv format are supported yet
-
+Following parameters configuring default behavior for data-objects/tables 
 ```
-    preferred_load_type: full
-    data_transition_format: csv
+    data_object_main_config:
+      
+      # Only full load is supported yet
+      preferred_load_type: full
+      
+      # Only csv format is supported yet  
+      data_transition_format: csv
+      
+      # provide fine definition 
+      use_data_objects_spec: true
+      
 ```
 
 The `use_data_objects_spec` parameter determines whether the `data_objects_spec` document is used.
@@ -90,23 +101,23 @@ The source attributes specify the source connections. The connection parameters 
 
 ```
   source_attributes:
-    endpoint_type: mysql 
     # Specify endpoint type: mysql, postgres, csv
+    endpoint_type: mysql 
     
-    database_user: root
     # Specify database user name
+    database_user: root
     
-    database_password: dbpassword
     # Specify database user password in plain text
+    database_password: dbpassword
     
-    database_host: localhost
     # Specify the database hostname or IP address. It can also be remote, if access is given to the machine running petaly, or if an ssh tunnel is provided.
-
-    database_port: 3306
-    # Specify database port
+    database_host: localhost
     
-    database_name: tutorial_db
+    # Specify database port
+    database_port: 3306
+    
     # Specify database name
+    database_name: tutorial_db
     
 ```    
 ### target_attributes
@@ -115,27 +126,29 @@ The target attributes specify the target connections. The connection parameters 
 
 ```
   target_attributes:    
-    endpoint_type: postgres
+    
     # Specify endpoint type: mysql, postgres, csv
+    endpoint_type: postgres
     
+    # Specify database user name
     database_user: postgres
-     # Specify database user name
      
-    database_password: dbpassword
     # Specify database user password in plain text
+    database_password: dbpassword
     
-    database_host: localhost
     # Specify the database hostname or IP address. It can also be remote, if access is given to the machine running petaly, or if an ssh tunnel is provided.
-
-    database_port: 5432
-    # Specify database port
+    database_host: localhost
     
-    database_name: petaly_db
+    # Specify database port
+    database_port: 5432
+    
     # Specify database name
+    database_name: petaly_db
      
-    database_schema: petaly
     # Specify database schema name
+    database_schema: petaly
 ```
+
 ### data_objects_spec
 
 The second document `data_objects_spec:` in the pipeline.yaml file, separated by three dashes, contains none, one or more object (table). 
@@ -287,9 +300,6 @@ pipeline:
   pipeline_attributes:
     pipeline_name: mysql_to_psql
     is_enabled: true
-    preferred_load_type: full
-    data_transition_format: csv
-    use_data_objects_spec: false
   source_attributes:
     platform_type: local
     endpoint_type: mysql
@@ -307,6 +317,10 @@ pipeline:
     database_port: 5432
     database_name: pg_db
     database_schema: tutorial_petaly
+  data_object_main_config:
+    preferred_load_type: full
+    data_transition_format: csv
+    use_data_objects_spec: true  
 ---
 data_objects_spec:
 - object_name: stocks

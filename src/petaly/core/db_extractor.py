@@ -144,7 +144,7 @@ class DBExtractor(ABC):
 		"""
 		logger.info("Compose data source meta query")
 
-		if self.pipeline.use_data_objects_spec is False:
+		if self.pipeline.data_object_main_config.get('use_data_objects_spec') is False:
 			table_stmt = ''
 		else:
 

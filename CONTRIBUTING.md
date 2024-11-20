@@ -1,4 +1,4 @@
-#  🌸 Welcome to PETALY!
+# Welcome to PETALY! ![petaly_favicon_small.png](images/logo/petaly_favicon_small.png) 
 
 Hello and welcome to the Petaly community! 
 

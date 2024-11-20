@@ -90,7 +90,7 @@ class MainConfig:
             self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(config_file_path), os.path.basename(config_file_name))
 
             self.console.print(f"The main config file was created: {config_file_path}\n"
-                  f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_base_dir_path= \npipeline_base_dir_path= \noutput_base_dir_path=\n")
+                  f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
 
         self.main_config_fpath = config_file_path
 
@@ -111,21 +111,21 @@ class MainConfig:
             conf_parser = ConfigParser(interpolation=ExtendedInterpolation())
             conf_parser.read(self.main_config_fpath)
 
-            self.logs_base_dpath = conf_parser['workspace_config']['logs_base_dir_path']
-            self.pipeline_base_dpath = conf_parser['workspace_config']['pipeline_base_dir_path']
-            self.output_base_dpath = conf_parser['workspace_config']['output_base_dir_path']
+            self.logs_base_dpath = conf_parser['workspace_config']['logs_dir_path']
+            self.pipeline_base_dpath = conf_parser['workspace_config']['pipeline_dir_path']
+            self.output_base_dpath = conf_parser['workspace_config']['output_dir_path']
 
             if os.path.isabs(self.logs_base_dpath) is False:
                 process_exit = True
-                self.console.print(f"The parameter logs_base_dir_path is not specified.")
+                self.console.print(f"The parameter logs_dir_path is not specified.")
 
             if os.path.isabs(self.pipeline_base_dpath) is False:
                 process_exit = True
-                self.console.print(f"The parameter pipeline_base_dir_path is not specified.")
+                self.console.print(f"The parameter pipeline_dir_path is not specified.")
 
             if os.path.isabs(self.output_base_dpath) is False:
                 process_exit = True
-                self.console.print(f"The parameter output_base_dir_path is not specified.")
+                self.console.print(f"The parameter output_dir_path is not specified.")
 
             if process_exit:
                 self.console.print(f"Check petaly config file: {self.main_config_fpath}")

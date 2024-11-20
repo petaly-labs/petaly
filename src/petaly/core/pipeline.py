@@ -78,7 +78,7 @@ class Pipeline:
         self.incremental_batch_size = pipeline_attr.get('incremental_batch_size')
         self.preferred_load_type = pipeline_attr.get('preferred_load_type')
         self.data_transition_format = pipeline_attr.get('data_transition_format')
-        self.load_data_objects_spec_only = pipeline_attr.get('load_data_objects_spec_only')
+        self.use_data_objects_spec = pipeline_attr.get('use_data_objects_spec')
 
         self.data_objects_attr = pipeline_all_obj[1]
 

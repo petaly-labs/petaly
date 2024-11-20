@@ -144,12 +144,12 @@ class DBExtractor(ABC):
 		"""
 		logger.info("Compose data source meta query")
 
-		if self.pipeline.load_data_objects_spec_only is False:
+		if self.pipeline.use_data_objects_spec is False:
 			table_stmt = ''
 		else:
 
 			if len(self.pipeline.data_objects)==0:
-				logger.warning(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If load_data_objects_spec_only is true the data_objects_spec: [] should has an object specification")
+				logger.warning(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If use_data_objects_spec is true the data_objects_spec: [] should has an object specification")
 				sys.exit()
 
 			table_stmt = 'AND tb.table_name IN ({tbl_list})'

@@ -72,7 +72,7 @@ class Composer():
 
 		return_list = []
 
-		if self.pipeline.load_data_objects_spec_only is False:
+		if self.pipeline.use_data_objects_spec is False:
 			# return the first list without modification
 			return_list = data_objects
 		else:

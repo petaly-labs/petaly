@@ -1,4 +1,4 @@
-# Welcome to PETALY! ![petaly_favicon_small.png](images/logo/petaly_favicon_small.png) 
+# Welcome to PETALY! ![petaly_favicon_small.png](./images/logo/petaly_favicon_small.png) 
 
 Hello and welcome to the Petaly community! 
 
@@ -24,7 +24,7 @@ Your questions, ideas, and feedback are always welcome.
 ### Sign the Contributor License Agreement (CLA)
 To ensure that all contributions are properly licensed, every contributor must sign our CLA before their first contribution. This helps us maintain the project's integrity and protect both contributors and users. 
 
-- Download our [ICLA](./petaly-icla.pdf). 
+- Download our [ICLA](petaly-icla.pdf). 
 - Fill in and sign
 - Scan it and email it to contact@petaly.org
 

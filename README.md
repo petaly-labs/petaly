@@ -1,6 +1,6 @@
-![run pipe](docs/tutorial/recording/petaly_run_pipe.gif)
+![run pipe](./docs/tutorial/recording/petaly_run_pipe.gif)
 
-## Welcome to Petaly! ![petaly_favicon_small.png](images/logo/petaly_favicon_small.png)
+## Welcome to Petaly! ![petaly_favicon_small.png](./images/logo/petaly_favicon_small.png)
 
 Petaly is an open-source ETL (Extract, Transform, Load) tool created by and for data people! 
 <br>Our mission is to simplify data movement and transformation across different data platforms with a tool that truly understands the needs of data professionals.
@@ -106,4 +106,4 @@ $ python3 -m petaly init -p my_pipeline
 $ python3 -m petaly run -p my_pipeline
 ```
 
-To learn more about pipeline configuration parameters, use the following tutorial - **[Pipeline Explained](docs/tutorial/pipeline_explained.md)**
+To learn more about pipeline configuration parameters, use the following tutorial - **[Pipeline Explained](./docs/tutorial/pipeline_explained.md)**

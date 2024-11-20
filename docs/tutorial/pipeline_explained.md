@@ -75,26 +75,6 @@ The structure of a pipeline definition is explained in the following sections.
     
 ```
 
-Following parameters configuring default behavior for data-objects/tables 
-```
-    data_object_main_config:
-      
-      # Only full load is supported yet
-      preferred_load_type: full
-      
-      # Only csv format is supported yet  
-      data_transition_format: csv
-      
-      # provide fine definition 
-      use_data_objects_spec: true
-      
-```
-
-The `use_data_objects_spec` parameter determines whether the `data_objects_spec` document is used.
-If true, only the objects specified in `data_objects_spec` are loaded, otherwise all objects from the specified database_schema are loaded.
-
-`use_data_objects_spec: true` [default is true]
-
 #### source_attributes
 
 The source attributes specify the source connections. The connection parameters may differ depending on the endpoint type.
@@ -148,6 +128,26 @@ The target attributes specify the target connections. The connection parameters 
     # Specify database schema name
     database_schema: petaly
 ```
+#### data_object_main_config
+Following parameters configuring default behavior for data-objects/tables 
+```
+    data_object_main_config:
+      
+      # Only full load is supported yet
+      preferred_load_type: full
+      
+      # Only csv format is supported yet  
+      data_transition_format: csv
+      
+      # provide fine definition 
+      use_data_objects_spec: true
+      
+```
+
+The `use_data_objects_spec` parameter determines whether the `data_objects_spec` document is used.
+If true, only the objects specified in `data_objects_spec` are loaded, otherwise all objects from the specified database_schema are loaded.
+
+`use_data_objects_spec: true` [default is true]
 
 ### data_objects_spec
 

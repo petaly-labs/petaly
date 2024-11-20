@@ -1,5 +1,5 @@
 # Change Log
-## [v0.0.5-alpha] - 2024-11-18 
+## [v0.0.5] - 2024-11-18 
 
 ### Added
 
@@ -11,13 +11,26 @@
   - **pipeline_base_dir_path** renamed to **pipeline_dir_path**
   - **logs_base_dir_path** renamed to **logs_dir_path**
   - **output_base_dir_path** renamed to **output_dir_path**
-
+<br><br>
 - renamed pipeline.yaml config parameter:
   - **load_data_objects_spec_only** renamed to **use_data_objects_spec**
-
+<br><br>
+- following parameters were moved into the block **data_object_main_config:** in pipeline:  
+```
+pipeline:
+...
+    data_object_main_config:   
+      # Only full load is supported yet
+      preferred_load_type: full
+      # Only csv format is supported yet  
+      data_transition_format: csv
+      # provide fine definition 
+      use_data_objects_spec: true
+---      
+```
 ### Fixed
 
-- None
+- MD links were improved
 
 ## [v0.0.4-alpha] - 2024-10-18 
 ### Added

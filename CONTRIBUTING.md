@@ -1,6 +1,4 @@
-# Welcome to PETALY! ![petaly_favicon_small.png](./images/logo/petaly_favicon_small.png) 
-
-Hello and welcome to the Petaly community! 
+# Welcome to Petaly Community! ![petaly_favicon_small.png](./images/logo/petaly_favicon_small.png)
 
 We’re thrilled to have you here and excited about the possibility of your contributions to our project. 
 

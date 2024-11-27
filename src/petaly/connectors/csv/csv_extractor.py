@@ -20,10 +20,12 @@ import sys
 
 from petaly.core.f_extractor import FExtractor
 
+from pprint import pprint
 
 class CsvExtractor(FExtractor):
 
     def __init__(self, pipeline):
+        self.file_format = 'csv'
         super().__init__(pipeline)
 
     def extract_data(self):
@@ -31,25 +33,22 @@ class CsvExtractor(FExtractor):
         """
         object_list = super().get_data_object_list()
 
-        for object_name in object_list:
-            data_object = super().get_data_object(object_name)
+        # cleanup pipeline directory before run
+        self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
 
+        for object_name in object_list:
+
+            data_object = super().get_data_object(object_name)
             file_dir = data_object.file_dir
+
             if file_dir is None:
                 logger.warning(f"object_attributes.file_dir in pipeline.yaml was not specified.")
                 sys.exit()
 
-            file_format = data_object.file_format
-            if file_format is None:
-                logger.warning(f"object_attributes.file_format in pipeline.yaml was not specified")
-                file_format = 'csv'
-                logger.info(f"File format was set to csv")
-
-
             file_list = data_object.file_name_list
 
             if len(file_list) == 0 or file_list[0] is None:
-                file_list = self.f_handler.get_all_dir_files(file_dir, file_format, file_names_only=True)
+                file_list = self.f_handler.get_all_dir_files(file_dir, self.file_format, file_names_only=True)
 
             for file in file_list:
                 file_source_fpath = os.path.join(file_dir, file)
@@ -59,7 +58,8 @@ class CsvExtractor(FExtractor):
             first_file_fpath = os.path.join(destination_dir, file_list[0])
 
             # analyse file structure
-            parquet_fpath = self.analyse_file_structure(first_file_fpath, data_object)
+            parquet_fpath = self.analyse_file_structure(first_file_fpath, data_object, self.file_format)
+
             meta_table = self.compose_metadata_file(parquet_fpath, object_name )
             self.save_metadata_into_file(meta_table)
             self.print_metadata_from_pq_file(parquet_fpath)

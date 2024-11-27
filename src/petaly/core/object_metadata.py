@@ -38,37 +38,32 @@ class ObjectMetadata():
         logger.info(f"Format and save metadata for table {object_name} in {source_object_fpath}")
         self.f_handler.save_dict_to_file(source_object_fpath, meta_table, 'json')
 
-    def format_metadata_result(self, meta_table):
+    def compose_objects_meta_from_query(self, meta_table):
         """ Its format array of dicts of table metadata result to the array of dict with following format
         [{'table_schema': table_schema_1, 'table_name': table_name_1, 'columns': []}]
         """
-
-
         distinct_object_list = []
         formated_tbl_arr = []
-        excluded_columns = []
         for i, val in enumerate(meta_table):
 
             schema_name = val.get("source_schema_name")
-            table_name = val.get("source_object_name")
+            source_object_name = val.get("source_object_name")
 
-            if table_name not in distinct_object_list:
-                distinct_object_list.append(table_name)
-                new_dict = {'source_schema_name': schema_name, 'source_object_name': table_name, 'columns': []}
+            if source_object_name not in distinct_object_list:
+                distinct_object_list.append(source_object_name)
+                new_dict = {'source_schema_name': schema_name, 'source_object_name': source_object_name, 'columns': []}
                 formated_tbl_arr.append(new_dict)
 
         for i, val in enumerate(formated_tbl_arr):
-            tbl_name = formated_tbl_arr[i].get('source_object_name')
 
-            #data_object = self.composer.get_data_object(tbl_name)
-            data_object = DataObject(self.pipeline, tbl_name)
-
+            object_name = formated_tbl_arr[i].get('source_object_name')
+            data_object = self.get_data_object(object_name)
             excluded_columns = [] if data_object.excluded_columns is None else data_object.excluded_columns
 
             for idx, value in enumerate(meta_table):
 
                 table_name = meta_table[idx].get('source_object_name')
-                if table_name == tbl_name:
+                if table_name == object_name:
                     if value.get('column_name') not in excluded_columns:
                         column_metadata = self.compose_column_metadata( column_name=value.get('column_name'),
                                                                     ordinal_position=value.get('ordinal_position'),
@@ -83,11 +78,41 @@ class ObjectMetadata():
 
         return formated_tbl_arr
 
+    def compose_object_meta_from_file(self, object_name, columns_metadata_arr):
+        """ Its creates a metadata file with all the attributes needed to recreate a table on the target.
+        """
+        meta_table = {}
+        meta_table.update({'source_object_name': object_name})
+        meta_table.update({'source_endpoint_type': self.pipeline.source_attr.get("endpoint_type")})
+        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
+
+        if csv_parse_options is not None:
+            meta_table.update({'csv_parse_options': csv_parse_options})
+        data_object = self.get_data_object(object_name)
+        excluded_columns = [] if data_object.excluded_columns is None else data_object.excluded_columns
+
+        columns_arr = []
+        for idx, value in enumerate(columns_metadata_arr):
+            if value.get('column_name') not in excluded_columns:
+                column_metadata = self.compose_column_metadata(
+                                                column_name=str(value.get('column_name')),
+                                                ordinal_position=str(idx+1),
+                                                is_nullable='YES',
+                                                data_type=value.get('data_type'),
+                                                character_maximum_length=None,
+                                                numeric_precision=None,
+                                                numeric_scale=None,
+                                                primary_key=None)
+
+                columns_arr.append(column_metadata)
+        meta_table.update({'columns': columns_arr})
+        return meta_table
+
     def process_metadata(self, meta_query_result):
         object_list = []
 
         if meta_query_result is not None:
-            for meta_table in self.format_metadata_result(meta_query_result):
+            for meta_table in self.compose_objects_meta_from_query(meta_query_result):
                 object_name = meta_table.get('source_object_name')
                 object_list.append(object_name)
                 self.save_table_metadata(meta_table)
@@ -99,6 +124,7 @@ class ObjectMetadata():
         return object_list
 
     def compose_column_metadata(self, column_name, ordinal_position, is_nullable, data_type, character_maximum_length, numeric_precision, numeric_scale, primary_key):
+
         column_meta = {}
         column_meta.update({'column_name': column_name})
         column_meta.update({'ordinal_position': ordinal_position})
@@ -127,3 +153,6 @@ class ObjectMetadata():
         """ This help private function. It replaces NaN or nan value to None for metadat result"""
         return_val = value if str(value).lower() != 'nan' else None
         return return_val
+
+    def get_data_object(self, object_name):
+        return DataObject(self.pipeline, object_name)

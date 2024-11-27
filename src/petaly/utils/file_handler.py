@@ -314,9 +314,9 @@ class FileHandler:
         :param path_to_dir:
         :return:
         """
-
         for folder_name, subfolders, filenames in os.walk(path_to_dir):
             logger.info('Following subfolders are removed:')
+            # clean up all subfolders in directory path
             for subfolder in subfolders:
                 folder_to_remove = os.path.join(folder_name, subfolder)
                 shutil.rmtree(folder_to_remove)

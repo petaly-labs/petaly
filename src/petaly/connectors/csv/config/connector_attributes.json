@@ -1,0 +1,7 @@
+{
+  "additional_options":
+  {
+      "newlines_in_values": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "String", "key_comment": "Whether newline characters are allowed in CSV values. Setting this to True reduces the performance of multi-threaded CSV reading."},
+      "ignore_empty_lines": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "String", "key_comment": "Whether empty lines are ignored in CSV input. If False, an empty line is interpreted as containing a single empty value (assuming a one-column CSV file)."}
+  }
+}

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 from petaly.sysconfig.logger import setup_logging
 from petaly.core.pipeline import Pipeline
 
+from pprint import pprint
 class MainCtl():
     def __init__(self, main_config):
         self.m_conf = main_config
@@ -26,10 +27,8 @@ class MainCtl():
     def run_pipeline(self, pipeline, run_endpoint, object_name_list):
         """ Call this function to run pipeline source and target
         """
-        #pprint(vars(pipeline))
         pipeline_name = pipeline.pipeline_name
         logger.info(f"Start: Pipeline with pipeline-name {pipeline_name} started.")
-        #pipeline = Pipeline(pipeline_name, self.m_conf)
 
         if pipeline.is_enabled is True:
             if object_name_list is not None:

@@ -73,11 +73,8 @@ class Pipeline:
         self.source_connector_id = self.source_attr.get('endpoint_type')
         self.target_connector_id = self.target_attr.get('endpoint_type')
 
-        self.data_object_main_config = pipeline_dict.get('pipeline').get('data_object_main_config')
-        #self.incremental_batch_size = pipeline_attr.get('incremental_batch_size')
-        #self.preferred_load_type = self.data_object_main_config.get('preferred_load_type')
-        #self.data_transition_format = self.data_object_main_config.get('data_transition_format')
-        #self.use_data_objects_spec = self.data_object_main_config.get('use_data_objects_spec')
+        self.data_attributes = pipeline_dict.get('pipeline').get('data_attributes')
+        self.use_data_objects_spec = self.data_attributes.get('use_data_objects_spec')
 
         self.data_objects_spec = pipeline_all_obj[1]
         if self.data_objects_spec is None:
@@ -99,7 +96,7 @@ class Pipeline:
         pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)
         return pipeline_all_obj
 
-    def get_data_objects(self):
+    def deprecated_get_data_objects(self):
         data_objects = []
         if self.data_objects is not None:
             if self.data_objects[0] is not None:

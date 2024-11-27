@@ -1,36 +1,32 @@
 {
   "pipeline_attributes":
     {
-        "pipeline_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "The name of the pipeline must be unique"},
-        "is_enabled": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "True indicates that the pipeline is enabled. The default is true"}
+      "pipeline_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "The name of the pipeline must be unique"},
+      "is_enabled": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean",  "key_comment": "If true the pipeline is enabled."}
     },
-  "endpoint_attributes":
+    "data_attributes": {
+      "preferred_load_type": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String",  "key_comment": "Only full load supported yet."},
+      "data_transition_format": {"in_use":false, "preassigned_values": ["csv"], "default_value":"csv", "key_type": "String", "key_comment": "Only csv format supported yet."},
+      "use_data_objects_spec": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean",  "key_comment": "If true, load only the objects specified in data_objects_spec which will be configured in the next step.\nIf false, load all objects from the database_schema (or database_name if no schema exists) in specified in the source_attributes section."}
+    },
+    "csv_parse_options":
     {
-    },
-    "database_attributes":
-    {
-    },
-    "file_attributes":
-    {
-    },
-    "data_object_main_config": {
-        "preferred_load_type": {"preassigned_values": ["full"], "key_type": "String",  "key_comment": "Only full load supported yet"},
-        "data_transition_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Only csv format supported yet"},
-        "use_data_objects_spec": {"preassigned_values": ["true", "false"], "key_type": "Boolean",  "key_comment": "If true, load only the objects specified in data_objects_spec which will be configured in the next step.\nIf false, load all objects from the database_schema (or database_name if no schema exists) in specified in the source_attributes section."}
+      "header": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean", "key_comment": "Specifies whether the file contains a header line with the names of each column in the file."},
+      "columns_delimiter": {"in_use":true, "preassigned_values": [null], "default_value":",", "key_type": "String", "key_comment": "The character delimiting individual cells in the CSV data."},
+      "quote_char": {"in_use":true, "preassigned_values": ["double-quote","single-quote","none"], "default_value":"double-quote", "key_type": "String", "key_comment": "Choose between double-quote, single-quote or none-quote. The default is double-quote."},
+      "file_encoding": {"in_use":true, "preassigned_values": [null], "default_value":"UTF8", "key_type": "String", "key_comment": "Define file encoding;"}
     },
     "data_objects_spec": {
-        "object_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "Specify a unique data_object name. It can be a table name for database or file/folder name for file export/import"},
-        "target_object_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "Optional! Specify target_object_name only if you want it to be different from source_object_name"},
-        "recreate_target_object": {"preassigned_values": ["false", "true"], "key_type": "Boolean", "key_comment": "If this parameter is true, the target object (table) will be rebuilt. If false, the object/table will be created if it does not exists. The default is false"},
-        "excluded_columns": {"preassigned_values": [null], "key_type": "Array", "key_comment": "Specify a comma-separated list of columns to exclude. Leave empty to include all columns"},
-        "load_type": {"preassigned_values": ["full"], "key_type": "String", "key_comment": "Only full load supported yet"},
-        "load_batch_size": {"preassigned_values": [10000], "key_type": "Integer", "key_comment": "Specify batch size for incremental load. It's not supported yet"},
-        "incremental_load_column": {"preassigned_values": [null], "key_type": "String", "key_comment": "Incremental load column. It's not supported yet"},
-        "skip_leading_rows": {"preassigned_values": [1], "key_type": "Integer", "key_comment": "Skip leading rows, numeric value, usually 1"},
-        "file_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Relevant to file upload only. Currently only CSV format is supported"},
-        "file_dir": {"preassigned_values": [null], "key_type": "String", "key_comment": "Relevant to file upload only. Specify path to file directory"},
-        "file_name_list": {"preassigned_values": [null], "key_type": "Array", "key_comment": "Relevant to file upload only. Specify the filenames to export or leave blank for all files"},
-        "target_file_format": {"preassigned_values": ["csv"], "key_type": "String", "key_comment": "Relevant to file extract only. Supports csv format only"},
-        "target_file_dir": {"preassigned_values": [null], "key_type": "String", "key_comment": "Relevant to file extract only. Destination directory after saving data first to output folder"}
+      "object_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies a unique data_object name. It can be a table name for database or file/folder name for file export/import."},
+      "target_object_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Optional! Specifies target_object_name only if you want it to be different from source_object_name."},
+      "recreate_target_object": {"in_use":true, "preassigned_values": ["false", "true"], "default_value":"false", "key_type": "Boolean", "key_comment": "If this parameter is true, the target object (table) will be rebuilt. If false, the object/table will be created if it does not exists."},
+      "excluded_columns": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "Array", "key_comment": "Specifies a comma-separated list of columns to exclude. Leave empty to include all columns."},
+      "load_type": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String", "key_comment": "Only full load supported yet."},
+      "load_batch_size": {"in_use":false, "preassigned_values": [10000], "default_value":10000, "key_type": "Integer", "key_comment": "Specifies batch size for incremental load. It's not supported yet."},
+      "incremental_load_column": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Incremental load column. It's not supported yet."},
+      "file_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Relevant to file upload only. Specifies path to file directory."},
+      "file_name_list": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "Array", "key_comment": "Relevant to file upload only. Specifies the filenames to export or leave blank for all files."},
+      "target_file_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Relevant to file extract only. Destination directory after saving data first to output folder."}
     }
+
 }

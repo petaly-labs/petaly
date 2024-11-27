@@ -42,11 +42,8 @@ class CsvLoader(FLoader):
                 sys.exit()
 
             # get target file format
-            target_file_format = data_object_dict.target_file_format
-            if target_file_format is None:
-                logger.warning(f"object_attributes.target_file_format in pipeline.yaml was not specified")
-                target_file_format = 'csv'
-                logger.info(f"File format was set to csv")
+            target_file_format = 'csv'
+            logger.info(f"Target file format is csv")
 
             logger.info(f"Move files from {output_data_dir} to {target_file_dir}")
             file_list = self.f_handler.get_all_dir_files(output_data_dir,

@@ -44,7 +44,9 @@ class CliMenu():
                                                  {"pipeline_attributes": {},
                                                   "source_attributes": {},
                                                   "target_attributes": {},
-                                                  "data_object_main_config": {}
+                                                  "data_attributes": {
+                                                      "use_data_objects_spec":True
+                                                  }
                                                   }
                                             },
                                             {
@@ -61,12 +63,12 @@ class CliMenu():
         return value
 
     def compose_pipeline(self, pipeline_name):
-        self.use_long_form_wizard = prompt.Confirm.ask("Use long form")
+        self.use_long_form_wizard = prompt.Confirm.ask("\nUse long form")
 
         self.compose_pipeline_attributes(pipeline_name)
         self.compose_endpoint_attributes('source')
         self.compose_endpoint_attributes('target')
-        self.compose_data_object_main_config()
+        self.compose_data_attributes()
 
     def compose_pipeline_attributes(self, pipeline_name):
         """
@@ -81,8 +83,9 @@ class CliMenu():
         endpoint_attributes_name = endpoint + '_attributes'
 
         self.console.print(
-            f"---------- Specify [bold yellow]{endpoint}[/bold yellow] attributes --------------")
-        endpoint_attributes = self.pipeline_meta_config.get("endpoint_attributes")
+            f"\n[bold blue]---------- Specify {endpoint.upper()} attributes --------------[/bold blue]\n")
+        #endpoint_attributes = self.pipeline_meta_config.get("endpoint_attributes")
+        endpoint_attributes = {}
 
         predefined_values = {}
         # step 1. specify endpoint type
@@ -94,18 +97,12 @@ class CliMenu():
         self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_endpoint_attributes)
 
         # step 2. get connector category
-        connector_category = self.m_conf.get_connector_class_config(endpoint_type).get('connector_category')
+        #connector_category = self.m_conf.get_connector_class_config(endpoint_type).get('connector_category')
 
         # step 3. based on connector category define database or file parameters
-        if connector_category == 'database':
-            database_attributes = self.m_conf.get_database_attributes(endpoint_type)
-            assigned_database_attributes = self.assign_attributes(database_attributes, predefined_values=None)
-            self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_database_attributes)
-
-        elif connector_category == 'file':
-            file_attributes = self.pipeline_meta_config.get("file_attributes")
-            assigned_file_attributes = self.assign_attributes(file_attributes)
-            self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_file_attributes)
+        connector_attributes = self.m_conf.get_connector_attributes(endpoint_type)
+        assigned_connector_attributes = self.assign_attributes(connector_attributes, predefined_values=None)
+        self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)
 
         # step 4. get and define platform type
         platform_type_list = self.m_conf.get_supported_platforms(endpoint_type)
@@ -124,15 +121,24 @@ class CliMenu():
             self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_platform_attributes)
 
 
-    def compose_data_object_main_config(self):
+    def compose_data_attributes(self):
 
         self.console.print(
-            f"---------- Specify [bold]Data Objects Main Config[/bold] --------------")
+            f"\n[bold blue]---------- Specify data object attributes --------------[/bold blue]")
 
-        data_object_main_config = self.pipeline_meta_config.get("data_object_main_config")
-        assigned_data_object_main_config = self.assign_attributes(data_object_main_config, predefined_values=None, exclude_key_list=[None])
-        self.composed_pipeline_config[0]['pipeline']['data_object_main_config'].update(assigned_data_object_main_config)
+        data_attributes = self.pipeline_meta_config.get("data_attributes")
+        assigned_data_attributes = self.assign_attributes(data_attributes, predefined_values=None, exclude_key_list=["use_data_objects_spec"])
+        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(assigned_data_attributes)
 
+        csv_parse_options = self.pipeline_meta_config.get("csv_parse_options")
+        assigned_csv_parse_options = self.assign_attributes(csv_parse_options, predefined_values=None)
+        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update({"csv_parse_options": assigned_csv_parse_options})
+
+        # use_data_objects_spec
+        self.console.print(f"\nFollowing configuration redefines a configuration for each data object/table:")
+        self.use_data_objects_spec = prompt.Confirm.ask("[bold green]use_data_objects_spec:[/bold green]")
+        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(
+            {'use_data_objects_spec': self.use_data_objects_spec})
 
     def compose_data_objects_spec(self, object_names):
 
@@ -142,10 +148,11 @@ class CliMenu():
         data_objects_spec_list = []
 
         if object_names is not None and len(object_names)>0:
-            for obj_name in object_names:
+            #self.console.print(f"\n[bold blue]---------- Run initialization of Data-Objects-Spec --------------[/bold blue]")
 
+            for obj_name in object_names:
                 self.console.print(
-                    f"---------- Run initialization of Data-Objects-Spec: [bold green]{obj_name}[/bold green] --------------")
+                    f"\n[bold blue]---------- Configure data object/table \[{obj_name}]: ------------------[/bold blue]")
 
                 predefined_values = {'object_name': obj_name}
 
@@ -171,55 +178,59 @@ class CliMenu():
 
         for key, value in spec_attributes.items():
 
-            # 1. handle predefined_values
-            #if predefined_values is not None and predefined_values.get(key) is not None:
-            if predefined_values is not None:
-                if self.f_handler.check_dict_key_exist(predefined_values, key):
-                    assigned_value = predefined_values.get(key)
-                    assigned_attributes.update({key: assigned_value})
-                    continue
+            in_use = False if value.get('in_use') is None else value.get('in_use')
 
-            # 2. define default and preassigned_values
-            preassigned_values = value.get('preassigned_values')
-            default_value = None if preassigned_values[0] is None else preassigned_values[0]
-            preassigned_values = None if preassigned_values[0] is None else preassigned_values
-            assigned_value = default_value
+            if in_use:
+                # 1. handle predefined_values
+                #if predefined_values is not None and predefined_values.get(key) is not None:
+                if predefined_values is not None:
+                    if self.f_handler.check_dict_key_exist(predefined_values, key):
+                        assigned_value = predefined_values.get(key)
+                        assigned_attributes.update({key: assigned_value})
+                        continue
 
-            # 3. print key comment and default value
-            console_print = f"{value.get('key_comment')}"
-            if default_value is not None:
-                console_print += f"\nDefault value: [bold blue]{default_value}[/bold blue]"
+                # 2. define default and preassigned_values
+                preassigned_values = value.get('preassigned_values')
+                default_value =  None if value.get('default_value') is None else value.get('default_value')
+                #default_value = None if preassigned_values[0] is None else preassigned_values[0]
+                preassigned_values = None if preassigned_values[0] is None else preassigned_values
+                assigned_value = default_value
 
-            self.console.print(console_print)
+                # 3. print key comment and default value
+                console_print = f"\n{value.get('key_comment')} "
+                if default_value is not None:
+                    console_print += f"Default: [bold blue]\[{default_value}][/bold blue]"
 
-            if key == 'database_password':
-                if self.use_long_form_wizard:
-                    assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", password=True)
+                self.console.print(console_print)
 
-            elif value.get('key_type') == 'Integer':
-                if self.use_long_form_wizard:
-                    assigned_value = prompt.IntPrompt.ask(f"[bold green]{key}[/bold green]", default=default_value,
-                                                          show_default=False)
+                if key == 'database_password':
+                    if self.use_long_form_wizard:
+                        assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", password=True)
 
-            elif value.get('key_type') == 'Array':
+                elif value.get('key_type') == 'Integer':
+                    if self.use_long_form_wizard:
+                        assigned_value = prompt.IntPrompt.ask(f"[bold green]{key}[/bold green]", default=default_value,
+                                                              show_default=False)
 
-                if self.use_long_form_wizard:
-                    assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", default=default_value,
-                                                       show_default=False)
+                elif value.get('key_type') == 'Array':
 
-                    if type(assigned_value) == str:
-                        assigned_value = [item.strip() for item in assigned_value.split(',')]
+                    if self.use_long_form_wizard:
+                        assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", default=default_value,
+                                                           show_default=False)
 
-                if assigned_value is None:
-                    assigned_value = [None]
-            else:
-                if self.use_long_form_wizard:
-                    assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", choices=preassigned_values,
-                                                       default=default_value, show_default=False)
+                        if type(assigned_value) == str:
+                            assigned_value = [item.strip() for item in assigned_value.split(',')]
 
-                if value.get('key_type') == 'Boolean':
-                    assigned_value = True if assigned_value == 'true' else False
+                    if assigned_value is None:
+                        assigned_value = [None]
+                else:
+                    if self.use_long_form_wizard:
+                        assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", choices=preassigned_values,
+                                                           default=default_value, show_default=False)
 
-            assigned_attributes.update({key: assigned_value})
+                    if value.get('key_type') == 'Boolean':
+                        assigned_value = True if assigned_value == 'true' else False
+
+                assigned_attributes.update({key: assigned_value})
 
         return assigned_attributes

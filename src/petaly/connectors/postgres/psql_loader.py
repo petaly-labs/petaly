@@ -66,28 +66,56 @@ class PsqlLoader(DBLoader):
                                                                     cluster_by='',
                                                                     table_options='',
                                                                     alter_table_primary_or_unique_key=''))
+
         loader_obj_conf.get('table_ddl_dict').update({'create_table_stmt': create_table_stmt})
 
         return loader_obj_conf
 
+    def compose_from_options(self):
+        """
+        """
+        copy_options = ""
+
+        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
+        columns_delimiter = csv_parse_options.get("columns_delimiter")
+        if columns_delimiter == "\t":
+            copy_options += f", DELIMITER '\\t'"
+        else:
+            copy_options += f", DELIMITER '{columns_delimiter}'"
+
+        has_header = True if csv_parse_options.get("header") is None or True else False
+        copy_options += f", HEADER {has_header}"
+
+        # 3. OPTIONALLY ENCLOSED BY
+        quote_char = csv_parse_options.get("quote_char")
+        if quote_char == 'double-quote':
+            copy_options += f", QUOTE '\"'"
+        elif quote_char == 'single-quote':
+            copy_options += f", QUOTE \"'\""
+
+        client_encoding = self.pipeline.source_attr.get("client_encoding")
+        if client_encoding is not None:
+            copy_options += f", ENCODING '{client_encoding}'"
+
+        return copy_options
+
     def compose_load_from_stmt(self, data_object, loader_obj_conf):
         """ Its compose a copy from statement """
+
+        copy_from_options = self.compose_from_options()
 
         load_from_stmt = self.f_handler.load_file(self.connector_load_from_stmt_fpath)
         table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
         schema_table_name = f"{table_ddl_dict.get('schema_name')}.{table_ddl_dict.get('table_name')}"
         column_list = '' if table_ddl_dict.get('column_list') == None else '(' + table_ddl_dict.get('column_list') + ')'
 
-        has_header = True if data_object.skip_leading_rows > 0 else False
-
         load_from_stmt = load_from_stmt.format_map(FormatDict(schema_table_name=schema_table_name,
                                                               column_list=column_list,
-                                                              has_header=has_header))
+                                                              copy_from_options=copy_from_options))
         load_from_file_fpath = loader_obj_conf.get('load_from_stmt_fpath')
 
         self.f_handler.save_file(load_from_file_fpath, load_from_stmt)
         return load_from_stmt
-
 
     def drop_table(self, loader_obj_conf: dict):
 

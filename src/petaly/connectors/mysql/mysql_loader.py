@@ -70,6 +70,45 @@ class MysqlLoader(DBLoader):
 
         return object_load_conf
 
+    def compose_load_options(self):
+        """
+        """
+        load_data_options = ""
+        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
+
+        # 1. CHARACTER SET
+        charset_name = self.pipeline.source_attr.get("charset_name")
+        if charset_name is not None:
+            load_data_options += f"CHARACTER SET {charset_name}"
+
+        # 2. FIELDS TERMINATED BY (COLUMNS DELIMITER)
+        columns_delimiter = csv_parse_options.get("columns_delimiter")
+        if columns_delimiter == "\t":
+            load_data_options += f"\nFIELDS TERMINATED BY '\\t' "
+        else:
+            load_data_options += f"\nFIELDS TERMINATED BY '{columns_delimiter}' "
+
+        # 3. OPTIONALLY ENCLOSED BY
+        quote_char = csv_parse_options.get("quote_char")
+        if quote_char == 'double-quote':
+            load_data_options += f" ENCLOSED BY '\"'"
+        elif quote_char == 'single-quote':
+            load_data_options += f" ENCLOSED BY \"'\""
+
+        # 4. ESCAPED BY
+        load_data_options += f" ESCAPED BY '\\\\'"
+
+
+        # 5. LINES TERMINATED BY
+        load_data_options += f"\nLINES TERMINATED BY '\\n'"
+
+        # 6. IGNORE ROWS / SKIP Lines
+        has_header = csv_parse_options.get("header")
+        ignore_rows = 1 if has_header is True else 0
+        load_data_options += f"\nIGNORE {ignore_rows} ROWS"
+
+        return load_data_options
+
     def compose_load_from_stmt(self, data_object, loader_obj_conf):
         """ Its compose a copy from statement """
 
@@ -77,10 +116,12 @@ class MysqlLoader(DBLoader):
         table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
         table_name = table_ddl_dict.get('table_name')
 
+        load_data_options = self.compose_load_options()
+
         column_list = '' if table_ddl_dict.get('column_list') == None else '(' + table_ddl_dict.get('column_list') + ')'
         load_from_stmt = load_from_stmt.format_map(FormatDict(table_name=table_name,
                                                               column_list=column_list,
-                                                              skip_leading_rows=data_object.skip_leading_rows))
+                                                              load_data_options=load_data_options))
         load_from_file_fpath = loader_obj_conf.get('load_from_stmt_fpath')
 
         self.f_handler.save_file(load_from_file_fpath, load_from_stmt)

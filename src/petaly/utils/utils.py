@@ -18,7 +18,7 @@ import time
 from functools import wraps
 
 def measure_time(func):
-    """This decorator prints the execution time for the decorated function."""
+    """This decorator return the execution time for the decorated function."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):

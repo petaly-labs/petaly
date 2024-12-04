@@ -63,7 +63,7 @@ class DBLoader(ABC):
 
     @measure_time
     def load_data(self):
-        """  Load data into Postgres. Recreate table if parameter recreate_table=True. """
+        """  Load data into Database. Recreate table if parameter recreate_table=True. """
 
         logger.info(f"Start the load process to the target storage: {self.pipeline.target_connector_id}.")
 
@@ -115,7 +115,7 @@ class DBLoader(ABC):
         """ Its composes statement for create table command by using table_metadata dictionary. """
 
         object_name = data_object.object_name
-        table_name = data_object.target_object_name
+        table_name = data_object.destination_object_name
 
         if table_name is None:
             # table_name = table_metadata.get('source_object_name')

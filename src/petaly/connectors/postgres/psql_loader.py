@@ -53,8 +53,6 @@ class PsqlLoader(DBLoader):
 
             self.db_connector.load_from(load_from_stmt, path_to_data_file)
 
-
-
     def compose_create_table_stmt(self, loader_obj_conf):
 
         table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
@@ -73,13 +71,12 @@ class PsqlLoader(DBLoader):
 
         return loader_obj_conf
 
-    def compose_options(self):
+    def compose_from_options(self):
         """
         """
-        copy_options = f"WITH ( FORMAT CSV"
+        copy_options = ""
 
         csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
-
         columns_delimiter = csv_parse_options.get("columns_delimiter")
         if columns_delimiter == "\t":
             copy_options += f", DELIMITER '\\t'"
@@ -96,18 +93,16 @@ class PsqlLoader(DBLoader):
         elif quote_char == 'single-quote':
             copy_options += f", QUOTE \"'\""
 
-        file_encoding = csv_parse_options.get("file_encoding")
-        if file_encoding is not None:
-            copy_options += f", ENCODING '{file_encoding}'"
+        client_encoding = self.pipeline.source_attr.get("client_encoding")
+        if client_encoding is not None:
+            copy_options += f", ENCODING '{client_encoding}'"
 
-        copy_options += f" )"
         return copy_options
 
     def compose_load_from_stmt(self, data_object, loader_obj_conf):
         """ Its compose a copy from statement """
 
-        copy_options = self.compose_options()
-        print(copy_options)
+        copy_from_options = self.compose_from_options()
 
         load_from_stmt = self.f_handler.load_file(self.connector_load_from_stmt_fpath)
         table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
@@ -116,12 +111,11 @@ class PsqlLoader(DBLoader):
 
         load_from_stmt = load_from_stmt.format_map(FormatDict(schema_table_name=schema_table_name,
                                                               column_list=column_list,
-                                                              copy_options=copy_options))
+                                                              copy_from_options=copy_from_options))
         load_from_file_fpath = loader_obj_conf.get('load_from_stmt_fpath')
 
         self.f_handler.save_file(load_from_file_fpath, load_from_stmt)
         return load_from_stmt
-
 
     def drop_table(self, loader_obj_conf: dict):
 

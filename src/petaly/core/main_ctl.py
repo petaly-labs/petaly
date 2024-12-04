@@ -14,11 +14,9 @@
 
 import logging
 logger = logging.getLogger(__name__)
-
 from petaly.sysconfig.logger import setup_logging
-from petaly.core.pipeline import Pipeline
 
-from pprint import pprint
+
 class MainCtl():
     def __init__(self, main_config):
         self.m_conf = main_config

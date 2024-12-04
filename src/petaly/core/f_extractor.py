@@ -104,7 +104,7 @@ class FExtractor():
         meta_table = self.object_metadata.compose_object_meta_from_file(object_name, pq_columns_metadata_arr)
         return meta_table
 
-    def print_metadata_from_pq_file(self, parquet_fpath):
+    def describe_parquet_metadata(self, parquet_fpath):
         """ Its print a parquet metadata from parquet file to stdout
         """
         # extract metadata from parquet file
@@ -124,7 +124,7 @@ class FExtractor():
         output_text += header_str + '\n'
         output_text += '-'*len(header_str)  + '\n'
 
-        # print row by row
+        # compose output row by row
         for i in range(len(pq_columns_metadata_arr)):
             row_str = ""
             for key in pq_columns_metadata_arr[i]:

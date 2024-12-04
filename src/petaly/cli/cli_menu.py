@@ -45,7 +45,7 @@ class CliMenu():
                                                   "source_attributes": {},
                                                   "target_attributes": {},
                                                   "data_attributes": {
-                                                      "use_data_objects_spec":True
+                                                      "data_objects_spec_mode":{}
                                                   }
                                                   }
                                             },
@@ -66,8 +66,8 @@ class CliMenu():
         self.use_long_form_wizard = prompt.Confirm.ask("\nUse long form")
 
         self.compose_pipeline_attributes(pipeline_name)
-        self.compose_endpoint_attributes('source')
-        self.compose_endpoint_attributes('target')
+        self.compose_endpoint_attributes('source_attributes')
+        self.compose_endpoint_attributes('target_attributes')
         self.compose_data_attributes()
 
     def compose_pipeline_attributes(self, pipeline_name):
@@ -79,33 +79,37 @@ class CliMenu():
         assigned_attributes = self.assign_attributes(pipeline_attributes, predefined_values=predefined_values)
         self.composed_pipeline_config[0]['pipeline']['pipeline_attributes'].update(assigned_attributes)
 
-    def compose_endpoint_attributes(self, endpoint):
-        endpoint_attributes_name = endpoint + '_attributes'
+    def compose_endpoint_attributes(self, endpoint_attributes_name):
 
         self.console.print(
-            f"\n[bold blue]---------- Specify {endpoint.upper()} attributes --------------[/bold blue]\n")
-        #endpoint_attributes = self.pipeline_meta_config.get("endpoint_attributes")
-        endpoint_attributes = {}
+            f"\n[bold blue]---------- Specify {endpoint_attributes_name} --------------[/bold blue]\n")
 
+        endpoint_attributes_dict = {}
         predefined_values = {}
+
         # step 1. specify endpoint type
         available_connectors = self.m_conf.get_available_connectors()
-        endpoint_type = prompt.Prompt.ask(f"Specify [bold yellow]{endpoint} endpoint[/bold yellow] type", choices=available_connectors)
-        predefined_values.update({'endpoint_type': endpoint_type})
+        connector_type = prompt.Prompt.ask(f"Specify [bold yellow]{endpoint_attributes_name} connector[/bold yellow] type", choices=available_connectors)
+        predefined_values.update({'connector_type': connector_type})
 
-        assigned_endpoint_attributes = self.assign_attributes(endpoint_attributes, predefined_values=predefined_values)
+        assigned_endpoint_attributes = self.assign_attributes(endpoint_attributes_dict, predefined_values=predefined_values)
         self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_endpoint_attributes)
 
         # step 2. get connector category
-        #connector_category = self.m_conf.get_connector_class_config(endpoint_type).get('connector_category')
+        connector_category = self.m_conf.get_connector_class_config(connector_type).get('connector_category')
 
         # step 3. based on connector category define database or file parameters
-        connector_attributes = self.m_conf.get_connector_attributes(endpoint_type)
-        assigned_connector_attributes = self.assign_attributes(connector_attributes, predefined_values=None)
+        connector_attributes = self.m_conf.get_connector_attributes(connector_type)
+
+        exclude_key_list = [None]
+        if connector_category == "file" and endpoint_attributes_name == 'source_attributes':
+            exclude_key_list = ['destination_file_dir']
+
+        assigned_connector_attributes = self.assign_attributes(connector_attributes, exclude_key_list=exclude_key_list, predefined_values=None)
         self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)
 
         # step 4. get and define platform type
-        platform_type_list = self.m_conf.get_supported_platforms(endpoint_type)
+        platform_type_list = self.m_conf.get_supported_platforms(connector_type)
 
         if len(platform_type_list) == 1:
             platform_type = platform_type_list[0]
@@ -117,46 +121,49 @@ class CliMenu():
         if platform_type != 'local':
             predefined_values.update({'platform_type': platform_type})
             platform_attributes = self.m_conf.get_platform_attributes(platform_id=platform_type)
-            assigned_platform_attributes = self.assign_attributes(platform_attributes, exclude_key_list=['endpoint_type'], predefined_values=predefined_values)
+            assigned_platform_attributes = self.assign_attributes(platform_attributes, predefined_values=predefined_values, exclude_key_list=['connector_type'])
             self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_platform_attributes)
-
 
     def compose_data_attributes(self):
 
-        self.console.print(
-            f"\n[bold blue]---------- Specify data object attributes --------------[/bold blue]")
-
         data_attributes = self.pipeline_meta_config.get("data_attributes")
-        assigned_data_attributes = self.assign_attributes(data_attributes, predefined_values=None, exclude_key_list=["use_data_objects_spec"])
-        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(assigned_data_attributes)
 
-        csv_parse_options = self.pipeline_meta_config.get("csv_parse_options")
+        self.console.print(f"\n[bold blue]---------- Specify data parse options --------------[/bold blue]")
+
+        csv_parse_options = data_attributes.get("csv_parse_options")
         assigned_csv_parse_options = self.assign_attributes(csv_parse_options, predefined_values=None)
         self.composed_pipeline_config[0]['pipeline']['data_attributes'].update({"csv_parse_options": assigned_csv_parse_options})
 
-        # use_data_objects_spec
-        self.console.print(f"\nFollowing configuration redefines a configuration for each data object/table:")
-        self.use_data_objects_spec = prompt.Confirm.ask("[bold green]use_data_objects_spec:[/bold green]")
-        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(
-            {'use_data_objects_spec': self.use_data_objects_spec})
+        self.console.print(f"\n[bold blue]---------- Specify data object attributes --------------[/bold blue]")
 
-    def compose_data_objects_spec(self, object_names):
+        assigned_data_attributes = self.assign_attributes(data_attributes, predefined_values=None, exclude_key_list=[None])
+        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(assigned_data_attributes)
 
-        self.use_long_form_wizard = prompt.Confirm.ask("Use data-objects wizard")
+    def compose_data_objects_spec(self, pipeline, object_names):
+
+        self.use_long_form_wizard = prompt.Confirm.ask("Use data-objects-spec wizard")
 
         data_objects_spec = self.pipeline_meta_config.get("data_objects_spec")
         data_objects_spec_list = []
 
-        if object_names is not None and len(object_names)>0:
-            #self.console.print(f"\n[bold blue]---------- Run initialization of Data-Objects-Spec --------------[/bold blue]")
+        exclude_key_list=['object_name']
 
+        connector_category = self.m_conf.get_connector_category(pipeline.source_attr.get("connector_type"))
+        print(connector_category)
+        # exclude params for file load (csv, etc..)
+        if connector_category != "file":
+            print("test")
+            exclude_key_list.append("files_source_dir")
+            exclude_key_list.append("file_names")
+
+        if object_names is not None and len(object_names)>0:
             for obj_name in object_names:
                 self.console.print(
                     f"\n[bold blue]---------- Configure data object/table \[{obj_name}]: ------------------[/bold blue]")
 
                 predefined_values = {'object_name': obj_name}
 
-                assigned_attributes = self.assign_attributes(data_objects_spec, predefined_values=predefined_values, exclude_key_list=['object_name'])
+                assigned_attributes = self.assign_attributes(data_objects_spec, predefined_values=predefined_values, exclude_key_list=exclude_key_list)
                 assigned_attributes.pop('object_name')
                 tmp_assigned_attributes = {}
                 tmp_assigned_attributes.update({'object_name': obj_name, 'object_attributes': assigned_attributes})
@@ -182,7 +189,6 @@ class CliMenu():
 
             if in_use:
                 # 1. handle predefined_values
-                #if predefined_values is not None and predefined_values.get(key) is not None:
                 if predefined_values is not None:
                     if self.f_handler.check_dict_key_exist(predefined_values, key):
                         assigned_value = predefined_values.get(key)
@@ -192,14 +198,15 @@ class CliMenu():
                 # 2. define default and preassigned_values
                 preassigned_values = value.get('preassigned_values')
                 default_value =  None if value.get('default_value') is None else value.get('default_value')
-                #default_value = None if preassigned_values[0] is None else preassigned_values[0]
                 preassigned_values = None if preassigned_values[0] is None else preassigned_values
                 assigned_value = default_value
 
-                # 3. print key comment and default value
-                console_print = f"\n{value.get('key_comment')} "
+                # 3. compose key comment and default value
+                console_print = "\n"
                 if default_value is not None:
-                    console_print += f"Default: [bold blue]\[{default_value}][/bold blue]"
+                    console_print += f"Default:[bold blue]\[{default_value}][/bold blue]; "
+
+                console_print += f"{value.get('key_comment')} "
 
                 self.console.print(console_print)
 

@@ -1,4 +1,4 @@
-# Welcome to Petaly Community! ![petaly_favicon_small.png](./images/logo/petaly_favicon_small.png)
+# ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly Community! 
 
 We’re thrilled to have you here and excited about the possibility of your contributions to our project. 
 

@@ -70,11 +70,11 @@ class Pipeline:
             logger.warning(f"The pipeline: {pipeline_name} is disabled. To enable pipeline {self.pipeline_dpath} set the parameter is_enabled: true ")
             #sys.exit()
 
-        self.source_connector_id = self.source_attr.get('endpoint_type')
-        self.target_connector_id = self.target_attr.get('endpoint_type')
+        self.source_connector_id = self.source_attr.get('connector_type')
+        self.target_connector_id = self.target_attr.get('connector_type')
 
         self.data_attributes = pipeline_dict.get('pipeline').get('data_attributes')
-        self.use_data_objects_spec = self.data_attributes.get('use_data_objects_spec')
+        self.data_objects_spec_mode = self.data_attributes.get('data_objects_spec_mode')
 
         self.data_objects_spec = pipeline_all_obj[1]
         if self.data_objects_spec is None:

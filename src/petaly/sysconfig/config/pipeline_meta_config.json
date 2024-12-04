@@ -5,28 +5,28 @@
       "is_enabled": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean",  "key_comment": "If true the pipeline is enabled."}
     },
     "data_attributes": {
-      "preferred_load_type": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String",  "key_comment": "Only full load supported yet."},
+      "preferred_load_mode": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String",  "key_comment": "Only full load supported yet."},
       "data_transition_format": {"in_use":false, "preassigned_values": ["csv"], "default_value":"csv", "key_type": "String", "key_comment": "Only csv format supported yet."},
-      "use_data_objects_spec": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean",  "key_comment": "If true, load only the objects specified in data_objects_spec which will be configured in the next step.\nIf false, load all objects from the database_schema (or database_name if no schema exists) in specified in the source_attributes section."}
-    },
-    "csv_parse_options":
-    {
-      "header": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean", "key_comment": "Specifies whether the file contains a header line with the names of each column in the file."},
-      "columns_delimiter": {"in_use":true, "preassigned_values": [null], "default_value":",", "key_type": "String", "key_comment": "The character delimiting individual cells in the CSV data."},
-      "quote_char": {"in_use":true, "preassigned_values": ["double-quote","single-quote","none"], "default_value":"double-quote", "key_type": "String", "key_comment": "Choose between double-quote, single-quote or none-quote. The default is double-quote."},
-      "file_encoding": {"in_use":true, "preassigned_values": [null], "default_value":"UTF8", "key_type": "String", "key_comment": "Define file encoding;"}
-    },
+      "data_objects_spec_mode": {"in_use":true, "preassigned_values": ["only", "ignore", "prefer"], "default_value":"only", "key_type": "String",
+              "key_comment": "In this step, you will define the main behaviour of the object definition, as follows:\nIf [bold blue]only[/bold blue]: Load only the objects explicitly specified in data_objects_spec[] section. These objects will be configured in the next step.\nIf [bold blue]ignore[/bold blue]: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section, completely disregarding data_objects_spec[] section.\nIf [bold blue]prefer[/bold blue]: Load all objects from the database_schema, but for objects specified in data_objects_spec[], apply the refined configuration defined in that section."
+              },
+      "csv_parse_options":
+                {
+                  "header": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean", "key_comment": "Specifies whether the file contains a header line with the names of each column in the file."},
+                  "columns_delimiter": {"in_use":true, "preassigned_values": [null], "default_value":",", "key_type": "String", "key_comment": "The character delimiting individual cells in the CSV data."},
+                  "quote_char": {"in_use":true, "preassigned_values": ["double-quote","single-quote","none"], "default_value":"double-quote", "key_type": "String", "key_comment": "Choose between double-quote, single-quote or none-quote. The default is double-quote."}
+                }
+     },
     "data_objects_spec": {
-      "object_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies a unique data_object name. It can be a table name for database or file/folder name for file export/import."},
-      "target_object_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Optional! Specifies target_object_name only if you want it to be different from source_object_name."},
+      "object_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies a unique data_object name. It can be a table name for database table or folder name for file export/import."},
+      "destination_object_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Optional! Specifies destination_object_name only if you want it to be different from source_object_name."},
       "recreate_target_object": {"in_use":true, "preassigned_values": ["false", "true"], "default_value":"false", "key_type": "Boolean", "key_comment": "If this parameter is true, the target object (table) will be rebuilt. If false, the object/table will be created if it does not exists."},
-      "excluded_columns": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "Array", "key_comment": "Specifies a comma-separated list of columns to exclude. Leave empty to include all columns."},
-      "load_type": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String", "key_comment": "Only full load supported yet."},
+      "cleanup_linebreak_in_fields": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "Setting this parameter to true will clean up a line break in all fields. This works, currently for MySQL extraction, the idea is to extend it to other sources in the future."},
+      "exclude_columns": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "Array", "key_comment": "Specifies a comma-separated list of columns to exclude. Leave empty to include all columns."},
+      "files_source_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Relevant to files upload only, e.g. csv as a source. Specify path to files source directory"},
+      "file_names": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "Array", "key_comment": "Relevant to files upload only, e.g. csv as a source. Specifies a comma-separated list of file names to upload or leave blank for all files inside files_source_dir"},
+      "load_mode": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String", "key_comment": "Only full load supported yet."},
       "load_batch_size": {"in_use":false, "preassigned_values": [10000], "default_value":10000, "key_type": "Integer", "key_comment": "Specifies batch size for incremental load. It's not supported yet."},
-      "incremental_load_column": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Incremental load column. It's not supported yet."},
-      "file_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Relevant to file upload only. Specifies path to file directory."},
-      "file_name_list": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "Array", "key_comment": "Relevant to file upload only. Specifies the filenames to export or leave blank for all files."},
-      "target_file_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Relevant to file extract only. Destination directory after saving data first to output folder."}
-    }
-
+      "column_for_incremental_load": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Incremental load column. It's not supported yet."}
+      }
 }

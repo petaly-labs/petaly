@@ -1,5 +1,5 @@
 COPY {schema_table_name}
 {column_list}
 FROM STDIN
-{copy_options}
+WITH (FORMAT CSV {copy_from_options})
 ;

@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 import sys
 from abc import ABC, abstractmethod
-
 from petaly.utils.utils import measure_time
 from petaly.core.composer import Composer
 from petaly.utils.file_handler import FileHandler
@@ -68,7 +67,7 @@ class DBExtractor(ABC):
 		# 2. compose_extract_scripts
 		meta_query = self.compose_meta_query()
 
-		# 3. get meta query result
+		# 3. get meta query result, expected as a dict
 		meta_query_result = self.execute_meta_query(meta_query)
 
 		# 4. save metadata and export scripts
@@ -110,19 +109,21 @@ class DBExtractor(ABC):
 		extract_queries_dict = self.compose_extract_queries(table_metadata)
 		extractor_obj_conf.update(extract_queries_dict)
 
-		# 3. load stmt_extract_to.txt and transform it in later stage
+		# 3. add csv_parse_options
+		extractor_obj_conf.update({'csv_parse_options': table_metadata.get('csv_parse_options')})
+
+		# 4. load stmt_extract_to.txt and transform it in later stage
 		extract_to_stmt = self.f_handler.load_file(self.connector_extract_to_stmt_fpath)
 		extract_to_stmt = self.compose_extract_to_stmt(extract_to_stmt, extractor_obj_conf)
 		extractor_obj_conf.update({'extract_to_stmt': extract_to_stmt})
 
-		# 4.  save extract_to_stmt under output_extract_to_file_fpath
+		# 5.  save extract_to_stmt under output_extract_to_file_fpath
 		output_extract_to_stmt_fpath = self.pipeline.output_extract_to_stmt_fpath.format(object_name=object_name)
-
 		extractor_obj_conf.update({'extract_to_stmt_fpath': output_extract_to_stmt_fpath})
-
 		self.f_handler.save_file(output_extract_to_stmt_fpath, extract_to_stmt)
 
-		# 5. create output_file_path
+		# 6. create output_file_path
+
 		output_fpath = self.get_local_output_path(object_name)
 		extractor_obj_conf.update({'output_fpath': output_fpath})
 
@@ -144,12 +145,12 @@ class DBExtractor(ABC):
 		"""
 		logger.info("Compose data source meta query")
 
-		if self.pipeline.data_object_main_config.get('use_data_objects_spec') is False:
+		if self.pipeline.data_attributes.get('data_objects_spec_mode') in ("ignore","prefer"):
 			table_stmt = ''
 		else:
 
 			if len(self.pipeline.data_objects)==0:
-				logger.warning(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If use_data_objects_spec is true the data_objects_spec: [] should has an object specification")
+				logger.warning(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If data_objects_spec_mode is set to \"only\" the data_objects_spec: [] should has at least one object specification")
 				sys.exit()
 
 			table_stmt = 'AND tb.table_name IN ({tbl_list})'

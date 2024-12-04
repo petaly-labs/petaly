@@ -69,7 +69,7 @@ class Composer():
 		"""
 		return_list = []
 
-		if self.pipeline.data_attributes.get('use_data_objects_spec') is False:
+		if self.pipeline.data_attributes.get('data_objects_spec_mode') == "ignore":
 			# return the first list without modification
 			return_list = data_objects
 		else:

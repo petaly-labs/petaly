@@ -70,16 +70,16 @@ class MysqlLoader(DBLoader):
 
         return object_load_conf
 
-    def compose_options(self):
+    def compose_load_options(self):
         """
         """
         load_data_options = ""
         csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
 
         # 1. CHARACTER SET
-        char_set = "utf8mb4" if csv_parse_options.get("file_encoding") == 'UTF8' else csv_parse_options.get("file_encoding")
-        if char_set is not None:
-            load_data_options += f"CHARACTER SET {char_set}"
+        charset_name = self.pipeline.source_attr.get("charset_name")
+        if charset_name is not None:
+            load_data_options += f"CHARACTER SET {charset_name}"
 
         # 2. FIELDS TERMINATED BY (COLUMNS DELIMITER)
         columns_delimiter = csv_parse_options.get("columns_delimiter")
@@ -116,7 +116,7 @@ class MysqlLoader(DBLoader):
         table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
         table_name = table_ddl_dict.get('table_name')
 
-        load_data_options = self.compose_options()
+        load_data_options = self.compose_load_options()
 
         column_list = '' if table_ddl_dict.get('column_list') == None else '(' + table_ddl_dict.get('column_list') + ')'
         load_from_stmt = load_from_stmt.format_map(FormatDict(table_name=table_name,

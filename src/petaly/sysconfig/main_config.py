@@ -178,8 +178,8 @@ class MainConfig:
         return True
 
     def get_available_connectors(self):
-        endpoint_types = (self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors").keys())
-        return endpoint_types
+        connector_type = (self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors").keys())
+        return connector_type
 
     def set_loader_paths(self, connector_id):
         connector_dpath = self.get_connector_dpath(connector_id)
@@ -246,3 +246,7 @@ class MainConfig:
         class_name = connector_class_config.get(class_type).get('class_name')
         class_object = load_class_obj(module_path, class_name)
         return class_object
+
+    def get_connector_category(self, connector_id):
+        connector_category = self.get_connector_class_config(connector_id).get('connector_category')
+        return connector_category

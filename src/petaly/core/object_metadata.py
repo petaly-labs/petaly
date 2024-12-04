@@ -14,9 +14,7 @@
 
 import logging
 logger = logging.getLogger(__name__)
-
 import sys
-
 from petaly.core.data_object import DataObject
 from petaly.core.composer import Composer
 from petaly.utils.file_handler import FileHandler
@@ -38,13 +36,22 @@ class ObjectMetadata():
         logger.info(f"Format and save metadata for table {object_name} in {source_object_fpath}")
         self.f_handler.save_dict_to_file(source_object_fpath, meta_table, 'json')
 
-    def compose_objects_meta_from_query(self, meta_table):
-        """ Its format array of dicts of table metadata result to the array of dict with following format
-        [{'table_schema': table_schema_1, 'table_name': table_name_1, 'columns': []}]
+    def compose_objects_meta_from_query(self, meta_query_result):
+        """ Its format array of dicts of table metadata result to the array of dict
+        Given format:
+        [{'source_schema_name': table_schema_1, 'source_object_name': table_name_1, 'column_name_1': attributes},
+        {'source_schema_name': table_schema_1, 'source_object_name': table_name_1, 'column_name_2': attributes},
+        ]
+        Result format:
+        [{'table_schema': table_schema_1, 'table_name': table_name_1, 'columns': [all]},
+        {'table_schema': table_schema_2, 'table_name': table_name_2, 'columns': [all]}
+        ]
         """
         distinct_object_list = []
-        formated_tbl_arr = []
-        for i, val in enumerate(meta_table):
+        formated_object_meta_list = []
+        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
+
+        for i, val in enumerate(meta_query_result):
 
             schema_name = val.get("source_schema_name")
             source_object_name = val.get("source_object_name")
@@ -52,19 +59,26 @@ class ObjectMetadata():
             if source_object_name not in distinct_object_list:
                 distinct_object_list.append(source_object_name)
                 new_dict = {'source_schema_name': schema_name, 'source_object_name': source_object_name, 'columns': []}
-                formated_tbl_arr.append(new_dict)
+                formated_object_meta_list.append(new_dict)
 
-        for i, val in enumerate(formated_tbl_arr):
 
-            object_name = formated_tbl_arr[i].get('source_object_name')
+        for i, val in enumerate(formated_object_meta_list):
+
+            object_name = formated_object_meta_list[i].get('source_object_name')
             data_object = self.get_data_object(object_name)
-            excluded_columns = [] if data_object.excluded_columns is None else data_object.excluded_columns
 
-            for idx, value in enumerate(meta_table):
+            exclude_columns = [] if data_object.exclude_columns is None else data_object.exclude_columns
 
-                table_name = meta_table[idx].get('source_object_name')
+            # make a copy of dict object and add cleanup_linebreak_in_fields to csv_parse_options
+            parse_options = dict(csv_parse_options)
+            parse_options.update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
+            formated_object_meta_list[i].update({'csv_parse_options': parse_options})
+
+            for idx, value in enumerate(meta_query_result):
+
+                table_name = meta_query_result[idx].get('source_object_name')
                 if table_name == object_name:
-                    if value.get('column_name') not in excluded_columns:
+                    if value.get('column_name') not in exclude_columns:
                         column_metadata = self.compose_column_metadata( column_name=value.get('column_name'),
                                                                     ordinal_position=value.get('ordinal_position'),
                                                                     is_nullable=value.get('is_nullable'),
@@ -74,26 +88,29 @@ class ObjectMetadata():
                                                                     numeric_scale=value.get('numeric_scale'),
                                                                     primary_key=value.get('primary_key'))
 
-                        formated_tbl_arr[i]['columns'].append(column_metadata)
+                        formated_object_meta_list[i]['columns'].append(column_metadata)
 
-        return formated_tbl_arr
+        return formated_object_meta_list
 
     def compose_object_meta_from_file(self, object_name, columns_metadata_arr):
         """ Its creates a metadata file with all the attributes needed to recreate a table on the target.
         """
-        meta_table = {}
-        meta_table.update({'source_object_name': object_name})
-        meta_table.update({'source_endpoint_type': self.pipeline.source_attr.get("endpoint_type")})
-        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
+        object_meta = {}
+        object_meta.update({'source_object_name': object_name})
+        object_meta.update({'output_file_format': self.pipeline.source_attr.get("connector_type")})
 
-        if csv_parse_options is not None:
-            meta_table.update({'csv_parse_options': csv_parse_options})
+        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
+        object_meta.update({'csv_parse_options': csv_parse_options})
+
         data_object = self.get_data_object(object_name)
-        excluded_columns = [] if data_object.excluded_columns is None else data_object.excluded_columns
+
+        # add cleanup_linebreak_in_fields to csv_parse_options
+        object_meta['csv_parse_options'].update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
+        exclude_columns = [] if data_object.exclude_columns is None else data_object.exclude_columns
 
         columns_arr = []
         for idx, value in enumerate(columns_metadata_arr):
-            if value.get('column_name') not in excluded_columns:
+            if value.get('column_name') not in exclude_columns:
                 column_metadata = self.compose_column_metadata(
                                                 column_name=str(value.get('column_name')),
                                                 ordinal_position=str(idx+1),
@@ -105,8 +122,8 @@ class ObjectMetadata():
                                                 primary_key=None)
 
                 columns_arr.append(column_metadata)
-        meta_table.update({'columns': columns_arr})
-        return meta_table
+        object_meta.update({'columns': columns_arr})
+        return object_meta
 
     def process_metadata(self, meta_query_result):
         object_list = []

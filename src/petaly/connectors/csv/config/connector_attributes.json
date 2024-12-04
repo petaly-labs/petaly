@@ -1,0 +1,10 @@
+{
+  "file_encoding": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] Define file encoding; If in doubt, leave it blank or use UTF8."},
+  "destination_file_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Define the absolute path to your destination file directory. This directory will serve as the final destination for your extracted files."},
+  "additional_options":
+  {
+      "newlines_in_values": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "String", "key_comment": "Whether newline characters are allowed in CSV values. Setting this to True reduces the performance of multi-threaded CSV reading."},
+      "ignore_empty_lines": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "String", "key_comment": "Whether empty lines are ignored in CSV input. If False, an empty line is interpreted as containing a single empty value (assuming a one-column CSV file)."}
+  }
+}
+

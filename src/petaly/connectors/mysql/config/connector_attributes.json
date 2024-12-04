@@ -1,0 +1,16 @@
+{
+  "database_user": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database user name"},
+  "database_password": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database user password"},
+  "database_host": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database hostname or IP address"},
+  "database_port": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database port"},
+  "database_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database name"},
+  "database_server_version":  {"in_use":false, "preassigned_values": ["9.1","9.0","8.4","8.3","8.2","8.1","8.0","5.x"], "default_value":"9.0", "key_type": "String", "key_comment": "Specifies the database server version."},
+  "charset_name": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] Define client or file charset; If in doubt, leave it blank or use utf8mb4."},
+  "additional_options":
+      {
+       "lines_starting_by": {"in_use":false, "preassigned_values": [null], "default_value":"", "key_type": "String", "key_comment": "If all the input lines have a common prefix that you want to ignore, you can use LINES STARTING BY 'prefix_string' to skip the prefix and anything before it. If a line does not include the prefix, the entire line is skipped. Suppose that you issue the following statement:"},
+       "lines_terminated_by": {"in_use":false, "preassigned_values": [null], "default_value":"\n", "key_type": "String", "key_comment": "For a text file generated on a Windows system, proper file reading might require LINES TERMINATED BY '\\r\\n' because Windows programs typically use two characters as a line terminator. Some programs, such as WordPad, might use \\r as a line terminator when writing files. To read such files, use LINES TERMINATED BY '\\r'."},
+       "ignore_rows": {"in_use":false, "preassigned_values": [null], "default_value":1, "key_type": "Integer", "key_comment": "The IGNORE number LINES clause can be used to ignore lines at the start of the file. For example, you can use IGNORE 1 LINES to skip an initial header line containing column names:"}
+      }
+}
+

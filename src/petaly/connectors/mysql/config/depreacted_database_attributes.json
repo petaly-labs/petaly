@@ -1,0 +1,7 @@
+{
+  "database_user": {"preassigned_values": [null], "key_type": "String", "key_comment": "Specify database user name"},
+  "database_password": {"preassigned_values": [null], "key_type": "String", "key_comment": "Specify database user password"},
+  "database_host": {"preassigned_values": [null], "key_type": "String", "key_comment": "Specify database hostname or IP address"},
+  "database_port": {"preassigned_values": [null], "key_type": "String", "key_comment": "Specify database port"},
+  "database_name": {"preassigned_values": [null], "key_type": "String", "key_comment": "Specify database name"}
+}

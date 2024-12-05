@@ -44,19 +44,19 @@ class PsqlExtractor(DBExtractor):
         "WITH (FORMAT CSV, DELIMITER ',', HEADER true, FORCE_QUOTE *, ENCODING 'UTF-8');"
         copy_options = ""
 
-        csv_parse_options = extractor_obj_conf.get("csv_parse_options")
+        object_default_settings = extractor_obj_conf.get("object_default_settings")
 
-        columns_delimiter = csv_parse_options.get("columns_delimiter")
+        columns_delimiter = object_default_settings.get("columns_delimiter")
         if columns_delimiter == "\t":
             copy_options += f", DELIMITER '\\t'"
         else:
             copy_options += f", DELIMITER '{columns_delimiter}'"
 
-        has_header = True if csv_parse_options.get("header") is None or True else False
+        has_header = True if object_default_settings.get("header") is None or True else False
         copy_options += f", HEADER {has_header}"
 
         # 3. OPTIONALLY ENCLOSED BY
-        quote_char = csv_parse_options.get("quote_char")
+        quote_char = object_default_settings.get("quote_char")
         if quote_char == 'double-quote':
             copy_options += f", QUOTE '\"'"
         elif quote_char == 'single-quote':

@@ -109,8 +109,8 @@ class DBExtractor(ABC):
 		extract_queries_dict = self.compose_extract_queries(table_metadata)
 		extractor_obj_conf.update(extract_queries_dict)
 
-		# 3. add csv_parse_options
-		extractor_obj_conf.update({'csv_parse_options': table_metadata.get('csv_parse_options')})
+		# 3. add object_default_settings
+		extractor_obj_conf.update({'object_default_settings': table_metadata.get('object_default_settings')})
 
 		# 4. load stmt_extract_to.txt and transform it in later stage
 		extract_to_stmt = self.f_handler.load_file(self.connector_extract_to_stmt_fpath)

@@ -114,9 +114,25 @@ Following parameters configuring default behavior for data-objects/tables
       
       # provide fine definition: only, prefer, ignore 
       data_objects_spec_mode: only
-      
+```
+In this step, you will define the main behaviour of the object definition, as follows:<br>
+If **only** [default]: Load only the objects explicitly specified in data_objects_spec[] section. These objects will be configured in the next step.<br>
+If **ignore**: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section, completely disregarding data_objects_spec[] section.<br>
+If **prefer**: Load all objects from the database_schema, but for objects specified in data_objects_spec[], apply the refined configuration defined in that section.<br>
+
+**object_default_settings**
+
+The object_default_settings parameter defines the default configuration options applied to objects during processing.
+These settings serve as a baseline and can be overridden by more specific configurations if needed.
+
+This section is used for loading data from CSV files, as well as for extracting and loading data from databases.
+
+It provides a standardized configuration to facilitate seamless data exchange between different engines, such as MySQL and PostgreSQL.
+
+
+```
       # define csv parse options. It also valid for mysql, postgres extract or load
-      csv_parse_options:
+      object_default_settings:
         
         # Specifies whether the file should contains or contains a header line with the names of each column in the file.
         header: true
@@ -129,12 +145,7 @@ Following parameters configuring default behavior for data-objects/tables
         
 ```
 
-In this step, you will define the main behaviour of the object definition, as follows:<br>
-If **only** [default]: Load only the objects explicitly specified in data_objects_spec[] section. These objects will be configured in the next step.<br>
-If **ignore**: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section, completely disregarding data_objects_spec[] section.<br>
-If **prefer**: Load all objects from the database_schema, but for objects specified in data_objects_spec[], apply the refined configuration defined in that section.<br>
 
-`data_objects_spec_mode: only`
 
 ### data_objects_spec
 
@@ -255,9 +266,11 @@ pipeline:
   ....
   target_attributes:
     connector_type: csv
-    destination_file_dir: /opt/petaly_labs/data/dest_data
+    destination_file_dir: /your-path-to-destination-folder
 ```
 
+
+### Run petaly with the new 
 ### Full Example: CSV file to MySQL
 
 The following example create a new table and load csv file stocks.csv into Mysql database.
@@ -278,7 +291,7 @@ pipeline:
     database_name: petalydb
   data_attributes:
     use_data_objects_spec: only
-    csv_parse_options:
+    object_default_settings:
       header: true
       columns_delimiter: ","
       quote_char: none
@@ -291,7 +304,7 @@ data_objects_spec:
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
-    files_source_dir: /opt/petaly_labs/data/source_data/csv/stocks
+    files_source_dir: /your-path-to-csv-folder/stocks
     file_names:
     - stocks.csv
 ```
@@ -322,7 +335,7 @@ pipeline:
     database_schema: petaly_schema
   data_attributes:
     data_objects_spec_mode: only
-    csv_parse_options:
+    object_default_settings:
       header: true
       columns_delimiter: ','
       quote_char: double-quote
@@ -357,10 +370,10 @@ pipeline:
     database_schema: petaly_schema
   target_attributes:
     connector_type: csv
-    destination_file_dir: /opt/petaly_labs/data/dest_data
+    destination_file_dir: /your-path-to-destination-folder
   data_attributes:
     data_objects_spec_mode: only
-    csv_parse_options:
+    object_default_settings:
       header: true
       columns_delimiter: ","
       quote_char: double-quote

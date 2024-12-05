@@ -128,11 +128,11 @@ class CliMenu():
 
         data_attributes = self.pipeline_meta_config.get("data_attributes")
 
-        self.console.print(f"\n[bold blue]---------- Specify data parse options --------------[/bold blue]")
+        self.console.print(f"\n[bold blue]---------- Specify default object settings --------------[/bold blue]")
 
-        csv_parse_options = data_attributes.get("csv_parse_options")
-        assigned_csv_parse_options = self.assign_attributes(csv_parse_options, predefined_values=None)
-        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update({"csv_parse_options": assigned_csv_parse_options})
+        object_default_settings = data_attributes.get("object_default_settings")
+        assigned_object_default_settings = self.assign_attributes(object_default_settings, predefined_values=None)
+        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update({"object_default_settings": assigned_object_default_settings})
 
         self.console.print(f"\n[bold blue]---------- Specify data object attributes --------------[/bold blue]")
 

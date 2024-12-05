@@ -31,7 +31,7 @@ class FExtractor():
         self.composer = Composer(pipeline)
         self.f_handler = FileHandler()
         self.object_metadata = ObjectMetadata(pipeline)
-        self.csv_parse_options = pipeline.data_attributes.get("csv_parse_options")
+        self.object_default_settings = pipeline.data_attributes.get("object_default_settings")
         pass
 
 
@@ -147,7 +147,7 @@ class FExtractor():
             sys.exit()
 
         # transform csv to parquet
-        parse_options = csv.ParseOptions(delimiter=self.csv_parse_options.get("columns_delimiter"))
+        parse_options = csv.ParseOptions(delimiter=self.object_default_settings.get("columns_delimiter"))
         file_data = csv.read_csv(source_file, parse_options=parse_options)
 
         pq_file_name = self.f_handler.replace_file_extension(source_file, '.parquet')

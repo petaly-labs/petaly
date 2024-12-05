@@ -74,7 +74,7 @@ class MysqlLoader(DBLoader):
         """
         """
         load_data_options = ""
-        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
+        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
 
         # 1. CHARACTER SET
         charset_name = self.pipeline.source_attr.get("charset_name")
@@ -82,14 +82,14 @@ class MysqlLoader(DBLoader):
             load_data_options += f"CHARACTER SET {charset_name}"
 
         # 2. FIELDS TERMINATED BY (COLUMNS DELIMITER)
-        columns_delimiter = csv_parse_options.get("columns_delimiter")
+        columns_delimiter = object_default_settings.get("columns_delimiter")
         if columns_delimiter == "\t":
             load_data_options += f"\nFIELDS TERMINATED BY '\\t' "
         else:
             load_data_options += f"\nFIELDS TERMINATED BY '{columns_delimiter}' "
 
         # 3. OPTIONALLY ENCLOSED BY
-        quote_char = csv_parse_options.get("quote_char")
+        quote_char = object_default_settings.get("quote_char")
         if quote_char == 'double-quote':
             load_data_options += f" ENCLOSED BY '\"'"
         elif quote_char == 'single-quote':
@@ -103,7 +103,7 @@ class MysqlLoader(DBLoader):
         load_data_options += f"\nLINES TERMINATED BY '\\n'"
 
         # 6. IGNORE ROWS / SKIP Lines
-        has_header = csv_parse_options.get("header")
+        has_header = object_default_settings.get("header")
         ignore_rows = 1 if has_header is True else 0
         load_data_options += f"\nIGNORE {ignore_rows} ROWS"
 

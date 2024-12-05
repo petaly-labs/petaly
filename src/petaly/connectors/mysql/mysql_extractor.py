@@ -35,17 +35,17 @@ class MysqlExtractor(DBExtractor):
     def compose_extract_options(self, extractor_obj_conf)->dict:
         """
         """
-        csv_parse_options = extractor_obj_conf.get("csv_parse_options")
+        object_default_settings = extractor_obj_conf.get("object_default_settings")
         extract_options = {}
 
         # 1. FIELDS TERMINATED BY (COLUMNS DELIMITER)
-        columns_delimiter = csv_parse_options.get("columns_delimiter")
+        columns_delimiter = object_default_settings.get("columns_delimiter")
         extract_options.update({"delimiter": columns_delimiter})
         if columns_delimiter == "\\t":
             extract_options.update({"delimiter": "\t"})
 
         # 2. OPTIONALLY ENCLOSED BY
-        quote_char = csv_parse_options.get("quote_char")
+        quote_char = object_default_settings.get("quote_char")
         if quote_char == 'double-quote':
             extract_options.update({"quotechar": "\""})
             extract_options.update({"quoting": csv.QUOTE_ALL})
@@ -63,11 +63,11 @@ class MysqlExtractor(DBExtractor):
         extract_options.update({"lineterminator": "\n"})
 
         # 6. Has Header
-        has_header = True if csv_parse_options.get("header") else False
+        has_header = True if object_default_settings.get("header") else False
         extract_options.update({"header": has_header})
 
         # 7. check cleanup_linebreak_in_fields
-        cleanup_linebreak_in_fields = True if csv_parse_options.get("cleanup_linebreak_in_fields") else False
+        cleanup_linebreak_in_fields = True if object_default_settings.get("cleanup_linebreak_in_fields") else False
         extract_options.update({"cleanup_linebreak_in_fields": cleanup_linebreak_in_fields})
 
         return extract_options

@@ -76,18 +76,18 @@ class PsqlLoader(DBLoader):
         """
         copy_options = ""
 
-        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
-        columns_delimiter = csv_parse_options.get("columns_delimiter")
+        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
+        columns_delimiter = object_default_settings.get("columns_delimiter")
         if columns_delimiter == "\t":
             copy_options += f", DELIMITER '\\t'"
         else:
             copy_options += f", DELIMITER '{columns_delimiter}'"
 
-        has_header = True if csv_parse_options.get("header") is None or True else False
+        has_header = True if object_default_settings.get("header") is None or True else False
         copy_options += f", HEADER {has_header}"
 
         # 3. OPTIONALLY ENCLOSED BY
-        quote_char = csv_parse_options.get("quote_char")
+        quote_char = object_default_settings.get("quote_char")
         if quote_char == 'double-quote':
             copy_options += f", QUOTE '\"'"
         elif quote_char == 'single-quote':

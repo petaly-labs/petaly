@@ -49,7 +49,7 @@ class ObjectMetadata():
         """
         distinct_object_list = []
         formated_object_meta_list = []
-        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
+        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
 
         for i, val in enumerate(meta_query_result):
 
@@ -69,10 +69,10 @@ class ObjectMetadata():
 
             exclude_columns = [] if data_object.exclude_columns is None else data_object.exclude_columns
 
-            # make a copy of dict object and add cleanup_linebreak_in_fields to csv_parse_options
-            parse_options = dict(csv_parse_options)
-            parse_options.update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
-            formated_object_meta_list[i].update({'csv_parse_options': parse_options})
+            # make a copy of dict object and add cleanup_linebreak_in_fields to object_default_settings
+            object_default_settings = dict(object_default_settings)
+            object_default_settings.update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
+            formated_object_meta_list[i].update({'object_default_settings': object_default_settings})
 
             for idx, value in enumerate(meta_query_result):
 
@@ -99,13 +99,13 @@ class ObjectMetadata():
         object_meta.update({'source_object_name': object_name})
         object_meta.update({'output_file_format': self.pipeline.source_attr.get("connector_type")})
 
-        csv_parse_options = self.pipeline.data_attributes.get("csv_parse_options")
-        object_meta.update({'csv_parse_options': csv_parse_options})
+        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
+        object_meta.update({'object_default_settings': object_default_settings})
 
         data_object = self.get_data_object(object_name)
 
-        # add cleanup_linebreak_in_fields to csv_parse_options
-        object_meta['csv_parse_options'].update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
+        # add cleanup_linebreak_in_fields to object_default_settings
+        object_meta['object_default_settings'].update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
         exclude_columns = [] if data_object.exclude_columns is None else data_object.exclude_columns
 
         columns_arr = []

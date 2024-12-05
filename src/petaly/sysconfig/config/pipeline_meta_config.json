@@ -5,16 +5,15 @@
       "is_enabled": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean",  "key_comment": "If true the pipeline is enabled."}
     },
     "data_attributes": {
-      "preferred_load_mode": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String",  "key_comment": "Only full load supported yet."},
-      "data_transition_format": {"in_use":false, "preassigned_values": ["csv"], "default_value":"csv", "key_type": "String", "key_comment": "Only csv format supported yet."},
-      "data_objects_spec_mode": {"in_use":true, "preassigned_values": ["only", "ignore", "prefer"], "default_value":"only", "key_type": "String",
-              "key_comment": "In this step, you will define the main behaviour of the object definition, as follows:\nIf [bold blue]only[/bold blue]: Load only the objects explicitly specified in data_objects_spec[] section. These objects will be configured in the next step.\nIf [bold blue]ignore[/bold blue]: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section, completely disregarding data_objects_spec[] section.\nIf [bold blue]prefer[/bold blue]: Load all objects from the database_schema, but for objects specified in data_objects_spec[], apply the refined configuration defined in that section."
-              },
-      "csv_parse_options":
+      "data_objects_spec_mode": {"in_use":true, "preassigned_values": ["only", "ignore", "prefer"], "default_value":"only", "key_type": "String", "key_comment": "In this step, you will define the main behaviour of the object definition, as follows:\nIf [bold blue]only[/bold blue]: Load only the objects explicitly specified in data_objects_spec[] section. These objects will be configured in the next step.\nIf [bold blue]ignore[/bold blue]: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section, completely disregarding data_objects_spec[] section.\nIf [bold blue]prefer[/bold blue]: Load all objects from the database_schema, but for objects specified in data_objects_spec[], apply the refined configuration defined in that section."},
+      "object_default_settings":
                 {
                   "header": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean", "key_comment": "Specifies whether the file contains a header line with the names of each column in the file."},
                   "columns_delimiter": {"in_use":true, "preassigned_values": [null], "default_value":",", "key_type": "String", "key_comment": "The character delimiting individual cells in the CSV data."},
-                  "quote_char": {"in_use":true, "preassigned_values": ["double-quote","single-quote","none"], "default_value":"double-quote", "key_type": "String", "key_comment": "Choose between double-quote, single-quote or none-quote. The default is double-quote."}
+                  "quote_char": {"in_use":true, "preassigned_values": ["double-quote","single-quote","none"], "default_value":"double-quote", "key_type": "String", "key_comment": "Choose between double-quote, single-quote or none-quote. The default is double-quote."},
+                  "preferred_load_mode": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String",  "key_comment": "Only full load supported yet."},
+                  "data_transition_format": {"in_use":false, "preassigned_values": ["csv"], "default_value":"csv", "key_type": "String", "key_comment": "Only csv format supported yet."}
+
                 }
      },
     "data_objects_spec": {

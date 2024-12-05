@@ -1,8 +1,21 @@
 # ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
+
+## [v0.0.7.1] - 2024-12-05 - Major Release - Post 1
+
+### Added
+
+New documentation is added under [run_pipeline.md](.docs/tutorial/run_pipeline.md)
+
+### Changed
+
+The parameter `csv_parse_options` has been renamed to `object_default_settings` because the context of csv_parse_options was very limited. 
+The new object_default_settings allows for the inclusion of a broader range of options.
+
 ## [v0.0.7] - 2024-12-04 - Major Release
 
 This is a major release that affects all files and changes the logic flow of pipelines, as well as renaming several parameters and changing their behaviour.
 For pipelines created with the previous version, it is recommended to rebuild all pipelines with the wizard and set all parameters again.
+
 ### Added
 
 - New tutorial files: petaly_init_workspace.md, petaly_install.md

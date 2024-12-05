@@ -6,23 +6,21 @@ In this tutorial, we’ll show you how to run a new pipeline and load a test CSV
 ### Before You Start
 
 - Ensure that Petaly is installed properly and your workspace is initialized. 
-- Refer to our [installation](./docs/tutorial/ppetaly_install.md) and [workspace setup guides](./docs/tutorial/ppetaly_init_workspace.md) if needed.
+- Refer to our [installation](./petaly_install.md) and [workspace setup guides](./petaly_init_workspace.md) if needed.
 
 - Install a PostgreSQL or MySQL server locally, or use a Docker image for setup.
-
-- More details you can find here [How to set up a pipeline with Petaly](./docs/tutorial/pipeline_explained.md)
 
 ### Steps to Run the Pipeline
 
 #### 1. Configure the Pipeline:
 
-- Run the following command to configure your pipeline. <br><br>For detailed instructions, check  [How to set up a pipeline with Petaly](./docs/tutorial/pipeline_explained.md)
+- Run the following command to configure your pipeline. <br><br>For detailed instructions, check  [How to set up a pipeline with Petaly](./pipeline_explained.md)
 
 - `$ python3 -m petaly init -p csv_to_postgres -c /path_to_config_dir/petaly.ini`
 
 #### 2. Download the test files:
 
-- Download the stocks and options CSV files from the repository. [petaly/tests/data/csv/*](./tests/data/csv/) and store it under `/your-directory-path-to-csv-files`
+- Download the stocks and options CSV files from the repository. [petaly/tests/data/csv/*](../../tests/data/csv/) and store it under `/your-directory-path-to-csv-files`
 - unzip it under linux or mac with: `gunzip options.csv.gz`, `gunzip stocks.csv.gz` 
 
 #### 3. Set Up the Pipeline:

@@ -5,6 +5,7 @@
 ### Added
 
 New documentation is added under [run_pipeline.md](.docs/tutorial/run_pipeline.md)
+Added gzip csv files as test data to the `.tests/data/csv/` folder: `stocks.csv.gz` and `options.csv.gz`
 
 ### Changed
 

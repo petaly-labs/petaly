@@ -1,11 +1,48 @@
-# Change Log
-## [v0.0.5] - 2024-11-18 
+# ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
+
+## [v0.0.7.1] - 2024-12-05 - Major Release - Post 1
 
 ### Added
 
-- New tutorial file pipeline_explained.md
+New documentation is added under [run_pipeline.md](.docs/tutorial/run_pipeline.md)
+Added gzip csv files as test data to the `.tests/data/csv/` folder: `stocks.csv.gz` and `options.csv.gz`
 
 ### Changed
+
+The parameter `csv_parse_options` has been renamed to `object_default_settings` because the context of csv_parse_options was very limited. 
+The new object_default_settings allows for the inclusion of a broader range of options.
+
+## [v0.0.7] - 2024-12-04 - Major Release
+
+This is a major release that affects all files and changes the logic flow of pipelines, as well as renaming several parameters and changing their behaviour.
+For pipelines created with the previous version, it is recommended to rebuild all pipelines with the wizard and set all parameters again.
+
+### Added
+
+- New tutorial files: petaly_init_workspace.md, petaly_install.md
+- Improved petaly_install.md
+- Added main parsing definition for csv files for: header, delimiter, quote
+  ```
+  csv_parse_options:
+    header: true
+    columns_delimiter: ','
+    quote_char: double-quote```
+- 
+### Changed
+The following pipeline parameters have been modified:
+- `endpoint_type` to `connector_type`
+- `use_data_objects_spec` to `data_objects_spec_mode`; The behaviour has also changed. New modes have been added: ***only***, ***ignore***, ***prefer***
+- Removed all unused parameters
+- Simplified the entire pipeline to make it easier to use
+      
+### Fixed
+- All md links have been changed to absolute paths. This should work on both github.com and pypi.com. 
+- Fixed bugs
+
+## [v0.0.6] - 2024-11-22
+minor change
+
+## [v0.0.5] - 2024-11-18
 
 - renamed petaly.ini parameters:
   - **pipeline_base_dir_path** renamed to **pipeline_dir_path**

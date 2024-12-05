@@ -1,0 +1,19 @@
+{
+  "database_user": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database user name"},
+  "database_password": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database user password"},
+  "database_host": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database hostname or IP address"},
+  "database_port": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database port"},
+  "database_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database name"},
+  "database_schema": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database schema"},
+  "database_server_version":  {"in_use":false, "preassigned_values": ["17", "16", "15", "14", "13", "older"], "default_value": "17", "key_type": "String", "key_comment": "Specifies the database server version."},
+  "client_encoding": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] Define client or file encoding; If in doubt, leave it blank or use UTF8."},
+  "additional_options":
+      {
+       "force_quote": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "Forces quoting to be used for all non-NULL values in each specified column. NULL output is never quoted. If true is specified, non-NULL values will be quoted in all columns."},
+       "force_not_null": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "Do not match the specified columns' values against the null string. In the default case where the null string is empty, this means that empty values will be read as zero-length strings rather than nulls, even when they are not quoted. If true is specified, the option will be applied to all columns."},
+       "force_null": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "Match the specified columns' values against the null string, even if it has been quoted, and if a match is found set the value to NULL. In the default case where the null string is empty, this converts a quoted empty string into NULL. If true is specified, the option will be applied to all columns."},
+       "default_string": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies the string that represents a default value. Each time the string is found in the input file, the default value of the corresponding column will be used."},
+       "on_error": {"in_use":false, "preassigned_values": ["stop", "ignore"], "default_value":"stop", "key_type": "String", "key_comment": "Specifies how to behave when encountering an error converting a column's input value into its data type. An error_action value of stop means fail the command, while ignore means discard the input row and continue with the next one. The default is stop."},
+       "log_verbosity": {"in_use":false, "preassigned_values": ["default", "verbose"], "default_value":null, "key_type": "String", "key_comment": "Specifies the amount of messages emitted by a COPY command: default or verbose. If verbose is specified, additional messages are emitted during processing.\nThis is currently used in COPY FROM command when ON_ERROR option is set to ignore."}
+      }
+}

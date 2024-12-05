@@ -50,7 +50,7 @@ class CliInitializer():
 	def init_pipeline(self, pipeline_name):
 		""" Initiate sub folder under pipeline directory with given pipeline_name
 		"""
-		self.console.print(f"Init of pipeline-wizard started.")
+		self.console.print(f"\nInit of pipeline-wizard started.\n")
 
 		if pipeline_name is None:
 			pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name', message="Specify unique pipeline name")
@@ -64,7 +64,7 @@ class CliInitializer():
 		# check pipeline directory and pipeline.yaml
 		if self.f_handler.is_file(pipeline_fpath):
 			self.console.print (f"Pipeline with the path {pipeline_dpath} already exists.")
-			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration?")
+			process_continue = self.cli_menu.prompt.Confirm.ask(f"\nDo you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration?")
 
 			if process_continue:
 				self.console.print(f"Backup with the name {self.m_conf.pipeline_fname}.buckup_<timestamp> from pipeline.yaml will be created.")
@@ -78,8 +78,8 @@ class CliInitializer():
 
 		# check output folder and ask for confirmation
 		if self.f_handler.is_dir(output_pipeline_dpath):
-			self.console.print (f"Output directory with the path {output_pipeline_dpath} already exists.")
-			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue and overwrite the existing output directory? All files inside will be deleted.")
+			self.console.print (f"\nOutput directory with the path {output_pipeline_dpath} already exists.")
+			process_continue = self.cli_menu.prompt.Confirm.ask(f"\nDo you want to continue and overwrite the existing output directory? All files inside will be deleted.")
 			if process_continue is True:
 				self.f_handler.cleanup_dir(output_pipeline_dpath)
 				self.f_handler.make_dirs(output_pipeline_dpath)
@@ -93,55 +93,56 @@ class CliInitializer():
 		self.f_handler.backup_file(pipeline_fpath)
 		self.f_handler.save_dict_to_yaml(pipeline_fpath, self.cli_menu.composed_pipeline_config, dump_all=True)
 
-		self.console.print(f"Pipeline {pipeline_name} is initialized.")
+		self.console.print(f"\nPipeline {pipeline_name} is initialized.")
 		self.console.print(f"For further configuration review the yaml file: {pipeline_fpath}")
 		self.console.print(f"Output directory {output_pipeline_dpath} is created.")
 
-		process_continue = self.cli_menu.composed_pipeline_config[0]['pipeline']['data_object_main_config'].get('use_data_objects_spec')
-		if process_continue is False:
-			self.console.print(f"The parameter [bold green]use_data_objects_spec[/bold green] was set to [bold blue]false[/bold blue]")
-			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining the data objects?")
+
+		data_objects_spec_mode = self.cli_menu.composed_pipeline_config[0]['pipeline']['data_attributes'].get('data_objects_spec_mode')
+
+		process_continue = True
+
+		if data_objects_spec_mode in ("ignore"):
+			self.console.print(f"\nThe parameter [bold green]data_objects_spec_mode[/bold green] was set to [bold blue]ignore[/bold blue]")
+			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining the data objects despite the definition in data_objects_spec_mode=ignore?")
 
 		if process_continue:
-			self.cli_menu.composed_pipeline_config[0]['pipeline']['data_object_main_config'].update({'use_data_objects_spec': True})
 			self.console.print(
-				f"The parameter [bold green]use_data_objects_spec[/bold green] is set now to [bold blue]true[/bold blue]")
+				f"\nThe configuration process will continue. Don't forget to set manually the parameter [bold green]data_objects_spec_mode[/bold green] to either [bold blue]only[/bold blue] or [bold blue]prefer[/bold blue], depending on your requirements.")
 			self.init_data_objects(pipeline_name, object_names=None)
 		else:
-			self.console.print(
-				f"Review the pipeline.yaml file and modify manually if neccessary."
-				)
+			self.console.print("Review the pipeline.yaml file and modify manually if necessary.")
 
 	def init_data_objects(self, pipeline_name, object_names):
 
-		self.console.print(f"Initialization of data-objects started. Before running this step the pipeline {pipeline_name} should already exists.")
+		self.console.print(f"\n[bold blue]---------- Initialization of data-objects started. --------------[/bold blue]")
 
 		if pipeline_name is None:
 			pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name',
 													message="Provide pipeline name. Pipeline with this name should already exists.")
 
-		pipe = Pipeline(pipeline_name, self.m_conf)
+		pipeline = Pipeline(pipeline_name, self.m_conf)
 
 		if object_names is None:
 			object_names = self.cli_menu.force_assign_value(key='object_name_list',
-																message="Specify one or more comma-separated object/table names for extraction.")
+																message="\nSpecify one or more comma-separated object/table names for extraction.")
 
 		if type(object_names) == str:
 			object_name_arr = [item.strip() for item in object_names.split(',')]
 
-		pipeline_all_obj = pipe.get_pipeline_entire_config()
+		pipeline_all_obj = pipeline.get_pipeline_entire_config()
 
-		data_objects_spec = self.cli_menu.compose_data_objects_spec(object_name_arr)
+		data_objects_spec = self.cli_menu.compose_data_objects_spec(pipeline, object_name_arr)
 
 		if len(data_objects_spec) > 0:
 			self.save_data_objects(pipeline_all_obj=pipeline_all_obj,
 												 data_objects_spec=data_objects_spec,
-												 pipeline_fpath=pipe.pipeline_fpath
+												 pipeline_fpath=pipeline.pipeline_fpath
 												 )
-			self.console.print(f"Data-Objects were added for pipeline {pipe.pipeline_name}. For further configuration review the yaml file: {pipe.pipeline_fpath} ")
+			self.console.print(f"Data-Objects were added for pipeline {pipeline.pipeline_name}. For further configuration review the yaml file: {pipeline.pipeline_fpath} ")
 		else:
 			self.console.print(
-				f"Data-Objects weren't specified for pipeline {pipe.pipeline_name}. For further configuration review the yaml file: {pipe.pipeline_fpath} ")
+				f"Data-Objects weren't specified for pipeline {pipeline.pipeline_name}. For further configuration review the yaml file: {pipeline.pipeline_fpath} ")
 
 	def save_data_objects(self, pipeline_all_obj, data_objects_spec, pipeline_fpath):
 

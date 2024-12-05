@@ -1,27 +1,34 @@
-![petaly_logo_transparent.png](./images/logo/petaly_logo_transparent.png)
+![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_logo_transparent.png)
 
-![run pipe](./docs/tutorial/recording/petaly_run_pipe.gif)
+![](https://raw.githubusercontent.com/petaly-labs/petaly/main/docs/tutorial/recording/petaly_run_pipe.gif)
 
 ## Welcome to Petaly!
 
-Petaly is an open-source ETL (Extract, Transform, Load) tool created by and for data professionals! Our mission is to simplify data movement and transformation across different platforms with a tool that truly understands the needs of the data community.
+Petaly is an open-source ETL (Extract, Transform, Load) tool created by and for data professionals! 
+Our mission is to simplify data movement and transformation across different platforms with a tool that truly understands the needs of the data community.
 
-Designed for seamless data exchange, Petaly supports PostgreSQL, MySQL, and CSV formats, with plans to expand and integrate additional open-source technologies. It makes connecting and transferring data across various systems effortless. Petaly is user-friendly and requires no programming knowledge—data pipelines can be easily configured in YAML format, making the tool ready to use immediately after installation.
+Designed for seamless data exchange, Petaly supports PostgreSQL, MySQL and CSV formats, with plans to expand and integrate additional open-source technologies. 
+It makes connecting and transferring data across various systems effortless. Petaly is user-friendly and requires no programming knowledge. 
+Data pipelines can be easily configured using the YAML format, making the tool ready to use immediately after installation.
 
 ## Important
 This is an Alpha version of the Petaly project!
 
 ## Getting Started
-- **Explore the Documentation:** [UNDER CONSTRUCTION] Check out our documentation to get started with installation, configuration, and best practices for using Petaly.
-- **Join the Community:** [UNDER CONSTRUCTION] Connect with fellow contributors, share your experiences, and get support in our community channels.
+
+- **Explore the Documentation:** Check out our documentation to get started with: 
+  - **[installation](https://github.com/petaly-labs/petaly/blob/main/docs/tutorial/petaly_install.md)**
+  - **[configuration](https://github.com/petaly-labs/petaly/blob/main/docs/tutorial/petaly_init_workspace.md)**
+  - **[How to set up your first pipeline](https://github.com/petaly-labs/petaly/blob/main/docs/tutorial/pipeline_explained.md)**
 - **Contribute:** We’re continuously improving Petaly, and your feedback and contributions are invaluable. Check out our Contributing Guide to see how you can get involved.
+- **Join the Community:** Connect with fellow contributors, share your experiences, and get support in our community channels.
 
 ## Tool Features
 In the current version Petaly provides extract and load data between following endpoints:
 
 - CSV
-- MySQL (tested version 8.0)
-- PostgresQL (tested version 16)
+- MySQL (tested version 8.0+)
+- PostgresQL (tested version 16+)
 
 ## Requirements:
 - Python 3.10 - 3.12
@@ -102,4 +109,5 @@ $ python3 -m petaly init -p my_pipeline
 $ python3 -m petaly run -p my_pipeline
 ```
 
-To learn more about pipeline configuration parameters, use the following tutorial - **[Pipeline Explained](./docs/tutorial/pipeline_explained.md)**
+To learn more about pipeline configuration parameters, use the following tutorial: **[How to set up your first pipeline](https://github.com/petaly-labs/petaly/blob/main/docs/tutorial/pipeline_explained.md)**
+

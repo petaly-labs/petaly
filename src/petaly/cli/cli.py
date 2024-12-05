@@ -83,7 +83,6 @@ class Cli():
                 initialize.init_pipeline(args.pipeline_name)
         else:
             self.console.print('Provide one of the following sub arguments: --workspace, --pipeline_name, --pipeline_name + --object_name. Use -h for help')
-            #self.parser.print_help()
 
     def show_p(self, args):
         """
@@ -140,8 +139,8 @@ class Cli():
         """
         identical_attributes = False
 
-        source_category = self.m_conf.get_connector_class_config(pipeline.source_attr.get('endpoint_type')).get('connector_category')
-        target_category = self.m_conf.get_connector_class_config(pipeline.target_attr.get('endpoint_type')).get('connector_category')
+        source_category = self.m_conf.get_connector_class_config(pipeline.source_attr.get('connector_type')).get('connector_category')
+        target_category = self.m_conf.get_connector_class_config(pipeline.target_attr.get('connector_type')).get('connector_category')
 
         if source_category == 'database':
             if source_category == target_category:

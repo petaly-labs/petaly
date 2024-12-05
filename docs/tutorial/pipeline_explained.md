@@ -1,28 +1,7 @@
-# Tutorial 
+# Step 3: How to set up a pipeline with Petaly
 
-This tutorial explains the first steps after installation.
+This tutorial provides a step-by-step guide for getting started with Petaly after installation. It begins with an explanation of the petaly.ini configuration file and then dives into the details of the pipeline.yaml file.
 
-## Init config file
-
-If the petaly.ini file has already been created, ignore this step. 
-
-`$ python3 -m petaly init -c /path_to_config_dir/petaly.ini`
-
-## Init workspace
-
-This step must be performed once during the installation. 
-If the workspace is already initialised, you can skip the following step and start configuring pipelines.
-
-If the workspace hasn't been initialised yet, first define three predefined parameters in petaly.ini
-
-```
-pipeline_dir_path=/absolute-path-to-pipelines-dir
-logs_dir_path=/absolute-path-to-logs-dir
-output_dir_path=/absolute-path-to-output-dir
-```
-And execute:
-
-`$ python3 -m petaly init --workspace -c /path_to_config_dir/petaly.ini` 
 
 ## Pipeline configuration
 
@@ -53,7 +32,7 @@ pipeline:
     ....
   target_attributes:
     ....
-  data_object_main_config:
+  data_attributes:
     ....
 --- 
 data_objects_spec:[] 
@@ -82,7 +61,7 @@ The source attributes specify the source connections. The connection parameters 
 ```
   source_attributes:
     # Specify endpoint type: mysql, postgres, csv
-    endpoint_type: mysql 
+    connector_type: mysql 
     
     # Specify database user name
     database_user: root
@@ -100,7 +79,7 @@ The source attributes specify the source connections. The connection parameters 
     database_name: tutorial_db
     
 ```    
-### target_attributes
+#### target_attributes
 
 The target attributes specify the target connections. The connection parameters may differ depending on the endpoint type.
 
@@ -108,7 +87,7 @@ The target attributes specify the target connections. The connection parameters 
   target_attributes:    
     
     # Specify endpoint type: mysql, postgres, csv
-    endpoint_type: postgres
+    connector_type: postgres
     
     # Specify database user name
     database_user: postgres
@@ -128,26 +107,45 @@ The target attributes specify the target connections. The connection parameters 
     # Specify database schema name
     database_schema: petaly
 ```
-#### data_object_main_config
+#### data_attributes
 Following parameters configuring default behavior for data-objects/tables 
 ```
-    data_object_main_config:
+    data_attributes:
       
-      # Only full load is supported yet
-      preferred_load_type: full
-      
-      # Only csv format is supported yet  
-      data_transition_format: csv
-      
-      # provide fine definition 
-      use_data_objects_spec: true
-      
+      # provide fine definition: only, prefer, ignore 
+      data_objects_spec_mode: only
+```
+In this step, you will define the main behaviour of the object definition, as follows:<br>
+If **only** [default]: Load only the objects explicitly specified in data_objects_spec[] section. These objects will be configured in the next step.<br>
+If **ignore**: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section, completely disregarding data_objects_spec[] section.<br>
+If **prefer**: Load all objects from the database_schema, but for objects specified in data_objects_spec[], apply the refined configuration defined in that section.<br>
+
+**object_default_settings**
+
+The object_default_settings parameter defines the default configuration options applied to objects during processing.
+These settings serve as a baseline and can be overridden by more specific configurations if needed.
+
+This section is used for loading data from CSV files, as well as for extracting and loading data from databases.
+
+It provides a standardized configuration to facilitate seamless data exchange between different engines, such as MySQL and PostgreSQL.
+
+
+```
+      # define csv parse options. It also valid for mysql, postgres extract or load
+      object_default_settings:
+        
+        # Specifies whether the file should contains or contains a header line with the names of each column in the file.
+        header: true
+        
+        # The character delimiting individual cells in the CSV data.
+        columns_delimiter: ","
+        
+        # Choose between double-quote, single-quote or none-quote. The default is double-quote.
+        quote_char:  double-quote
+        
 ```
 
-The `use_data_objects_spec` parameter determines whether the `data_objects_spec` document is used.
-If true, only the objects specified in `data_objects_spec` are loaded, otherwise all objects from the specified database_schema are loaded.
 
-`use_data_objects_spec: true` [default is true]
 
 ### data_objects_spec
 
@@ -158,29 +156,21 @@ The second document `data_objects_spec:` in the pipeline.yaml file, separated by
 data_objects_spec:[]
 ```
 
-As explained above it is only used when it set to true, which is the default.
-`use_data_objects_spec: true`
-
-If it set to false, all tables from the specified schema in Postgres `database_schema:` or in MySQL `database_name` will be loaded. 
-
-`use_data_objects_spec: false`
-
-If case the `use_data_objects_spec:` was set to true, `data_objects_spec:` will be used.
-
-`use_data_objects_spec: true`
+As explained above data_objects_spec is only used when it set to **only** or **prefer**. The default mode is **only**
+`data_objects_spec_mode: only`
 
 Take a look at the `data_objects_spec:` bellow:
 
 ```
 ---
 data_objects_spec:
-- object_name: object_or_table_name_1
+- object_name: table_name_1
   object_attributes:
-    target_object_name:   
+    destination_object_name:   
     ...
-- object_name: object_or_table_name_2
+- object_name: table_name_2
   object_attributes:
-    target_object_name:
+    destination_object_name: table_name_2_new
     ...     
 ```
 
@@ -188,36 +178,36 @@ The `object_name` has to be unique.
 This can be a source/destination table name.
 Multiple objects can be specified starting with a dash `- object_name:` and followed by `object_attributes:` parameters.
 
-Optionally, the target object/table name can be different. To achieve this specify the parameter `target_object_name`.
+Optionally, the destination object/table name can be different. To achieve this specify the parameter `destination_object_name`.
 
 ```
 ---
 data_objects_spec:
 - object_name: stocks 
   object_attributes:
-    target_object_name: stocksnew
+    destination_object_name: stocksnew
 ```
 
 If the `recreate_target_object` parameter is true, the target object (table) will be recreated. 
 Otherwise, the object/table will only be created if it does not exist. The default is false.
 
 ```
-    recreate_target_object: true
+    recreate_target_object: false
 ```
 
-Use the `excluded_columns` parameter to exclude specific columns, or leave it blank to include all columns for specific table/object. 
+Use the `exclude_columns` parameter to exclude specific columns, or leave it blank to include all columns for specific table/object. 
 If you want to exclude columns: either specify a comma-separated list of columns to exclude in parentheses [] or use dashes '-', one per line. As shown below:   
 
 To include all
 ```    
-    excluded_columns:
+    exclude_columns:
       - null
 ```
 
 To exclude column1, column2
 
 ```
-    excluded_columns:
+    exclude_columns:
       - column1
       - column2
 ```
@@ -225,134 +215,185 @@ To exclude column1, column2
 Alternative approach to exclude column1, column2
 
 ```
-    excluded_columns: [column1, column2]
+    exclude_columns: [column1, column2]
 ```
 
-The following parameters are not yet implemented and can be ignored.
+#### csv files as source
 
-```
-    load_type: full
-    load_batch_size: 10000
-    incremental_load_column: null
-```
+In `files_source_dir:`, specify the path to the directory where the csv files are stored. This is only relevant for file uploads.
 
-#### Source file
+`files_source_dir: /absolute-path-to-file-dir`
 
-To skip leading rows, for example a header line in csv file, use 1. This is only relevant for file uploads.
-
-`skip_leading_rows: 1`
-
-Currently only the CSV format is supported. This is only relevant for file uploads.
-
-`file_format: csv`
-
-In `file_dir:`, specify the path to the directory where the csv files are stored. This is only relevant for file uploads.
-
-`file_dir: /absolute-path-to-file-dir`
-
-Specify the filenames to load specific file or leave blank/null to include all files from `file_dir:`.
+Specify the filenames to load specific file or leave blank/null to include all files from `files_source_dir:`.
 At least one dash or empty brackets [] should be present.
 If you leave it empty/null, remember that all files in `file_dir:` should have the same metadata structure as they will be loaded into the same table. 
 In case you want to load only a specific file/s from the given `file_dir:` use dash character one per line and filename.
 
 Use one of the following options: 
-1. To load all files from the `file_dir:`    
+1. To load all files from the `files_source_dir` set:    
 ```
-    file_name_list:
+    file_names:
     - null
 ```
-2. Alternatively, to load all the files from the `file_dir:`    
+Alternatively, to load all files from the `files_source_dir` set:    
 ```
-    file_name_list: []
+    file_names: []
 ```
-3. To load specific files from the `file_dir:` 
+2. To load specific files from the `files_source_dir` set: 
 ```
 
-    file_name_list:
+    file_names:
     - file_name.csv
     - file_name_2.csv
     - file_name_3.csv
 ```
-4. Alternatively, to load specific files from `file_dir:`
+Alternatively, to load specific files from `files_source_dir` set:
 
 ```
-    file_name_list: [file_name.csv, file_name_2.csv, file_name_3.csv]
+    file_names: [file_name.csv, file_name_2.csv, file_name_3.csv]
 ```
 
-#### Target file
+#### csv as target
 
-The target_file_format specifies the format of the extract file from the database to a file. [Only the csv format is supported.]
+The target file format is specified through connector_type: csv.
 
 The initial data is loaded into the output folder defined in the petaly.ini file. 
-The target_file_dir defines the target directory after processing the data in the output folder first.
+The destination_file_dir defines the final directory after download the data in the output folder first.
+
 
 ```
-    target_file_format: csv 
-    target_file_dir: null
+pipeline:
+  ....
+  target_attributes:
+    connector_type: csv
+    destination_file_dir: /your-path-to-destination-folder
 ```
 
-### Full Example: MySQL to Postgres
 
-The following example exports a table stocks and options from Mysql and loads it into Postgres under the name `stocks` and `optionsnew`
+### Run petaly with the new 
+### Full Example: CSV file to MySQL
+
+The following example create a new table and load csv file stocks.csv into Mysql database.
 
 ```
 pipeline:
   pipeline_attributes:
-    pipeline_name: mysql_to_psql
+    pipeline_name: csv2mysql
     is_enabled: true
   source_attributes:
-    platform_type: local
-    endpoint_type: mysql
+    connector_type: csv
+  target_attributes:
+    connector_type: mysql
     database_user: root
-    database_password: dbpassword
+    database_password: db-password
     database_host: localhost
     database_port: 3306
-    database_name: tutorial_db
-  target_attributes:
-    platform_type: local
-    endpoint_type: postgres
-    database_user: postgres
-    database_password: dbpassword
-    database_host: localhost
-    database_port: 5432
-    database_name: pg_db
-    database_schema: tutorial_petaly
-  data_object_main_config:
-    preferred_load_type: full
-    data_transition_format: csv
-    use_data_objects_spec: true  
+    database_name: petalydb
+  data_attributes:
+    use_data_objects_spec: only
+    object_default_settings:
+      header: true
+      columns_delimiter: ","
+      quote_char: none
 ---
 data_objects_spec:
 - object_name: stocks
   object_attributes:
-    target_object_name:
-    recreate_target_object: false
-    excluded_columns:
-      - adjust_close
-    load_type: full
-    load_batch_size: 10000
-    incremental_load_column: null
-    skip_leading_rows: 1
-    file_format: csv
-    file_dir: null
-    file_name_list:
-    - null
-    target_file_format: csv
-    target_file_dir: null
-- object_name: options
-  object_attributes:
-    target_object_name: optionsnew
+    destination_object_name:
     recreate_target_object: true
-    excluded_columns:
-      - adjust_close
-    load_type: full
-    load_batch_size: 10000
-    incremental_load_column: null
-    skip_leading_rows: 1
-    file_format: csv
-    file_dir: null
-    file_name_list:
-    - null
-    target_file_format: csv
-    target_file_dir: null
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    -
+    files_source_dir: /your-path-to-csv-folder/stocks
+    file_names:
+    - stocks.csv
 ```
+
+### Full Example: MySQL to Postgres
+
+The following example exports a table `stocks` from Mysql into PostgresQL under the name `stocks_in_postgres`
+
+```
+pipeline:
+  pipeline_attributes:
+    pipeline_name: mysql2psql
+    is_enabled: true
+  source_attributes:
+    connector_type: mysql
+    database_user: root
+    database_password: db-password
+    database_host: localhost
+    database_port: 3306
+    database_name: petalydb
+  target_attributes:
+    connector_type: postgres
+    database_user: postgres
+    database_password: db-password
+    database_host: localhost
+    database_port: 5432
+    database_name: petalydb
+    database_schema: petaly_schema
+  data_attributes:
+    data_objects_spec_mode: only
+    object_default_settings:
+      header: true
+      columns_delimiter: ','
+      quote_char: double-quote
+---
+data_objects_spec:
+- object_name: stocks
+  object_attributes:
+    destination_object_name: stocks_in_postgres
+    recreate_target_object: false
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    -
+```
+
+### Full Example: Postgres to CSV file
+
+The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_file_dir: /opt/petaly_labs/data/dest_data`
+It also exclude columns ***likebroadway***, ***likemusicals*** of table **users** from export.
+
+```
+pipeline:
+  pipeline_attributes:
+    pipeline_name: psql2csv
+    is_enabled: true
+  source_attributes:
+    connector_type: postgres
+    database_user: postgres
+    database_password: db-password
+    database_host: localhost
+    database_port: 5432
+    database_name: petalydb
+    database_schema: petaly_schema
+  target_attributes:
+    connector_type: csv
+    destination_file_dir: /your-path-to-destination-folder
+  data_attributes:
+    data_objects_spec_mode: only
+    object_default_settings:
+      header: true
+      columns_delimiter: ","
+      quote_char: double-quote
+---
+data_objects_spec:
+- object_name: stocks
+  object_attributes:
+    destination_object_name: stocks_as_csv
+    recreate_target_object: true
+    cleanup_linebreak_in_fields: true
+    exclude_columns:
+    - 
+- object_name: users
+  object_attributes:
+    destination_object_name: users_as_csv
+    recreate_target_object: true
+    cleanup_linebreak_in_fields: true
+    exclude_columns:
+    - 
+```
+
+
+

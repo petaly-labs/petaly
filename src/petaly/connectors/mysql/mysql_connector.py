@@ -16,9 +16,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 from petaly.utils.utils import measure_time
-
-import os, sys
+from petaly.utils.file_handler import FileHandler
+import os
+import sys
 import csv
+
 import mysql.connector
 
 
@@ -77,8 +79,9 @@ class MysqlConnector():
             logger.error(error)
             sys.exit()
 
-    def extract_to(self, extract_to_stmt, data_fpath):
-        self.extract_to_fetchone(extract_to_stmt, data_fpath)
+    def extract_to(self, extract_to_stmt, data_fpath, extract_options):
+
+        self.extract_to_fetchone(extract_to_stmt, data_fpath, extract_options)
 
         # extract_to_fetchmany can be used too
         #self.extract_to_fetchmany(extract_to_stmt, data_fpath, batch_size=10000)
@@ -86,21 +89,41 @@ class MysqlConnector():
         #self.extract_to_fetchall(extract_to_stmt, data_fpath)
 
 
-    def extract_to_fetchone(self, extract_to_stmt, data_fpath):
+    def cleanup_linebreak_in_fields(self, row):
+        """ This function cleans up a line terminator if it is present in a table field.
+        This function is currently in testing mode and is used manually by adding a by adding a parameter to the pipeline.
+        In the case of dict, the reference get passes, so no return is required.
+        """
+        for key, value in row.items():
+            value = str(value).replace("\r", "").replace("\n", "")
+            row.update({key:value})
+
+
+    def extract_to_fetchone(self, extract_to_stmt, data_fpath, extract_options):
         """  """
         try:
             cur = self.get_cursor()
             cur.execute(extract_to_stmt)
-            with (open(data_fpath, 'w', newline='') as file):
+            with (open(data_fpath, 'w') as file):
 
                 row = cur.fetchone()
-                csvwriter = csv.DictWriter(file, fieldnames=row, delimiter=',', quotechar='"',
-                                           quoting=csv.QUOTE_MINIMAL)
 
-                if row is not None:
+                csvwriter = csv.DictWriter(file,
+                                           fieldnames=row,
+                                           delimiter=extract_options.get("delimiter"),
+                                           quotechar=extract_options.get("quotechar"),
+                                           escapechar=extract_options.get("escapechar"),
+                                           quoting=extract_options.get("quoting"),
+                                           lineterminator=extract_options.get("lineterminator"),
+                                          )
+
+                if row is not None and extract_options.get("header"):
                     csvwriter.writeheader()
 
                 while row is not None:
+
+                    if extract_options.get("cleanup_linebreak_in_fields"):
+                        self.cleanup_linebreak_in_fields(row)
                     csvwriter.writerow(row)
                     row = cur.fetchone()
 

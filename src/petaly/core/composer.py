@@ -34,7 +34,7 @@ class Composer():
 	#def get_data_object(self, object_name):
 	#	return DataObject(self.pipeline, object_name)
 
-	def _deprecated_get_data_objects(self):
+	def deprecated_get_data_objects(self):
 		data_objects_spec = self.pipeline.data_objects_spec
 		object_name_list = []
 
@@ -47,7 +47,6 @@ class Composer():
 	def get_data_object_list(self):
 		data_objects_spec = self.pipeline.data_objects_spec
 		object_name_list = []
-
 		for data_object in data_objects_spec.get('data_objects_spec'):
 			if data_object != None:
 				object_name_list.append(data_object.get('object_name'))
@@ -70,14 +69,13 @@ class Composer():
 		"""
 		return_list = []
 
-		if self.pipeline.data_object_main_config.get('use_data_objects_spec') is False:
+		if self.pipeline.data_attributes.get('data_objects_spec_mode') == "ignore":
 			# return the first list without modification
 			return_list = data_objects
 		else:
 			for value in data_objects:
 				if value in pipeline_data_objects:
 					return_list.append(value)
-
 		return return_list
 
 

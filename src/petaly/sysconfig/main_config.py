@@ -43,7 +43,7 @@ class MainConfig:
         self.extract_to_stmt_fname = 'extract_to_stmt.sql'
         self.load_from_stmt_fname = 'load_from_stmt.sql'
         self.create_table_stmt_fname = 'create_table_stmt.sql'
-        self.database_attributes_fname = 'database_attributes.json'
+        self.connector_attributes_fname = 'connector_attributes.json'
 
         self.base_dpath = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -100,7 +100,6 @@ class MainConfig:
                   f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
 
         self.main_config_fpath = config_file_path
-        print(self.main_config_fpath)
 
     def validate_config_ini_file(self, config_file_path):
 
@@ -179,8 +178,8 @@ class MainConfig:
         return True
 
     def get_available_connectors(self):
-        endpoint_types = (self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors").keys())
-        return endpoint_types
+        connector_type = (self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors").keys())
+        return connector_type
 
     def set_loader_paths(self, connector_id):
         connector_dpath = self.get_connector_dpath(connector_id)
@@ -209,13 +208,13 @@ class MainConfig:
 
         return connector_class_config
 
-    def get_database_attributes(self, connector_id):
+    def get_connector_attributes(self, connector_id):
 
         #connector_class_config = self.get_connector_class_config(connector_id)
         connector_dpath = self.get_connector_dpath(connector_id)
-        database_attributes_fpath = os.path.join(connector_dpath, 'config', self.database_attributes_fname)
+        connector_attributes_fpath = os.path.join(connector_dpath, 'config', self.connector_attributes_fname)
 
-        return self.f_handler.load_json(database_attributes_fpath)
+        return self.f_handler.load_json(connector_attributes_fpath)
 
     def get_type_mapping_paths(self, connector_id):
 
@@ -238,12 +237,16 @@ class MainConfig:
         return self.get_class_obj(connector_class_config, 'extractor')
 
     def get_loader_class(self, connector_id):
-
         connector_class_config = self.get_connector_class_config(connector_id)
         return self.get_class_obj(connector_class_config,'loader')
 
     def get_class_obj(self, connector_class_config, class_type):
+
         module_path = connector_class_config.get('connector_dpath') + '.' + connector_class_config.get(class_type).get('module_path')
         class_name = connector_class_config.get(class_type).get('class_name')
         class_object = load_class_obj(module_path, class_name)
         return class_object
+
+    def get_connector_category(self, connector_id):
+        connector_category = self.get_connector_class_config(connector_id).get('connector_category')
+        return connector_category

@@ -270,8 +270,8 @@ pipeline:
 ```
 
 
-### Run petaly with the new 
-### Full Example: CSV file to MySQL
+### Pipelines Full Examples
+#### CSV file to MySQL
 
 The following example create a new table and load csv file stocks.csv into Mysql database.
 
@@ -309,7 +309,7 @@ data_objects_spec:
     - stocks.csv
 ```
 
-### Full Example: MySQL to Postgres
+#### MySQL to Postgres
 
 The following example exports a table `stocks` from Mysql into PostgresQL under the name `stocks_in_postgres`
 
@@ -350,7 +350,7 @@ data_objects_spec:
     -
 ```
 
-### Full Example: Postgres to CSV file
+#### Postgres to CSV file
 
 The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_file_dir: /opt/petaly_labs/data/dest_data`
 It also exclude columns ***likebroadway***, ***likemusicals*** of table **users** from export.

@@ -270,7 +270,7 @@ pipeline:
 ```
 
 
-### Pipelines Full Examples
+### Full Pipeline Examples
 #### CSV file to MySQL
 
 The following example create a new table and load csv file stocks.csv into Mysql database.
@@ -350,7 +350,7 @@ data_objects_spec:
     -
 ```
 
-#### Postgres to CSV file
+#### Postgres to CSV
 
 The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_file_dir: /opt/petaly_labs/data/dest_data`
 It also exclude columns ***likebroadway***, ***likemusicals*** of table **users** from export.

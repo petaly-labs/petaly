@@ -80,11 +80,13 @@ class DBExtractor(ABC):
 			extractor_obj_conf = self.get_extractor_obj_conf(object_name)
 
 			# 6. run export data
+			logger.info(f"Extract data from table: {object_name}")
 			self.extract_to(extractor_obj_conf)
+
 
 	def execute_meta_query(self, meta_query):
 		""" compose and execute meta query and store result in json file """
-		logger.info("Execute meta-query and create extract scripts")
+		logger.debug("Execute meta-query and create extract scripts")
 		if meta_query is not None:
 			query_result = self.get_query_result(meta_query)
 
@@ -127,7 +129,7 @@ class DBExtractor(ABC):
 		output_fpath = self.get_local_output_path(object_name)
 		extractor_obj_conf.update({'output_fpath': output_fpath})
 
-		logger.info(f"Config for data extract: {extractor_obj_conf}")
+		logger.debug(f"Config for data extract: {extractor_obj_conf}")
 		return extractor_obj_conf
 
 	def get_local_output_path(self, object_name):
@@ -143,7 +145,7 @@ class DBExtractor(ABC):
 
 		:return:
 		"""
-		logger.info("Compose data source meta query")
+		logger.debug("Compose data source meta query")
 
 		if self.pipeline.data_attributes.get('data_objects_spec_mode') in ("ignore","prefer"):
 			table_stmt = ''

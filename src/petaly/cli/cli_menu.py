@@ -149,10 +149,8 @@ class CliMenu():
         exclude_key_list=['object_name']
 
         connector_category = self.m_conf.get_connector_category(pipeline.source_attr.get("connector_type"))
-        print(connector_category)
         # exclude params for file load (csv, etc..)
         if connector_category != "file":
-            print("test")
             exclude_key_list.append("files_source_dir")
             exclude_key_list.append("file_names")
 

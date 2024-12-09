@@ -25,7 +25,7 @@ def measure_time(func):
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
-        logger.info(f"Function {func.__module__}.{func.__name__}()  ran in {round(end - start, 2)}s")
+        logger.debug(f"Function {func.__module__}.{func.__name__}()  ran in {round(end - start, 2)}s")
 
         return result
 

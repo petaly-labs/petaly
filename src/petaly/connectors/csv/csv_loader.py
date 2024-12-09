@@ -50,19 +50,20 @@ class CsvLoader(FLoader):
 
             # get target file format
             target_file_format = 'csv'
-            logger.info(f"Destination file format: csv")
+            logger.debug(f"Destination file format: csv")
 
-            logger.info(f"Output file dir: {output_object_dir}")
+            logger.debug(f"Output file dir: {output_object_dir}")
             file_list = self.f_handler.get_all_dir_files(output_object_dir,
                                         target_file_format, file_names_only=True)
 
             logger.info(f"Destination file dir: {dest_file_dpath}")
+
             for file in file_list:
-                logger.info(f"File: {file}")
+                logger.debug(f"File: {file}")
                 file_source_fpath = os.path.join(output_object_dir, file)
 
                 # Rename file if destination_object_name is different from object_name
                 dest_file_name = file.replace(object_name, dest_object_name)
 
-                logger.info(f"Destination file path: {os.path.join(dest_file_dpath, dest_file_name)}")
+                logger.debug(f"Destination file path: {os.path.join(dest_file_dpath, dest_file_name)}")
                 self.f_handler.cp_file(file_source_fpath, dest_file_dpath, target_file_name=dest_file_name)

@@ -48,8 +48,8 @@ class PsqlLoader(DBLoader):
         file_list = self.f_handler.get_specific_files(output_data_object_dir,'*.csv')
 
         for path_to_data_file in file_list:
-            logger.info(f"Source file: {path_to_data_file}")
-            logger.info(f"Statement to execute: {load_from_stmt}")
+            logger.debug(f"Source file: {path_to_data_file}")
+            logger.debug(f"Statement to execute: {load_from_stmt}")
 
             self.db_connector.load_from(load_from_stmt, path_to_data_file)
 

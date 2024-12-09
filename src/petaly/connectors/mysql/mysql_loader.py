@@ -47,10 +47,12 @@ class MysqlLoader(DBLoader):
 
         file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv')
 
+        #logger.debug(f"Load data to table: {object_name}")
+
         for path_to_data_file in file_list:
 
             load_from_stmt_formated = load_from_stmt.format_map(FormatDict(path_to_data_file=path_to_data_file))
-            logger.info(f"Statement to execute: {load_from_stmt_formated}")
+            logger.debug(f"Statement to execute: {load_from_stmt_formated}")
             self.db_connector.load_from(load_from_stmt_formated)
 
     def compose_create_table_stmt(self, object_load_conf):

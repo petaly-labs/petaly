@@ -40,7 +40,7 @@ class FExtractor():
         """
         object_name = meta_table.get('source_object_name')
         source_object_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
-        logger.info(f"Format and save metadata for table {meta_table.get('source_object_name')} in {source_object_fpath}")
+        logger.debug(f"Format and save metadata for table {meta_table.get('source_object_name')} in {source_object_fpath}")
         self.f_handler.save_dict_to_file(source_object_fpath, meta_table, 'json')
 
     def extract_metadata_from_parquet_file(self, parquet_fpath):
@@ -105,7 +105,7 @@ class FExtractor():
         return meta_table
 
     def describe_parquet_metadata(self, parquet_fpath):
-        """ Its print a parquet metadata from parquet file to stdout
+        """ Its describe a parquet metadata from parquet file to stdout
         """
         # extract metadata from parquet file
         pq_columns_metadata_arr = self.extract_metadata_from_parquet_file(parquet_fpath)

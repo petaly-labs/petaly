@@ -65,7 +65,7 @@ class DBLoader(ABC):
     def load_data(self):
         """  Load data into Database. Recreate table if parameter recreate_table=True. """
 
-        logger.info(f"Start the load process to the target storage: {self.pipeline.target_connector_id}.")
+        logger.debug(f"Start the load process to the target storage: {self.pipeline.target_connector_id}.")
 
         # 1. get and run all objects
         object_list = self.composer.get_object_list_from_output_dir()
@@ -102,11 +102,9 @@ class DBLoader(ABC):
             loader_obj_conf.update({'load_from_stmt': load_from_stmt})
 
             # 6. load data into table
+            logger.info(f"Upload data to table: {object_name}")
             self.load_from(loader_obj_conf)
 
-
-    #def get_data_object(self, object_name):
-    #    return self.composer.get_data_object(object_name)
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)
@@ -128,7 +126,7 @@ class DBLoader(ABC):
         else:
             schema_table_name = table_name
 
-        logger.info(f"Compose DDL table: {schema_table_name}")
+        logger.debug(f"Compose DDL table: {schema_table_name}")
 
         table_ddl_dict = {}
         table_ddl_dict.update({'table_name': table_name})

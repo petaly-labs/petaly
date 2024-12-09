@@ -17,7 +17,6 @@ import sys
 import logging
 logger = logging.getLogger(__name__)
 from petaly.core.f_extractor import FExtractor
-from pprint import pprint
 
 class CsvExtractor(FExtractor):
 
@@ -36,24 +35,27 @@ class CsvExtractor(FExtractor):
         for object_name in object_list:
 
             data_object_dict = super().get_data_object(object_name)
-            #print(data_object_dict)
 
             # check files_source_dir
             if data_object_dict.files_source_dir is None:
                 logger.warning(f"The data_objects_spec->{object_name}->files_source_dir in pipeline.yaml is not specified.")
                 sys.exit()
 
+            logger.info(f"Prepare object {object_name} for upload; source dir: {data_object_dict.files_source_dir}")
+
             file_list = data_object_dict.file_names
 
             if len(file_list) == 0 or file_list[0] is None:
                 file_list = self.f_handler.get_all_dir_files(data_object_dict.files_source_dir, self.file_format, file_names_only=True)
 
+
+            output_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+
             for file in file_list:
                 file_source_fpath = os.path.join(data_object_dict.files_source_dir, file)
-                destination_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-                self.f_handler.cp_file(file_source_fpath, destination_dir)
+                self.f_handler.cp_file(file_source_fpath, output_dir)
 
-            first_file_fpath = os.path.join(destination_dir, file_list[0])
+            first_file_fpath = os.path.join(output_dir, file_list[0])
 
             # analyse file structure
             parquet_fpath = self.analyse_file_structure(first_file_fpath, data_object_dict, self.file_format)
@@ -62,5 +64,3 @@ class CsvExtractor(FExtractor):
             self.save_metadata_into_file(meta_table)
 
             # self.describe_parquet_metadata(parquet_fpath)
-
-

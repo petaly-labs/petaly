@@ -71,7 +71,7 @@ class MysqlConnector():
                 cur.execute(f"USE {self.database};")
                 cur.execute(query)
                 rows = cur.fetchall()
-                logger.info(f"Found {cur.rowcount} rows in query.")
+                logger.debug(f"Found {cur.rowcount} rows in query.")
 
                 return rows
 
@@ -132,7 +132,7 @@ class MysqlConnector():
             cur.close()
 
         except (mysql.connector.Error, IOError) as error:
-            logger.info(extract_to_stmt)
+            logger.debug(extract_to_stmt)
             logger.error(error)
 
     def describe_table(self, table_name):
@@ -142,7 +142,7 @@ class MysqlConnector():
             # Fetch rows from last executed query
             result = cursor.fetchall()
             for row in result:
-                print(row)
+                logger.debug(row)
 
     def extract_to_fetchmany(self, extract_to_stmt, data_fpath, batch_size=10000):
         """ """
@@ -167,7 +167,7 @@ class MysqlConnector():
             cur.close()
 
         except (mysql.connector.Error, IOError) as error:
-            logger.info(extract_to_stmt)
+            logger.debug(extract_to_stmt)
             logger.error(error)
 
     @measure_time
@@ -191,7 +191,7 @@ class MysqlConnector():
             cur.close()
 
         except (mysql.connector.Error, IOError) as error:
-            logger.info(extract_to_stmt)
+            logger.debug(extract_to_stmt)
             logger.error(error)
 
     def load_from(self, load_from_stmt):
@@ -202,7 +202,7 @@ class MysqlConnector():
             cur.execute(load_from_stmt)
             self.conn.commit()
         except (mysql.connector.Error, IOError) as error:
-            logger.info(load_from_stmt)
+            logger.debug(load_from_stmt)
             logger.error(error)
 
     def drop_table(self, table_name):
@@ -212,10 +212,10 @@ class MysqlConnector():
             cur.execute(f"USE {self.database};")
             cur.execute(sql)  # Make an API request.
             self.conn.commit()
-            logger.info(f"Table {table_name} was dropped.")
+            logger.debug(f"Table {table_name} was dropped.")
 
         except (mysql.connector.Error, IOError) as error:
-            logger.info(sql)
+            logger.debug(sql)
             logger.error(error)
 
     def execute_sql(self, sql_stmt):
@@ -224,10 +224,10 @@ class MysqlConnector():
             cur.execute(f"USE {self.database};")
             cur.execute(sql_stmt)  # Make an API request.
             self.conn.commit()
-            logger.info("Query was executed.")
+            logger.debug("Query was executed.")
 
         except (mysql.connector.Error, IOError) as error:
-            logger.info(sql_stmt)
+            logger.debug(sql_stmt)
             logger.error(error)
 
 if __name__ == "__main__":

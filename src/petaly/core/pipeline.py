@@ -23,7 +23,7 @@ from petaly.utils.file_handler import FileHandler
 
 class Pipeline:
     def __init__(self, pipeline_name, main_config):
-        logger.info("Load main ConfigHandler")
+        logger.debug("Load main ConfigHandler")
         self.m_conf = main_config
         self.pipeline_dpath = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name)
         self.pipeline_fpath = os.path.join(self.pipeline_dpath, main_config.pipeline_fname)
@@ -45,7 +45,7 @@ class Pipeline:
 
         self.pipeline_name = pipeline_name
 
-        logger.info("Load Pipeline config")
+        logger.debug("Load Pipeline config")
         self.f_handler = FileHandler()
 
         pipeline_all_obj = self.get_pipeline_entire_config()

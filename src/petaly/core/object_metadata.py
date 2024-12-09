@@ -33,7 +33,7 @@ class ObjectMetadata():
 
         source_object_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
         # format and save meta-data of each table in folder
-        logger.info(f"Format and save metadata for table {object_name} in {source_object_fpath}")
+        logger.debug(f"Format and save metadata for table {object_name} in {source_object_fpath}")
         self.f_handler.save_dict_to_file(source_object_fpath, meta_table, 'json')
 
     def compose_objects_meta_from_query(self, meta_query_result):

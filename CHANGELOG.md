@@ -1,6 +1,6 @@
 # ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
 
-## [v0.0.8] - 2024-12-11
+## [v0.0.8] - 2024-12-12
 
 ### Added
 

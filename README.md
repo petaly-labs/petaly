@@ -16,14 +16,16 @@ This is an Alpha version of the Petaly project!
 
 ## Getting Started
 
-- **Explore the documentation below:** 
-  - **[Installation](#petaly-install)**
-  - **[Configuration](#petaly-init-config-workspace)**
-  - **[Pipeline explained](#petaly-pipeline-explained)**
-  - **[Load CSV to Postgres](#petaly-load-csv-postgres-examples)**
-  - **[More Examples](#petaly-pipeline-more-examples)**
-- **Contribute:** We’re continuously improving Petaly, and your feedback and contributions are invaluable. Check out our Contributing Guide to see how you can get involved.
-- **Join the Community:** Connect with fellow contributors, share your experiences, and get support in our community channels.
+Explore the documentation below:
+  
+<br>**[1. Installation](#petaly-install)**
+<br>**[2. Init config file and workspace](#petaly-init-config-workspace)**
+<br>**[3. Init a pipeline](#petaly-init-pipeline)**
+<br>**[4. Run the pipeline](#petaly-run-pipeline)**
+<br>**[5. Load CSV to Postgres](#petaly-load-csv-postgres-examples)** (Step-by-Step Tutorial)
+<br>**[6. Pipeline better explained](#petaly-pipeline-explained)**
+<br>**[7. More Examples](#petaly-pipeline-more-examples)**
+
 
 ## Tool Features
 In the current version Petaly provides extract and load data between following endpoints:
@@ -229,7 +231,7 @@ data_objects_spec:
 ```
 
 
-## Pipeline explained
+## 6. Pipeline explained
 <a id="petaly-pipeline-explained"></a>
 
 This tutorial provides a step-by-step guide for getting started with Petaly after installation. It begins with an explanation of the petaly.ini configuration file and then dives into the details of the pipeline.yaml file.
@@ -498,10 +500,10 @@ pipeline:
     destination_file_dir: /your-path-to-destination-folder
 ```
 
-# More Examples
+## 7. More Examples
 <a id="petaly-pipeline-more-examples"></a>
 
-#### MySQL to Postgres
+### MySQL to Postgres
 
 The following example exports a table `stocks` from Mysql into PostgreSQL under the name `stocks_in_postgres`
 
@@ -542,7 +544,7 @@ data_objects_spec:
     -
 ```
 
-#### CSV to MySQL
+### CSV to MySQL
 
 The following example create a new table and load csv file stocks.csv into Mysql database.
 
@@ -592,7 +594,7 @@ data_objects_spec:
 ```
 
 
-#### Postgres to CSV
+### Postgres to CSV
 
 The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_file_dir: /your-path-to-destination-folder`
 It also exclude columns ***likebroadway***, ***likemusicals*** of table **users** from export.
@@ -639,4 +641,11 @@ data_objects_spec:
 ```
 
 
+## Let's Build Together  🌱
 
+Join us in building something meaningful together. 
+The foundation of any open-source project is its community, a group of individuals collaborating, sharing knowledge and contributing to a shared vision. At Petaly, every contribution, no matter the size, plays an important role in shaping the project.
+We’re continuously improving Petaly, and your feedback and contributions are invaluable. 
+Check out our [Contributing Guide](./CONTRIBUTING.md) to see how you can get involved. Connect with fellow contributors, share your experiences and get support in our community channels. 
+
+Together, we can make Petaly even better!

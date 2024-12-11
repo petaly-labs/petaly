@@ -55,7 +55,7 @@ data_objects_spec:
     -
 ```
 
-The entire documentation is consolidated in the Readme file, except for pipeline_explained.md
+The entire documentation is now consolidated in the README.md file
 
 ### Fixed
 

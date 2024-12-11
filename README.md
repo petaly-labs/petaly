@@ -46,9 +46,10 @@ OS:
 
 It's possible that the tool will work with other operating systems and other databases and python versions. It just hasn't been tested yet.
 
+<a id="petaly-install"></a>
 
 ## 1. Installation
-<a id="petaly-install"></a>
+
 Petaly can be installed using `pip` or downloaded directly from this repository.
 
 ### Install with pip
@@ -87,8 +88,10 @@ If the repo was cloned from the GitHub  [petaly-labs](https://github.com/petaly-
 
 `$ cd petaly/scr` and execute the command above
 
-## 2. Initialize config file and workspace
 <a id="petaly-init-config-workspace"></a>
+
+## 2. Initialize config file and workspace
+
 
 This tutorial explains the `petaly.ini` configuration file and how to create a workspace.
 
@@ -121,8 +124,10 @@ And then initialize the workspace with following command. This command will simp
 
 `$ python3 -m petaly init --workspace -c /path_to_config_dir/petaly.ini` 
 
-## 3. Init a pipeline
 <a id="petaly-init-pipeline"></a>
+
+## 3. Init a pipeline
+
 
 Run the following command and follow the wizard steps to initialize a pipeline my_pipeline.
 No changes will be made to the target endpoint at this point.
@@ -133,16 +138,19 @@ Run the following command to configure your pipeline. Once the pipeline is creat
 
 For detailed instructions, check in the section: **[Pipeline explained](#petaly-pipeline-explained)**
 
-## 4. Run Pipeline
 <a id="petaly-run-pipeline"></a>
+
+## 4. Run Pipeline
+
 Now you can run the pipeline my_pipeline and load data from the specified source. 
 Note that it will make changes, re/create tables in the target endpoint (database or folders)
 
 `$ python3 -m petaly run -p my_pipeline -c /path_to_config_dir/petaly.ini`
 
+<a id="petaly-load-csv-postgres-examples"></a>
+
 ## 5. Load CSV file to Postgres
 
-<a id="petaly-load-csv-postgres-examples"></a>
 In this tutorial, we’ll show you how to run a new pipeline and load a test CSV file into PostgreSQL.
 
 ### 5.1. Before You Start
@@ -230,9 +238,9 @@ data_objects_spec:
     - options.csv
 ```
 
+<a id="petaly-pipeline-explained"></a>
 
 ## 6. Pipeline explained
-<a id="petaly-pipeline-explained"></a>
 
 This tutorial provides a step-by-step guide for getting started with Petaly after installation. It begins with an explanation of the petaly.ini configuration file and then dives into the details of the pipeline.yaml file.
 
@@ -500,10 +508,11 @@ pipeline:
     destination_file_dir: /your-path-to-destination-folder
 ```
 
-## 7. More Examples
 <a id="petaly-pipeline-more-examples"></a>
 
-### MySQL to Postgres
+## 7. More Examples
+
+#### MySQL to Postgres
 
 The following example exports a table `stocks` from Mysql into PostgreSQL under the name `stocks_in_postgres`
 
@@ -544,7 +553,7 @@ data_objects_spec:
     -
 ```
 
-### CSV to MySQL
+#### CSV to MySQL
 
 The following example create a new table and load csv file stocks.csv into Mysql database.
 
@@ -594,7 +603,7 @@ data_objects_spec:
 ```
 
 
-### Postgres to CSV
+#### Postgres to CSV
 
 The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_file_dir: /your-path-to-destination-folder`
 It also exclude columns ***likebroadway***, ***likemusicals*** of table **users** from export.

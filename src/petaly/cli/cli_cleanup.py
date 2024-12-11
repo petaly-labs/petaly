@@ -48,8 +48,8 @@ class CliCleanup():
     def remove_data_objects(self, pipeline_all_obj, object_name_arr, pipeline_fpath):
         data_objects_spec = pipeline_all_obj[1].get('data_objects_spec')
         for object_name in object_name_arr:
-            for idx, object in enumerate(data_objects_spec):
-                if object.get('object_name') == object_name:
+            for idx, object_spec in enumerate(data_objects_spec):
+                if object_name == object_spec.get('object_spec').get('object_name'):
                     data_objects_spec.pop(idx)
 
         pipeline_all_obj[1]['data_objects_spec'] = data_objects_spec

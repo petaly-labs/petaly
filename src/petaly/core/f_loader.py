@@ -21,12 +21,12 @@ class FLoader():
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
-        self.composer = Composer(pipeline)
+        self.composer = Composer()
         self.f_handler = FileHandler()
         pass
 
-    def get_data_object_list(self):
-        return self.composer.get_data_object_list()
+    def deprecated_get_data_object_list(self):
+        return self.composer.get_data_object_list(self.pipeline)
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)

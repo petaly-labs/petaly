@@ -78,8 +78,8 @@ class MysqlExtractor(DBExtractor):
 
         extract_options = self.compose_extract_options(extractor_obj_conf)
 
-        logger.info(f"Output File: {output_fpath}")
-        logger.info(f"Statement to execute: {extract_to_stmt}")
+        logger.debug(f"Output File: {output_fpath}")
+        logger.debug(f"Statement to execute:\n{extract_to_stmt}")
 
         self.db_connector.extract_to(extract_to_stmt, output_fpath, extract_options)
 

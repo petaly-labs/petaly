@@ -129,7 +129,7 @@ class FileHandler:
             lambda dumper, value: dumper.represent_scalar(u'tag:yaml.org,2002:null', '')
         )
 
-        logger.info(f"Save dict as yaml under: {file_fpath}")
+        logger.debug(f"Save dict as yaml under: {file_fpath}")
 
         if dump_all==False:
 
@@ -146,7 +146,7 @@ class FileHandler:
         """
         """
         result = 0
-        logger.info(f"Save dict as json under: {file_fpath}")
+        logger.debug(f"Save dict as json under: {file_fpath}")
 
         file_fpath = self.replace_file_extension(file_fpath, ".json")
         dir_name = os.path.dirname(file_fpath)
@@ -298,7 +298,7 @@ class FileHandler:
         target_file = base_fname + '.backup_' + datetime.now().strftime("%Y%m%d%H%M%S")
         self.cp_file(path_to_file, target_dir, target_file_name=target_file)
 
-        logger.info(f"The file {base_fname} has been backed up to the: {os.path.join(target_dir,target_file)}")
+        logger.debug(f"The file {base_fname} has been backed up to the: {os.path.join(target_dir,target_file)}")
 
     def cleanup_files(self, path_to_dir, file_extension):
         """ This function remove all files in a folder of path_to_dir from specific extension.
@@ -315,12 +315,12 @@ class FileHandler:
         :return:
         """
         for folder_name, subfolders, filenames in os.walk(path_to_dir):
-            logger.info('Following subfolders are removed:')
+            logger.debug('Following subfolders are removed:')
             # clean up all subfolders in directory path
             for subfolder in subfolders:
                 folder_to_remove = os.path.join(folder_name, subfolder)
                 shutil.rmtree(folder_to_remove)
-                logger.info(folder_to_remove)
+                logger.debug(folder_to_remove)
 
     def copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
         """ This function copy templates file without comments to the specified pipeline

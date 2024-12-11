@@ -72,11 +72,11 @@ class PsqlConnector():
             with self.conn.cursor() as cur:
                 cur.execute(sql)
                 rows = cur.fetchall()
-                logger.info(f"Found {cur.rowcount} rows in query.")
+                logger.debug(f"Found {cur.rowcount} rows in query.")
                 return rows
 
         except (Exception, psycopg.DatabaseError) as error:
-            logger.info(sql)
+            logger.debug(sql)
             logger.error(error)
             sys.exit()
 
@@ -109,16 +109,17 @@ class PsqlConnector():
             sql = f"DROP TABLE IF EXISTS {schema_table_name}"
             self.conn.execute(sql)  # Make an API request.
             self.conn.commit()
-            logger.info(f"Table {schema_table_name} was dropped.")
+            logger.debug(f"Table {schema_table_name} was dropped.")
         except (Exception, psycopg.DatabaseError) as error:
-            logger.info(sql)
+            logger.debug(sql)
             logger.error(error)
 
     def execute_sql(self, sql):
         try:
             self.conn.execute(sql)  # Make an API request.
             self.conn.commit()
-            logger.info("Query was executed.")
+            logger.debug(f"Query was executed: {sql}")
+
         except (Exception, psycopg.DatabaseError) as error:
-            logger.info(sql)
+            logger.debug(sql)
             logger.error(error)

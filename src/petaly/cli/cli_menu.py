@@ -31,7 +31,7 @@ class OrderedCounter(Counter, OrderedDict):
 class CliMenu():
 
     def __init__(self, main_config):
-        self.use_long_form_wizard = True
+        self.use_pipeline_wizard = True
         self.console = Console()
         self.prompt = prompt
         self.m_conf = main_config
@@ -40,17 +40,17 @@ class CliMenu():
         self.pipeline_meta_config = self.f_handler.load_json(self.m_conf.pipeline_meta_config_fpath)
 
         self.composed_pipeline_config = [
-                                            {"pipeline":
-                                                 {"pipeline_attributes": {},
-                                                  "source_attributes": {},
-                                                  "target_attributes": {},
-                                                  "data_attributes": {
-                                                      "data_objects_spec_mode":{}
+                                            {'pipeline':
+                                                 {'pipeline_attributes': {},
+                                                  'source_attributes': {},
+                                                  'target_attributes': {},
+                                                  'data_attributes': {
+                                                      'data_objects_spec_mode':{}
                                                   }
                                                   }
                                             },
                                             {
-                                              "data_objects_spec": []
+                                              'data_objects_spec': []
                                             }
                                         ]
 
@@ -58,12 +58,14 @@ class CliMenu():
         while True:
             self.console.print(message)
             value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]")
+            message = f"[red]{message}[/red]"
             if value.strip() != '':
+
                 break
         return value
 
     def compose_pipeline(self, pipeline_name):
-        self.use_long_form_wizard = prompt.Confirm.ask("\nUse long form")
+
 
         self.compose_pipeline_attributes(pipeline_name)
         self.compose_endpoint_attributes('source_attributes')
@@ -73,7 +75,8 @@ class CliMenu():
     def compose_pipeline_attributes(self, pipeline_name):
         """
         """
-        # self.pipeline_meta_config.get("pipeline_attributes")
+        self.use_pipeline_wizard = prompt.Confirm.ask("\nUse Pipeline wizard")
+
         predefined_values = {'pipeline_name': pipeline_name}
         pipeline_attributes = self.pipeline_meta_config.get("pipeline_attributes")
         assigned_attributes = self.assign_attributes(pipeline_attributes, predefined_values=predefined_values)
@@ -126,11 +129,11 @@ class CliMenu():
 
     def compose_data_attributes(self):
 
-        data_attributes = self.pipeline_meta_config.get("data_attributes")
+        data_attributes = self.pipeline_meta_config.get('data_attributes')
 
         self.console.print(f"\n[bold blue]---------- Specify default object settings --------------[/bold blue]")
 
-        object_default_settings = data_attributes.get("object_default_settings")
+        object_default_settings = data_attributes.get('object_default_settings')
         assigned_object_default_settings = self.assign_attributes(object_default_settings, predefined_values=None)
         self.composed_pipeline_config[0]['pipeline']['data_attributes'].update({"object_default_settings": assigned_object_default_settings})
 
@@ -139,37 +142,30 @@ class CliMenu():
         assigned_data_attributes = self.assign_attributes(data_attributes, predefined_values=None, exclude_key_list=[None])
         self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(assigned_data_attributes)
 
-    def compose_data_objects_spec(self, pipeline, object_names):
+    def compose_object_spec(self, pipeline, object_name, use_pipeline_wizard):
 
-        self.use_long_form_wizard = prompt.Confirm.ask("Use data-objects-spec wizard")
+        self.use_pipeline_wizard = use_pipeline_wizard
+        data_objects_spec = self.pipeline_meta_config.get('data_objects_spec')
+        exclude_key_list = []
+        connector_category = self.m_conf.get_connector_category(pipeline.source_attr.get('connector_type'))
 
-        data_objects_spec = self.pipeline_meta_config.get("data_objects_spec")
-        data_objects_spec_list = []
-
-        exclude_key_list=['object_name']
-
-        connector_category = self.m_conf.get_connector_category(pipeline.source_attr.get("connector_type"))
-        print(connector_category)
         # exclude params for file load (csv, etc..)
-        if connector_category != "file":
-            print("test")
-            exclude_key_list.append("files_source_dir")
-            exclude_key_list.append("file_names")
+        if connector_category != 'file':
+            exclude_key_list.append('object_source_dir')
+            exclude_key_list.append('file_names')
 
-        if object_names is not None and len(object_names)>0:
-            for obj_name in object_names:
-                self.console.print(
-                    f"\n[bold blue]---------- Configure data object/table \[{obj_name}]: ------------------[/bold blue]")
+        if object_name is None:
+            object_name = self.force_assign_value(key='object_name',
+                                                  message=data_objects_spec.get('object_name').get('key_comment'))
 
-                predefined_values = {'object_name': obj_name}
+        exclude_key_list.append('object_name')
+        predefined_values = {'object_name': object_name}
 
-                assigned_attributes = self.assign_attributes(data_objects_spec, predefined_values=predefined_values, exclude_key_list=exclude_key_list)
-                assigned_attributes.pop('object_name')
-                tmp_assigned_attributes = {}
-                tmp_assigned_attributes.update({'object_name': obj_name, 'object_attributes': assigned_attributes})
-                data_objects_spec_list.append(tmp_assigned_attributes)
+        assigned_attributes = self.assign_attributes(data_objects_spec, predefined_values=predefined_values, exclude_key_list=exclude_key_list)
+        tmp_assigned_attributes = {}
+        tmp_assigned_attributes.update({'object_spec': assigned_attributes})
 
-        return data_objects_spec_list
+        return tmp_assigned_attributes
 
     def assign_attributes(self, spec_attributes, predefined_values=None, exclude_key_list=None) -> dict:
         assigned_attributes = {}
@@ -202,26 +198,26 @@ class CliMenu():
                 assigned_value = default_value
 
                 # 3. compose key comment and default value
-                console_print = "\n"
+                console_message = "\n"
+
+                console_message += f"{value.get('key_comment')}"
                 if default_value is not None:
-                    console_print += f"Default:[bold blue]\[{default_value}][/bold blue]; "
+                    console_message += f"Default:[bold blue] \[{default_value}][/bold blue]"
 
-                console_print += f"{value.get('key_comment')} "
-
-                self.console.print(console_print)
+                self.console.print(console_message)
 
                 if key == 'database_password':
-                    if self.use_long_form_wizard:
+                    if self.use_pipeline_wizard:
                         assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", password=True)
 
                 elif value.get('key_type') == 'Integer':
-                    if self.use_long_form_wizard:
+                    if self.use_pipeline_wizard:
                         assigned_value = prompt.IntPrompt.ask(f"[bold green]{key}[/bold green]", default=default_value,
                                                               show_default=False)
 
                 elif value.get('key_type') == 'Array':
 
-                    if self.use_long_form_wizard:
+                    if self.use_pipeline_wizard:
                         assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", default=default_value,
                                                            show_default=False)
 
@@ -231,7 +227,7 @@ class CliMenu():
                     if assigned_value is None:
                         assigned_value = [None]
                 else:
-                    if self.use_long_form_wizard:
+                    if self.use_pipeline_wizard:
                         assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", choices=preassigned_values,
                                                            default=default_value, show_default=False)
 

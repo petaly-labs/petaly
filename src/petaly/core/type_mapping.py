@@ -32,7 +32,7 @@ class TypeMapping():
         pipeline_type_mapping_fpath = os.path.join(self.pipeline.pipeline_dpath, self.m_conf.type_mapping_fname)
 
         if self.f_handler.is_file(pipeline_type_mapping_fpath):
-            logger.info(f"Load data type mapping from: {pipeline_type_mapping_fpath}")
+            logger.debug(f"Load data type mapping from: {pipeline_type_mapping_fpath}")
             type_mapping_dict = self.f_handler.load_json(pipeline_type_mapping_fpath)
             return type_mapping_dict
 
@@ -43,7 +43,7 @@ class TypeMapping():
             type_mapping_fpath = type_mapping_fpath.format(source_connector_id=self.pipeline.source_connector_id)
 
             if self.f_handler.is_file(type_mapping_fpath):
-                logger.info(f"Load data type mapping from: {type_mapping_fpath}")
+                logger.debug(f"Load data type mapping from: {type_mapping_fpath}")
                 type_mapping_dict = self.f_handler.load_json(type_mapping_fpath)
                 return type_mapping_dict
 

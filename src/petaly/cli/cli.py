@@ -37,18 +37,18 @@ class Cli():
         self.m_conf = MainConfig() if main_config == None else main_config
         self.console = Console()
         self.top_level_argument_message = (
-                                f"Type one of the following top level positional arguments followed by optional argument: show, init, run, cleanup."
+                                f"Type one of the following top level positional arguments: show, init, run, cleanup; followed by options below."
                                 f"\nUse -h for help"
         )
 
         self.parser = argparse.ArgumentParser()
         self.parser.add_argument('top_level_argument', choices=['show', 'init', 'run', 'cleanup'], help=self.top_level_argument_message)
-        self.parser.add_argument('-w', '--workspace', action="store_true", help='Provide attribute --workspace. Check exiting workspace_name by show workspace_name')
+        self.parser.add_argument('-w', '--workspace', action="store_true", help='Provide attribute --workspace for init. This is required once after installation to create the workspace.')
         self.parser.add_argument('-p', '--pipeline_name', help='Provide pipeline name. Check exiting pipelines by show pipelines')
         self.parser.add_argument('-o', '--object_name', help='Provide object name or a comma-separated list without empty space. The pipeline name should be specified with -p paramater too.')
-        self.parser.add_argument('-c', '--config_file_path', nargs='?', type=str, help=self.m_conf.get_petaly_config_path_message())
-        self.parser.add_argument('-s', '--source_only', action='store_true', help='This parameter allow to run the extract from the source only.')
-        self.parser.add_argument('-t', '--target_only', action='store_true', help='This parameter allow to run the load to the target only.')
+        self.parser.add_argument('-c', '--config_file_path', nargs='?', type=str, help=self.m_conf.missing_main_config_file_message())
+        self.parser.add_argument('-s', '--source_only', action='store_true', help='Use this optional argument only if you plan to extract data from the source without loading it to the target. This allows you to verify the data before loading.')
+        self.parser.add_argument('-t', '--target_only', action='store_true', help='Use this optional argument only if you plan to load data from the output directory that was previously extracted using the -s argument. This allows you to load data into the target without extracting it again.')
         self.parser.set_defaults(func=self.process_p)
 
 
@@ -70,8 +70,9 @@ class Cli():
     def init_p(self, args):
         """
         """
-        self.m_conf.set_main_config_fpath(args.config_file_path)
-        self.m_conf.set_base_dpaths()
+        self.m_conf.set_main_config_fpath(args.config_file_path, init_main_config = True)
+        self.m_conf.set_workspace_dpaths()
+
         initialize = CliInitializer(self.m_conf)
 
         if args.workspace:
@@ -88,7 +89,7 @@ class Cli():
         """
         """
         self.m_conf.set_main_config_fpath(args.config_file_path)
-        self.m_conf.set_base_dpaths()
+        self.m_conf.set_workspace_dpaths()
 
         visualize = CliVisualizer(self.m_conf)
 
@@ -101,14 +102,16 @@ class Cli():
             visualize.show_pipeline(args.pipeline_name)
         else:
             visualize.show_pipelines()
-            self.parser.print_help()
+
 
     def run_p(self, args):
         """
         """
 
         self.m_conf.set_main_config_fpath(args.config_file_path)
-        self.m_conf.set_base_dpaths()
+        self.m_conf.set_workspace_dpaths()
+        self.m_conf.set_global_settings()
+
 
         if args.pipeline_name:
 
@@ -130,7 +133,7 @@ class Cli():
                 main_ctl.run_pipeline(pipeline, run_endpoint, args.object_name)
 
         else:
-            self.parser.print_help()
+
             self.console.print('Provide -p pipeline name. Check exiting pipelines below')
             sys.exit()
 
@@ -157,7 +160,7 @@ class Cli():
         """
         """
         self.m_conf.set_main_config_fpath(args.config_file_path)
-        self.m_conf.set_base_dpaths()
+        self.m_conf.set_workspace_dpaths()
 
         cleanup = CliCleanup(self.m_conf)
 
@@ -165,14 +168,10 @@ class Cli():
             if args.object_name:
                 cleanup.cleanup_data_objects(args.pipeline_name, args.object_name)
             else:
-                self.exit_with_help(args.config_file_path,
-                                    f"Cleanup of pipeline is not supported yet. "
+                self.exit_with_help(f"Cleanup of pipeline is not supported yet. "
                                     f"To remove an object from specific pipeline provide additionaly --object_name: object_name.")
-        else:
-            self.exit_with_help(args.config_file_path,
-                'Provide one of the following arguments: --objects. Check below if the pipeline name already exists.')
 
-    def exit_with_help(self, config_file_path, message):
+    def exit_with_help(self, message):
         """
         """
         self.parser.print_help()

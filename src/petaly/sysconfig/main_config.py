@@ -17,18 +17,17 @@ logger = logging.getLogger(__name__)
 
 import os
 import sys
-import importlib
-import importlib.abc
 from rich.console import Console
 
 from configparser import ConfigParser, ExtendedInterpolation
 from petaly.utils.file_handler import FileHandler
 from petaly.sysconfig.load_class import load_class_obj
 
+
 class MainConfig:
 
     def __init__(self):
-
+        self.f_handler = FileHandler()
         self.console = Console()
         self.pipeline_fname = 'pipeline.yaml'
         self.env_config_dpath = os.getenv('PETALY_CONFIG_DIR')
@@ -59,15 +58,17 @@ class MainConfig:
         self.pipeline_meta_config_fpath = os.path.join(self.sysconfig_config, self.pipeline_meta_config_fname)
         self.class_sysconfig_fpath = os.path.join(self.sysconfig_config, self.class_config_fname)
 
-        self.workspace_config_options = {
-                                            'pipeline_dir_path': None,
-                                            'logs_dir_path': None,
-                                            'output_dir_path': None
+        self.workspace_config = {
+                                            "pipeline_dir_path": None,
+                                            "logs_dir_path": None,
+                                            "output_dir_path": None
                                          }
+        self.global_settings = {
+                                        "logging_mode": "INFO"
+                                        }
 
-        self.f_handler = FileHandler()
 
-    def set_main_config_fpath(self, config_file_path):
+    def set_main_config_fpath(self, config_file_path, init_main_config=False):
         """
         """
         # 1. if config file wasn't pass, set to default one
@@ -79,78 +80,102 @@ class MainConfig:
             if self.env_config_dpath:
                 config_file_path = os.path.join(self.env_config_dpath, config_file_path)
             else:
-                self.console.print(self.get_petaly_config_path_message())
+                self.console.print(self.missing_main_config_file_message())
                 sys.exit()
 
-        # 3. exit, if file hasn't ini file extension
+        # 3. exit, if file hasn't *.ini file extension
         if self.f_handler.check_file_extension(config_file_path, 'ini') is False:
-            self.console.print(self.get_petaly_config_path_message())
+            self.console.print(self.missing_main_config_file_message())
             sys.exit()
 
-        # 4. if config file or config directory doesn't exist, create it
+        # 4. If the configuration file or directory does not exist, create it.
         if self.f_handler.is_file(config_file_path) is False:
-            if self.f_handler.is_dir(config_file_path):
-                config_file_name = self.main_config_fname
+            if init_main_config == True:
+                if self.f_handler.is_dir(config_file_path):
+                    config_file_name = self.main_config_fname
+                else:
+                    config_file_name = os.path.basename(config_file_path)
+
+                self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(config_file_path), os.path.basename(config_file_name))
+
+                self.console.print(f"The main config file was created: {config_file_path}\n"
+                      f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
             else:
-                config_file_name = os.path.basename(config_file_path)
-
-            self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(config_file_path), os.path.basename(config_file_name))
-
-            self.console.print(f"The main config file was created: {config_file_path}\n"
-                  f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
+                self.console.print(self.missing_main_config_file_message())
 
         self.main_config_fpath = config_file_path
 
-    def validate_config_ini_file(self, config_file_path):
-
-        return_value = True
-        if self.f_handler.is_file(self.main_config_fpath) is False:
-
-            logger.warning(f"Check and modify petaly config file: {self.main_config_fpath}\n"
-                            f"If file doesn't exists run command with default parameters: "
-                            f"init -c\n"
-                            f"or specify custom config file: "
-                            f"init -c {os.path.dirname(self.main_config_fpath)}")
-            return_value = False
-
-        else:
-            conf_parser = ConfigParser(interpolation=ExtendedInterpolation())
-            conf_parser.read(config_file_path)
-
-            if conf_parser.has_section('workspace_config'):
-                for key in self.workspace_config_options.keys():
-                    if conf_parser.has_option('workspace_config', key) is False:
-                        self.console.print(f"The option {key} is not specified.")
-                        return_value = False
-                    else:
-                        abs_path = conf_parser.get('workspace_config',key)
-                        if os.path.isabs(abs_path) is False:
-                            self.console.print(f"The value of the option {key} is not specified or the path to the directory is not absolute.")
-                            return_value = False
-            else:
-                return_value = False
-                self.console.print("The section \[workspace_config] is not specified.")
-
-        if return_value is False:
-            self.console.print(f"Check petaly config file: {self.main_config_fpath}")
-            sys.exit()
-
-        return  return_value
-
-    def set_base_dpaths(self):
-        """
-        """
-        self.validate_config_ini_file(self.main_config_fpath)
+    def load_main_config_file(self):
 
         conf_parser = ConfigParser(interpolation=ExtendedInterpolation())
         conf_parser.read(self.main_config_fpath)
 
-        self.pipeline_base_dpath = conf_parser.get('workspace_config','pipeline_dir_path')
-        self.logs_base_dpath = conf_parser.get('workspace_config','logs_dir_path')
-        self.output_base_dpath = conf_parser.get('workspace_config','output_dir_path')
+        return conf_parser
 
-    def get_petaly_config_path_message(self):
-        return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"
+    def check_main_config_section(self, conf_parser, section_name):
+
+        if conf_parser.has_section(section_name):
+            return_result = True
+        else:
+            self.console.print(f"The section \[{section_name}] in petaly.ini is not specified.")
+            return_result = False
+
+        return return_result
+
+    def validate_workspace_abs_paths(self, conf_parser):
+
+        return_value = True
+
+        for key in self.workspace_config.keys():
+
+            if key in conf_parser.options('workspace_config'):
+                abs_path = conf_parser.get('workspace_config', key)
+                if os.path.isabs(abs_path) is False:
+                    self.console.print(f"The value of the option {key} is not specified or the path to the directory is not absolute.")
+                    return_value = False
+            else:
+                self.console.print(f"The option {key} is not specified.")
+                return_value = False
+
+        return  return_value
+
+    def set_workspace_dpaths(self):
+        """
+        """
+        section_name = 'workspace_config'
+
+        conf_parser = self.load_main_config_file()
+
+        if self.check_main_config_section(conf_parser, section_name):
+            if self.validate_workspace_abs_paths(conf_parser):
+                self.pipeline_base_dpath = conf_parser.get(section_name,'pipeline_dir_path')
+                self.logs_base_dpath = conf_parser.get(section_name,'logs_dir_path')
+                self.output_base_dpath = conf_parser.get(section_name,'output_dir_path')
+        else:
+            self.console.print(f"Check petaly config file: {self.main_config_fpath}")
+            sys.exit()
+
+    def set_global_settings(self):
+
+        section_name = 'global_settings'
+
+        conf_parser = self.load_main_config_file()
+
+        if self.check_main_config_section(conf_parser, section_name):
+
+            for key in self.global_settings.keys():
+                if key in conf_parser.options(section_name):
+                    value = conf_parser.get(section_name, key)
+                    if key == 'logging_mode':
+                        if value in ('INFO', 'DEBUG'):
+                            self.global_settings['logging_mode'] = value
+                        else:
+                            self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section \[global_settings] in petaly.ini.")
+                else:
+                    self.console.print(f"The option {key} is not specified under section \[global_settings] in petaly.ini.")
+
+    def missing_main_config_file_message(self):
+        return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"
                    f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
 
 

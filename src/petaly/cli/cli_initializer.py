@@ -18,6 +18,8 @@ import sys
 from petaly.utils.file_handler import FileHandler
 from petaly.core.pipeline import Pipeline
 from petaly.cli.cli_menu import CliMenu
+from petaly.core.composer import Composer
+import rich.prompt as prompt
 
 
 class CliInitializer():
@@ -26,7 +28,7 @@ class CliInitializer():
 		self.m_conf = main_config
 		self.cli_menu = CliMenu(main_config)
 		self.console = self.cli_menu.console
-
+		self.composer = Composer()
 		self.f_handler = FileHandler()
 
 	### Init Workspace
@@ -93,89 +95,72 @@ class CliInitializer():
 		self.f_handler.backup_file(pipeline_fpath)
 		self.f_handler.save_dict_to_yaml(pipeline_fpath, self.cli_menu.composed_pipeline_config, dump_all=True)
 
-		self.console.print(f"\nPipeline {pipeline_name} is initialized.")
-		self.console.print(f"For further configuration review the yaml file: {pipeline_fpath}")
-		self.console.print(f"Output directory {output_pipeline_dpath} is created.")
-
+		self.console.print(f"\nCheck pipeline {pipeline_name} under: {pipeline_fpath}")
+		self.console.print(f"Check output directory under: {output_pipeline_dpath}")
 
 		data_objects_spec_mode = self.cli_menu.composed_pipeline_config[0]['pipeline']['data_attributes'].get('data_objects_spec_mode')
 
 		process_continue = True
-
 		if data_objects_spec_mode in ("ignore"):
 			self.console.print(f"\nThe parameter [bold green]data_objects_spec_mode[/bold green] was set to [bold blue]ignore[/bold blue]")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining the data objects despite the definition in data_objects_spec_mode=ignore?")
 
 		if process_continue:
-			self.console.print(
-				f"\nThe configuration process will continue. Don't forget to set manually the parameter [bold green]data_objects_spec_mode[/bold green] to either [bold blue]only[/bold blue] or [bold blue]prefer[/bold blue], depending on your requirements.")
+			self.console.print("\nContinue with the configuration of objects/tables in the next step.")
+
 			self.init_data_objects(pipeline_name, object_names=None)
+
 		else:
 			self.console.print("Review the pipeline.yaml file and modify manually if necessary.")
 
 	def init_data_objects(self, pipeline_name, object_names):
-
-		self.console.print(f"\n[bold blue]---------- Initialization of data-objects started. --------------[/bold blue]")
 
 		if pipeline_name is None:
 			pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name',
 													message="Provide pipeline name. Pipeline with this name should already exists.")
 
 		pipeline = Pipeline(pipeline_name, self.m_conf)
+		pipeline_all_obj = pipeline.get_pipeline_entire_config()
+		data_objects_spec_meta = self.cli_menu.pipeline_meta_config.get('data_objects_spec')
+		object_name_key_comment = data_objects_spec_meta.get('object_name').get("key_comment")
+		data_objects_spec_list = []
 
-		if object_names is None:
-			object_names = self.cli_menu.force_assign_value(key='object_name_list',
-																message="\nSpecify one or more comma-separated object/table names for extraction.")
+		use_pipeline_wizard = prompt.Confirm.ask("Use data object specifications wizard")
+		ask_for_next_object = True
+		# 1. first handle list in array
+		if object_names is not None and type(object_names) == str:
 
-		if type(object_names) == str:
 			object_name_arr = [item.strip() for item in object_names.split(',')]
 
-		pipeline_all_obj = pipeline.get_pipeline_entire_config()
+			for i, object_name in enumerate(object_name_arr):
+				self.console.print(
+					f"\n[bold blue]---------- Continue with the object {object_name} specification ------------------[/bold blue]")
 
-		data_objects_spec = self.cli_menu.compose_data_objects_spec(pipeline, object_name_arr)
+				object_spec = self.cli_menu.compose_object_spec(pipeline, object_name=object_name, use_pipeline_wizard=use_pipeline_wizard)
 
-		if len(data_objects_spec) > 0:
-			self.save_data_objects(pipeline_all_obj=pipeline_all_obj,
-												 data_objects_spec=data_objects_spec,
-												 pipeline_fpath=pipeline.pipeline_fpath
-												 )
+				data_objects_spec_list.append(object_spec)
+				self.composer.save_data_objects(pipeline_all_obj=pipeline_all_obj, data_objects_spec=data_objects_spec_list, pipeline_fpath=pipeline.pipeline_fpath)
+
+			ask_for_next_object = False
+
+		# 2. continues here if array is emtpy or was handel and adding_objects is still true
+		while ask_for_next_object:
+			object_name = self.cli_menu.force_assign_value(key='object_name', message=object_name_key_comment)
+
+			object_spec = self.cli_menu.compose_object_spec(pipeline, object_name=object_name, use_pipeline_wizard=use_pipeline_wizard)
+			data_objects_spec_list.append(object_spec)
+
+			# save each object to the yaml document
+			self.composer.save_data_objects(pipeline_all_obj=pipeline_all_obj, data_objects_spec=data_objects_spec_list, pipeline_fpath=pipeline.pipeline_fpath)
+
+			self.console.print(
+				f"\n[bold blue]---------- Object {object_name} was successfully specified ------------------[/bold blue]")
+
+			ask_for_next_object = prompt.Confirm.ask("\nContinues with next object?")
+
+		if len(data_objects_spec_list) > 0:
 			self.console.print(f"Data-Objects were added for pipeline {pipeline.pipeline_name}. For further configuration review the yaml file: {pipeline.pipeline_fpath} ")
 		else:
 			self.console.print(
 				f"Data-Objects weren't specified for pipeline {pipeline.pipeline_name}. For further configuration review the yaml file: {pipeline.pipeline_fpath} ")
-
-	def save_data_objects(self, pipeline_all_obj, data_objects_spec, pipeline_fpath):
-
-		data_object_list = []
-
-		# make a list of new added objects with the same index order
-		for idx, obj in enumerate(data_objects_spec):
-			data_object_list.insert(idx, obj.get('object_name'))
-
-		# if object_name is in new list replace it in the pipeline, else just copy existing object on the same place
-		if pipeline_all_obj[1].get('data_objects_spec') is not None:
-			if len(pipeline_all_obj[1].get('data_objects_spec'))>0 and pipeline_all_obj[1].get('data_objects_spec')[0] is not None:
-
-				for idx, data_object in enumerate(pipeline_all_obj[1].get('data_objects_spec')):
-
-					if data_object.get('object_name') in data_object_list:
-						ind, obj =  self.get_object_spec_from_array(data_objects_spec, data_object.get('object_name'))
-						#pipeline_all_obj[1].get('data_objects_spec')[idx]={'object_name':data_object.get('object_name'), 'object_attributes':obj}
-						pipeline_all_obj[1].get('data_objects_spec')[idx] = obj
-
-						data_objects_spec.pop(ind)
-						data_object_list.pop(ind)
-
-		# add the entire new objects at the end of the pipeline
-		if len(data_object_list) > 0:
-			for i, obj in enumerate(data_objects_spec):
-				pipeline_all_obj[1].get('data_objects_spec').append(obj)
-
-		self.f_handler.backup_file(pipeline_fpath)
-		self.f_handler.save_dict_to_yaml(pipeline_fpath, pipeline_all_obj, dump_all=True)
-
-	def get_object_spec_from_array(self, object_arr, object_name):
-		for idx, obj in enumerate(object_arr):
-			if object_name == obj.get('object_name'):
-				return idx, obj
 

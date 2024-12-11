@@ -16,7 +16,6 @@ import logging
 logger = logging.getLogger(__name__)
 import sys
 from petaly.core.data_object import DataObject
-from petaly.core.composer import Composer
 from petaly.utils.file_handler import FileHandler
 
 
@@ -24,7 +23,15 @@ class ObjectMetadata():
     def __init__(self, pipeline):
         self.pipeline = pipeline
         self.f_handler = FileHandler()
-        self.composer = Composer(pipeline)
+        self.object_metadata_dict = {
+                                "source_schema_name": None,
+                                "source_object_name": None,
+                                "output_file_format": None,
+                                "object_default_settings": None,
+                                "object_default_settings": {},
+                                "columns":[]
+                                }
+
         pass
 
     def save_table_metadata(self, meta_table):
@@ -33,7 +40,7 @@ class ObjectMetadata():
 
         source_object_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
         # format and save meta-data of each table in folder
-        logger.info(f"Format and save metadata for table {object_name} in {source_object_fpath}")
+        logger.debug(f"Format and save metadata for table {object_name} in {source_object_fpath}")
         self.f_handler.save_dict_to_file(source_object_fpath, meta_table, 'json')
 
     def compose_objects_meta_from_query(self, meta_query_result):
@@ -58,7 +65,8 @@ class ObjectMetadata():
 
             if source_object_name not in distinct_object_list:
                 distinct_object_list.append(source_object_name)
-                new_dict = {'source_schema_name': schema_name, 'source_object_name': source_object_name, 'columns': []}
+                new_dict = self.object_metadata_dict.copy()
+                new_dict.update({'source_schema_name': schema_name, 'source_object_name': source_object_name, 'columns': []})
                 formated_object_meta_list.append(new_dict)
 
 
@@ -66,13 +74,12 @@ class ObjectMetadata():
 
             object_name = formated_object_meta_list[i].get('source_object_name')
             data_object = self.get_data_object(object_name)
-
             exclude_columns = [] if data_object.exclude_columns is None else data_object.exclude_columns
 
-            # make a copy of dict object and add cleanup_linebreak_in_fields to object_default_settings
-            object_default_settings = dict(object_default_settings)
-            object_default_settings.update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
-            formated_object_meta_list[i].update({'object_default_settings': object_default_settings})
+            # make a copy of dict object and add cleanup_linebreak_in_fields to object_default_settings for each object
+            new_object_def_sett = object_default_settings.copy()
+            new_object_def_sett.update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
+            formated_object_meta_list[i].update({'object_default_settings': new_object_def_sett})
 
             for idx, value in enumerate(meta_query_result):
 
@@ -95,17 +102,17 @@ class ObjectMetadata():
     def compose_object_meta_from_file(self, object_name, columns_metadata_arr):
         """ Its creates a metadata file with all the attributes needed to recreate a table on the target.
         """
-        object_meta = {}
-        object_meta.update({'source_object_name': object_name})
-        object_meta.update({'output_file_format': self.pipeline.source_attr.get("connector_type")})
+        #object_meta = {}
+        self.object_metadata_dict.update({'source_object_name': object_name})
+        self.object_metadata_dict.update({'output_file_format': self.pipeline.source_attr.get("connector_type")})
 
         object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
-        object_meta.update({'object_default_settings': object_default_settings})
+        self.object_metadata_dict.update({'object_default_settings': object_default_settings})
 
         data_object = self.get_data_object(object_name)
 
         # add cleanup_linebreak_in_fields to object_default_settings
-        object_meta['object_default_settings'].update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
+        self.object_metadata_dict['object_default_settings'].update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
         exclude_columns = [] if data_object.exclude_columns is None else data_object.exclude_columns
 
         columns_arr = []
@@ -122,12 +129,11 @@ class ObjectMetadata():
                                                 primary_key=None)
 
                 columns_arr.append(column_metadata)
-        object_meta.update({'columns': columns_arr})
-        return object_meta
+        self.object_metadata_dict.update({'columns': columns_arr})
+        return self.object_metadata_dict
 
     def process_metadata(self, meta_query_result):
         object_list = []
-
         if meta_query_result is not None:
             for meta_table in self.compose_objects_meta_from_query(meta_query_result):
                 object_name = meta_table.get('source_object_name')
@@ -137,7 +143,6 @@ class ObjectMetadata():
         else:
             logger.error(f"Meta Query for piepline {self.pipeline.pipeline_name} is empty. Review your configuration.")
             sys.exit()
-
         return object_list
 
     def compose_column_metadata(self, column_name, ordinal_position, is_nullable, data_type, character_maximum_length, numeric_precision, numeric_scale, primary_key):

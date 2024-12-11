@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 import os, sys
 from pyarrow import csv, parquet
 
-from petaly.core.composer import Composer
 from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
 from petaly.core.data_object import DataObject
@@ -28,7 +27,6 @@ class FExtractor():
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
-        self.composer = Composer(pipeline)
         self.f_handler = FileHandler()
         self.object_metadata = ObjectMetadata(pipeline)
         self.object_default_settings = pipeline.data_attributes.get("object_default_settings")
@@ -40,7 +38,7 @@ class FExtractor():
         """
         object_name = meta_table.get('source_object_name')
         source_object_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
-        logger.info(f"Format and save metadata for table {meta_table.get('source_object_name')} in {source_object_fpath}")
+        logger.debug(f"Format and save metadata for table {meta_table.get('source_object_name')} in {source_object_fpath}")
         self.f_handler.save_dict_to_file(source_object_fpath, meta_table, 'json')
 
     def extract_metadata_from_parquet_file(self, parquet_fpath):
@@ -105,7 +103,7 @@ class FExtractor():
         return meta_table
 
     def describe_parquet_metadata(self, parquet_fpath):
-        """ Its print a parquet metadata from parquet file to stdout
+        """ Its describe a parquet metadata from parquet file to stdout
         """
         # extract metadata from parquet file
         pq_columns_metadata_arr = self.extract_metadata_from_parquet_file(parquet_fpath)
@@ -155,9 +153,6 @@ class FExtractor():
         parquet.write_table(file_data, parquet_fpath)
 
         return parquet_fpath
-
-    def get_data_object_list(self):
-        return self.composer.get_data_object_list()
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)

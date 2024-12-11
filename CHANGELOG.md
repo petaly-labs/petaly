@@ -1,5 +1,64 @@
 # ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
 
+## [v0.0.8] - 2024-12-12
+
+### Added
+
+Improved logging behaviour and added new section in petaly.ini config file:
+
+[global_settings]
+The logging mode has two settings: INFO and DEBUG.
+By default, it is set to INFO, which generates minimal log output.
+If an issue occurs, switch to DEBUG for more detailed output that can assist in troubleshooting.
+
+logging_mode=DEBUG
+
+### Changed
+
+renamed pipeline/data_objects_spec parameters:
+renamed `recreate_target_object` to `recreate_destination_object`
+renamed `files_source_dir` `object_source_dir`
+renamed `object_attributes` to `object_spec` 
+relocate the parameter `object_name` into nested part under `object_spec:` 
+
+previous structure of `data_objects_spec`:
+
+```
+data_objects_spec:
+- object_name: stocks
+  object_attributes:
+    object_name: stocks
+    destination_object_name:
+    recreate_target_object: true
+    cleanup_linebreak_in_fields: true
+    exclude_columns: 
+    -
+    files_source_dir:
+    file_names:
+    -
+```
+
+new structure of `data_objects_spec`:
+
+```
+data_objects_spec:
+- object_spec:
+    object_name: stocks
+    object_name: stocks
+    destination_object_name:
+    recreate_destination_object: true
+    cleanup_linebreak_in_fields: true
+    exclude_columns: 
+    -
+    object_source_dir:
+    file_names:
+    -
+```
+
+The entire documentation is now consolidated in the README.md file
+
+### Fixed
+
 ## [v0.0.7.1] - 2024-12-05 - Major Release - Post 1
 
 ### Added

@@ -18,9 +18,9 @@ Here is an example of an export table from mysql to postgres
 
 The pipeline.yaml file contains two documents `pipeline:` and `data_objects_spec:`.
 
-The `pipeline:` document defines `pipeline_attributes:`, `source_attributes:` and `target_attributes:`.
+The `pipeline:` document defines `pipeline_attributes:`, `source_attributes:`, `target_attributes:` and `data_attributes:`
 
-The second document in the pipeline.yaml file, separated by three dashes, is the `data_objects_spec:` document which contains the definition of each object.
+The second document in the pipeline.yaml file, separated by three dashes, is the `data_objects_spec:` document which contains the definition of each object/table.
 
 Here is the skeleton of the whole pipeline.yaml document:
 
@@ -226,8 +226,8 @@ In `object_source_dir:`, specify the path to the directory where the csv files a
 
 Specify the filenames to load specific file or leave blank/null to include all files from `object_source_dir:`.
 At least one dash or empty brackets [] should be present.
-If you leave it empty/null, remember that all files in `file_dir:` should have the same metadata structure as they will be loaded into the same table. 
-In case you want to load only a specific file/s from the given `file_dir:` use dash character one per line and filename.
+If you leave it empty/null, remember that all files in `object_source_dir:` should have the same metadata structure as they will be loaded into the same table. 
+In case you want to load only a specific file/s from the given `object_source_dir:` use dash character one per line and filename.
 
 Use one of the following options: 
 1. To load all files from the `object_source_dir` set:    

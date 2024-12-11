@@ -177,7 +177,7 @@ Use the wizard to create the appropriate pipeline skeleton, as different connect
 
 Once the pipeline is created, you can modify it using editors like `vi`, `nano`, or any other text editor.
 
-The following examples are provided for reference only.
+The following examples are provided for reference only. For detailed instructions, check [How to set up a pipeline with Petaly](./docs/tutorial/pipeline_explained.md)
 
 ### CSV to Postgres
 ```
@@ -194,7 +194,7 @@ pipeline:
     database_host: localhost
     database_port: 5432
     database_name: petalydb
-    database_schema: petaly_schema
+    database_schema: petaly_tutorial
   data_attributes:
     use_data_objects_spec: only
     object_default_settings:
@@ -239,7 +239,7 @@ pipeline:
     database_password: db-password
     database_host: localhost
     database_port: 3306
-    database_name: petalydb
+    database_name: petaly_tutorial
   data_attributes:
     use_data_objects_spec: only
     object_default_settings:
@@ -258,7 +258,7 @@ data_objects_spec:
     object_source_dir: /your-directory-path-to-csv-files
     file_names:
     - stocks.csv
-- - object_spec:
+- object_spec:
     object_name: options
     destination_object_name:
     recreate_destination_object: true
@@ -269,4 +269,46 @@ data_objects_spec:
     file_names:
     - options.csv    
 ```
+
+#### MySQL to Postgres
+
+The following example exports a table `stocks` from Mysql into PostgresQL under the name `stocks_in_postgres`
+
+```
+pipeline:
+  pipeline_attributes:
+    pipeline_name: mysql2psql
+    is_enabled: true
+  source_attributes:
+    connector_type: mysql
+    database_user: root
+    database_password: db-password
+    database_host: localhost
+    database_port: 3306
+    database_name: petaly_tutorial
+  target_attributes:
+    connector_type: postgres
+    database_user: postgres
+    database_password: db-password
+    database_host: localhost
+    database_port: 5432
+    database_name: petalydb
+    database_schema: petaly_tutorial
+  data_attributes:
+    data_objects_spec_mode: only
+    object_default_settings:
+      header: true
+      columns_delimiter: ','
+      quote_char: double-quote
+---
+data_objects_spec:
+- object_spec:
+    object_name: stocks
+    destination_object_name: stocks_in_postgres
+    recreate_destination_object: false
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    -
+```
+
 

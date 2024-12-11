@@ -49,7 +49,7 @@ class PsqlLoader(DBLoader):
 
         for path_to_data_file in file_list:
             logger.debug(f"Source file: {path_to_data_file}")
-            logger.debug(f"Statement to execute: {load_from_stmt}")
+            logger.debug(f"Statement to execute:\n{load_from_stmt}")
 
             self.db_connector.load_from(load_from_stmt, path_to_data_file)
 

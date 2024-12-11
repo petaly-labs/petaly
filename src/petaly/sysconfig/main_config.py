@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 
 import os
 import sys
-import importlib
-import importlib.abc
 from rich.console import Console
 
 from configparser import ConfigParser, ExtendedInterpolation

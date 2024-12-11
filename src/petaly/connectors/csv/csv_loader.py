@@ -28,7 +28,8 @@ class CsvLoader(FLoader):
     def load_data(self):
 
         if self.pipeline.data_attributes.get("data_objects_spec_mode") == 'only':
-            object_list = super().get_data_object_list()
+            #object_list = super().get_data_object_list()
+            object_list = self.pipeline.data_objects
         else:
             object_list = self.f_handler.get_all_dir_names(self.pipeline.output_pipeline_dpath)
 
@@ -52,18 +53,27 @@ class CsvLoader(FLoader):
             target_file_format = 'csv'
             logger.debug(f"Destination file format: csv")
 
-            logger.debug(f"Output file dir: {output_object_dir}")
-            file_list = self.f_handler.get_all_dir_files(output_object_dir,
-                                        target_file_format, file_names_only=True)
+            dir_exists, files_in_dir = self.f_handler.check_dir(output_object_dir)
 
-            logger.info(f"Destination file dir: {dest_file_dpath}")
+            if dir_exists is True and files_in_dir> 0:
 
-            for file in file_list:
-                logger.debug(f"File: {file}")
-                file_source_fpath = os.path.join(output_object_dir, file)
+                logger.debug(f"Output file dir: {output_object_dir}")
 
-                # Rename file if destination_object_name is different from object_name
-                dest_file_name = file.replace(object_name, dest_object_name)
+                file_list = self.f_handler.get_all_dir_files(output_object_dir,
+                                            target_file_format, file_names_only=True)
 
-                logger.debug(f"Destination file path: {os.path.join(dest_file_dpath, dest_file_name)}")
-                self.f_handler.cp_file(file_source_fpath, dest_file_dpath, target_file_name=dest_file_name)
+                logger.info(f"Load - object {object_name}; process upload to destination directory: {dest_file_dpath}")
+
+                for file in file_list:
+                    logger.debug(f"File: {file}")
+                    file_source_fpath = os.path.join(output_object_dir, file)
+
+                    # Rename file if destination_object_name is different from object_name
+                    dest_file_name = file.replace(object_name, dest_object_name)
+
+                    logger.debug(f"Load: Upload performed to destination path: {os.path.join(dest_file_dpath, dest_file_name)}")
+                    self.f_handler.cp_file(file_source_fpath, dest_file_dpath, target_file_name=dest_file_name)
+
+            else:
+                logger.info(f"Load - object {object_name}; upload failed. Check the source and the source configuration.")
+                logger.debug(f"Load: Output directory doesn't exist or is empty: {output_object_dir}")

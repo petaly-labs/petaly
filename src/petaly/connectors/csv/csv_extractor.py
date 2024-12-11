@@ -27,7 +27,8 @@ class CsvExtractor(FExtractor):
     def extract_data(self):
         """
         """
-        object_list = super().get_data_object_list()
+        #object_list = super().get_data_object_list()
+        object_list = self.pipeline.data_objects
 
         # cleanup pipeline directory before run
         self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
@@ -36,23 +37,27 @@ class CsvExtractor(FExtractor):
 
             data_object_dict = super().get_data_object(object_name)
 
-            # check files_source_dir
-            if data_object_dict.files_source_dir is None:
-                logger.warning(f"The data_objects_spec->{object_name}->files_source_dir in pipeline.yaml is not specified.")
+            # check object_source_dir
+            if data_object_dict.object_source_dir is None:
+                logger.error(f"Incorrect object specification in file: {self.pipeline.pipeline_fpath} "
+                               f"\ndata_objects_spec: "
+                               f"\n- object_spec:"
+                               f"\n    object_name: {object_name}"
+                               f"\n    object_source_dir: IS EMPTY")
                 sys.exit()
 
-            logger.info(f"Prepare object {object_name} for upload; source dir: {data_object_dict.files_source_dir}")
+            logger.info(f"Extract - object {object_name}; source dir: {data_object_dict.object_source_dir}")
 
             file_list = data_object_dict.file_names
 
             if len(file_list) == 0 or file_list[0] is None:
-                file_list = self.f_handler.get_all_dir_files(data_object_dict.files_source_dir, self.file_format, file_names_only=True)
+                file_list = self.f_handler.get_all_dir_files(data_object_dict.object_source_dir, self.file_format, file_names_only=True)
 
 
             output_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
 
             for file in file_list:
-                file_source_fpath = os.path.join(data_object_dict.files_source_dir, file)
+                file_source_fpath = os.path.join(data_object_dict.object_source_dir, file)
                 self.f_handler.cp_file(file_source_fpath, output_dir)
 
             first_file_fpath = os.path.join(output_dir, file_list[0])

@@ -3,17 +3,21 @@
     "disable_existing_loggers": false,
     "formatters": {
         "format_file": {
-            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            "format": "%(asctime)s - %(levelname)s - %(message)s"
         },
-        "format_cons": {
+        "format_console": {
             "format": "%(message)s"
         }
     },
     "handlers": {
         "console": {
             "class": "rich.logging.RichHandler",
-            "formatter": "format_cons",
-            "level": "INFO"
+            "formatter": "format_console",
+            "level": "INFO",
+            "show_level": false,
+            "show_path": false,
+            "enable_link_path": false,
+            "omit_repeated_times": false
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",

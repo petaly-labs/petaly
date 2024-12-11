@@ -30,7 +30,7 @@ class DBLoader(ABC):
     def __init__(self, pipeline):
         self.pipeline = pipeline
         self.f_handler = FileHandler()
-        self.composer = Composer(pipeline)
+        self.composer = Composer()
         self.m_conf = pipeline.m_conf
         self.object_metadata = ObjectMetadata(pipeline)
 
@@ -68,7 +68,7 @@ class DBLoader(ABC):
         logger.debug(f"Start the load process to the target storage: {self.pipeline.target_connector_id}.")
 
         # 1. get and run all objects
-        object_list = self.composer.get_object_list_from_output_dir()
+        object_list = self.composer.get_object_list_from_output_dir(self.pipeline)
         for object_name in object_list:
             loader_obj_conf = {}
             loader_obj_conf.update({'object_name': object_name})
@@ -89,7 +89,7 @@ class DBLoader(ABC):
             loader_obj_conf.update({'table_ddl_dict': table_ddl_dict})
 
             # 4. drop and recreate table
-            if data_object.recreate_target_object == True:
+            if data_object.recreate_destination_object == True:
                 self.drop_table(loader_obj_conf)
 
             self.create_table(loader_obj_conf)
@@ -102,7 +102,7 @@ class DBLoader(ABC):
             loader_obj_conf.update({'load_from_stmt': load_from_stmt})
 
             # 6. load data into table
-            logger.info(f"Upload data to table: {object_name}")
+            logger.info(f"Load - object {object_name}")
             self.load_from(loader_obj_conf)
 
 

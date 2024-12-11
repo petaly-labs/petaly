@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 import os, sys
 from pyarrow import csv, parquet
 
-from petaly.core.composer import Composer
 from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
 from petaly.core.data_object import DataObject
@@ -28,7 +27,6 @@ class FExtractor():
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
-        self.composer = Composer(pipeline)
         self.f_handler = FileHandler()
         self.object_metadata = ObjectMetadata(pipeline)
         self.object_default_settings = pipeline.data_attributes.get("object_default_settings")
@@ -155,9 +153,6 @@ class FExtractor():
         parquet.write_table(file_data, parquet_fpath)
 
         return parquet_fpath
-
-    def get_data_object_list(self):
-        return self.composer.get_data_object_list()
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)

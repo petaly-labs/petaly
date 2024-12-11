@@ -52,7 +52,7 @@ class MysqlLoader(DBLoader):
         for path_to_data_file in file_list:
 
             load_from_stmt_formated = load_from_stmt.format_map(FormatDict(path_to_data_file=path_to_data_file))
-            logger.debug(f"Statement to execute: {load_from_stmt_formated}")
+            logger.debug(f"Statement to execute:\n{load_from_stmt_formated}")
             self.db_connector.load_from(load_from_stmt_formated)
 
     def compose_create_table_stmt(self, object_load_conf):
@@ -86,9 +86,9 @@ class MysqlLoader(DBLoader):
         # 2. FIELDS TERMINATED BY (COLUMNS DELIMITER)
         columns_delimiter = object_default_settings.get("columns_delimiter")
         if columns_delimiter == "\t":
-            load_data_options += f"\nFIELDS TERMINATED BY '\\t' "
+            load_data_options += f"FIELDS TERMINATED BY '\\t' "
         else:
-            load_data_options += f"\nFIELDS TERMINATED BY '{columns_delimiter}' "
+            load_data_options += f"FIELDS TERMINATED BY '{columns_delimiter}' "
 
         # 3. OPTIONALLY ENCLOSED BY
         quote_char = object_default_settings.get("quote_char")

@@ -164,35 +164,35 @@ Take a look at the `data_objects_spec:` bellow:
 ```
 ---
 data_objects_spec:
-- object_name: table_name_1
-  object_attributes:
+- object_spec:
+    object_name: table_name_1
     destination_object_name:   
     ...
-- object_name: table_name_2
-  object_attributes:
+- object_spec:
+    object_name: table_name_2
     destination_object_name: table_name_2_new
     ...     
 ```
 
 The `object_name` has to be unique.
 This can be a source/destination table name.
-Multiple objects can be specified starting with a dash `- object_name:` and followed by `object_attributes:` parameters.
+Multiple objects can be specified starting with a dash `- object_spec:` and followed by `object_name: table_name` and few others parameters.
 
 Optionally, the destination object/table name can be different. To achieve this specify the parameter `destination_object_name`.
 
 ```
 ---
 data_objects_spec:
-- object_name: stocks 
-  object_attributes:
+- object_spec:
+    object_name: stocks
     destination_object_name: stocksnew
 ```
 
-If the `recreate_target_object` parameter is true, the target object (table) will be recreated. 
+If the `recreate_destination_object` parameter is true, the target object (table) will be recreated. 
 Otherwise, the object/table will only be created if it does not exist. The default is false.
 
 ```
-    recreate_target_object: false
+    recreate_destination_object: false
 ```
 
 Use the `exclude_columns` parameter to exclude specific columns, or leave it blank to include all columns for specific table/object. 
@@ -220,26 +220,26 @@ Alternative approach to exclude column1, column2
 
 #### csv files as source
 
-In `files_source_dir:`, specify the path to the directory where the csv files are stored. This is only relevant for file uploads.
+In `object_source_dir:`, specify the path to the directory where the csv files are stored. This is only relevant for file uploads.
 
-`files_source_dir: /absolute-path-to-file-dir`
+`object_source_dir: /absolute-path-to-file-dir`
 
-Specify the filenames to load specific file or leave blank/null to include all files from `files_source_dir:`.
+Specify the filenames to load specific file or leave blank/null to include all files from `object_source_dir:`.
 At least one dash or empty brackets [] should be present.
 If you leave it empty/null, remember that all files in `file_dir:` should have the same metadata structure as they will be loaded into the same table. 
 In case you want to load only a specific file/s from the given `file_dir:` use dash character one per line and filename.
 
 Use one of the following options: 
-1. To load all files from the `files_source_dir` set:    
+1. To load all files from the `object_source_dir` set:    
 ```
     file_names:
     - null
 ```
-Alternatively, to load all files from the `files_source_dir` set:    
+Alternatively, to load all files from the `object_source_dir` set:    
 ```
     file_names: []
 ```
-2. To load specific files from the `files_source_dir` set: 
+2. To load specific files from the `object_source_dir` set: 
 ```
 
     file_names:
@@ -247,7 +247,7 @@ Alternatively, to load all files from the `files_source_dir` set:
     - file_name_2.csv
     - file_name_3.csv
 ```
-Alternatively, to load specific files from `files_source_dir` set:
+Alternatively, to load specific files from `object_source_dir` set:
 
 ```
     file_names: [file_name.csv, file_name_2.csv, file_name_3.csv]
@@ -297,14 +297,14 @@ pipeline:
       quote_char: none
 ---
 data_objects_spec:
-- object_name: stocks
-  object_attributes:
+- object_spec:
+    object_name: stocks
     destination_object_name:
-    recreate_target_object: true
+    recreate_destination_object: true
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
-    files_source_dir: /your-path-to-csv-folder/stocks
+    object_source_dir: /your-path-to-csv-folder/stocks
     file_names:
     - stocks.csv
 ```
@@ -341,10 +341,10 @@ pipeline:
       quote_char: double-quote
 ---
 data_objects_spec:
-- object_name: stocks
-  object_attributes:
+- object_spec:
+    object_name: stocks
     destination_object_name: stocks_in_postgres
-    recreate_target_object: false
+    recreate_destination_object: false
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
@@ -379,17 +379,17 @@ pipeline:
       quote_char: double-quote
 ---
 data_objects_spec:
-- object_name: stocks
-  object_attributes:
+- object_spec:
+    object_name: stocks
     destination_object_name: stocks_as_csv
-    recreate_target_object: true
+    recreate_destination_object: true
     cleanup_linebreak_in_fields: true
     exclude_columns:
     - 
-- object_name: users
-  object_attributes:
+- object_spec:
+    object_name: users
     destination_object_name: users_as_csv
-    recreate_target_object: true
+    recreate_destination_object: true
     cleanup_linebreak_in_fields: true
     exclude_columns:
     - 

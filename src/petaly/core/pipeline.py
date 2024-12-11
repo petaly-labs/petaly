@@ -90,7 +90,7 @@ class Pipeline:
         if len(self.data_objects_spec) > 0:
             for obj in self.data_objects_spec.get('data_objects_spec'):
                 if obj is not None:
-                    self.data_objects.append(obj.get('object_name'))
+                    self.data_objects.append(obj.get('object_spec').get('object_name'))
 
     def get_pipeline_entire_config(self):
         pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)

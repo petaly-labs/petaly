@@ -35,7 +35,7 @@ class PsqlExtractor(DBExtractor):
         output_fpath = extractor_obj_conf.get('output_fpath')
         extract_to_stmt = extractor_obj_conf.get('extract_to_stmt')
         logger.debug(f"Output file: {output_fpath}")
-        logger.debug(f"Statement to execute: {extract_to_stmt}")
+        logger.debug(f"Statement to execute:\n{extract_to_stmt}")
 
         self.db_connector.extract_to(extract_to_stmt, output_fpath)
 

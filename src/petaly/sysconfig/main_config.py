@@ -117,7 +117,7 @@ class MainConfig:
         if conf_parser.has_section(section_name):
             return_result = True
         else:
-            self.console.print(f"The section \[{section_name}] in petaly.ini is not specified.")
+            self.console.print(f"The section {section_name} in petaly.ini config file is not specified.")
             return_result = False
 
         return return_result
@@ -170,9 +170,9 @@ class MainConfig:
                         if value in ('INFO', 'DEBUG'):
                             self.global_settings['logging_mode'] = value
                         else:
-                            self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section \[global_settings] in petaly.ini.")
+                            self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section global_settings in petaly.ini.")
                 else:
-                    self.console.print(f"The option {key} is not specified under section \[global_settings] in petaly.ini.")
+                    self.console.print(f"The option {key} is not specified under section global_settings in petaly.ini.")
 
     def missing_main_config_file_message(self):
         return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"

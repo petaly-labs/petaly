@@ -204,7 +204,7 @@ class CliMenu():
 
                 console_message += f"{value.get('key_comment')}"
                 if default_value is not None:
-                    console_message += f"Default:[bold blue] \[{default_value}][/bold blue]"
+                    console_message += f"Default: [bold blue]{default_value}[/bold blue]"
 
                 self.console.print(console_message)
 

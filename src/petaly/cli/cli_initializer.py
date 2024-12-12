@@ -153,10 +153,10 @@ class CliInitializer():
 			# save each object to the yaml document
 			self.composer.save_data_objects(pipeline_all_obj=pipeline_all_obj, data_objects_spec=data_objects_spec_list, pipeline_fpath=pipeline.pipeline_fpath)
 
-			self.console.print(
-				f"\n[bold blue]---------- Object {object_name} was successfully specified ------------------[/bold blue]")
+			self.console.print(f"[bold blue]------------------------------------------------------------------[/bold blue]"
+							  f"\nThe object: [bold blue]{object_name}[/bold blue] was successfully specified")
 
-			ask_for_next_object = prompt.Confirm.ask("\nContinues with next object?")
+			ask_for_next_object = prompt.Confirm.ask("\nContinue configuring the next object?")
 
 		if len(data_objects_spec_list) > 0:
 			self.console.print(f"Data-Objects were added for pipeline {pipeline.pipeline_name}. For further configuration review the yaml file: {pipeline.pipeline_fpath} ")

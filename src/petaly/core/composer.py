@@ -53,6 +53,8 @@ class Composer():
 			for value in data_objects:
 				if value in pipeline_data_objects:
 					return_list.append(value)
+				else:
+					return_list = data_objects
 		return return_list
 
 	def save_data_objects(self, pipeline_all_obj, data_objects_spec, pipeline_fpath):

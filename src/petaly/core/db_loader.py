@@ -65,10 +65,11 @@ class DBLoader(ABC):
     def load_data(self):
         """  Load data into Database. Recreate table if parameter recreate_table=True. """
 
-        logger.debug(f"Start the load process to the target storage: {self.pipeline.target_connector_id}.")
+        logger.info(f"Load - process started; connector-type: {self.pipeline.target_connector_id}")
 
         # 1. get and run all objects
         object_list = self.composer.get_object_list_from_output_dir(self.pipeline)
+
         for object_name in object_list:
             loader_obj_conf = {}
             loader_obj_conf.update({'object_name': object_name})

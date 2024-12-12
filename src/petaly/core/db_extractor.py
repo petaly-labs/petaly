@@ -59,6 +59,8 @@ class DBExtractor(ABC):
 		""" Its export data as csv into pipeline output directory.
 		"""
 
+		logger.info(f"Extract - process started; connector-type: {self.pipeline.source_connector_id}")
+
 		# 1. Start with cleanup
 		self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
 
@@ -70,7 +72,8 @@ class DBExtractor(ABC):
 
 		# 4. save metadata and export scripts
 		object_list = self.object_metadata.process_metadata(meta_query_result)
-		# run loop for each object
+
+		# 5. run loop for each object
 		for object_name in object_list:
 
 			# 5. get all export scripts and store data into output directory

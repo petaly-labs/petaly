@@ -52,7 +52,8 @@ class CliInitializer():
 	def init_pipeline(self, pipeline_name):
 		""" Initiate sub folder under pipeline directory with given pipeline_name
 		"""
-		self.console.print(f"\nInit of pipeline-wizard started.\n")
+		self.console.print(f"[bold]{self.cli_menu.break_line}[/bold]")
+		self.console.print(f"[bold]The pipeline initialization has started.[/bold]\n")
 
 		if pipeline_name is None:
 			pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name', message="Specify unique pipeline name")
@@ -102,7 +103,7 @@ class CliInitializer():
 
 		process_continue = True
 		if data_objects_spec_mode in ("ignore"):
-			self.console.print(f"\nThe parameter [bold green]data_objects_spec_mode[/bold green] was set to [bold blue]ignore[/bold blue]")
+			self.console.print(f"\nThe parameter [bold]data_objects_spec_mode[/bold] was set to [bold]ignore[/bold]")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining the data objects despite the definition in data_objects_spec_mode=ignore?")
 
 		if process_continue:
@@ -133,8 +134,8 @@ class CliInitializer():
 			object_name_arr = [item.strip() for item in object_names.split(',')]
 
 			for i, object_name in enumerate(object_name_arr):
-				self.console.print(
-					f"\n[bold blue]---------- Continue with the object {object_name} specification ------------------[/bold blue]")
+				self.console.print(f"\n[bold]{self.cli_menu.break_line}[/bold]")
+				self.console.print(f"Continue with the object [bold]{object_name}[/bold] specification")
 
 				object_spec = self.cli_menu.compose_object_spec(pipeline, object_name=object_name, use_pipeline_wizard=use_pipeline_wizard)
 
@@ -153,10 +154,10 @@ class CliInitializer():
 			# save each object to the yaml document
 			self.composer.save_data_objects(pipeline_all_obj=pipeline_all_obj, data_objects_spec=data_objects_spec_list, pipeline_fpath=pipeline.pipeline_fpath)
 
-			self.console.print(f"[bold blue]------------------------------------------------------------------[/bold blue]"
-							  f"\nThe object: [bold blue]{object_name}[/bold blue] was successfully specified")
+			self.console.print(f"\n[bold]{self.cli_menu.break_line}[/bold]")
+			self.console.print(f"The object: [bold]{object_name}[/bold] has been added to the pipeline.")
 
-			ask_for_next_object = prompt.Confirm.ask("\nContinue configuring the next object?")
+			ask_for_next_object = prompt.Confirm.ask("\nDo you want to continue defining the next data object?")
 
 		if len(data_objects_spec_list) > 0:
 			self.console.print(f"Data-Objects were added for pipeline {pipeline.pipeline_name}. For further configuration review the yaml file: {pipeline.pipeline_fpath} ")

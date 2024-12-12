@@ -36,6 +36,7 @@ class CliMenu():
         self.prompt = prompt
         self.m_conf = main_config
         self.f_handler = FileHandler()
+        self.break_line = '------------------------------------------------------------------'
 
         self.pipeline_meta_config = self.f_handler.load_json(self.m_conf.pipeline_meta_config_fpath)
 
@@ -83,9 +84,8 @@ class CliMenu():
         self.composed_pipeline_config[0]['pipeline']['pipeline_attributes'].update(assigned_attributes)
 
     def compose_endpoint_attributes(self, endpoint_attributes_name):
-
-        self.console.print(
-            f"\n[bold blue]---------- Specify {endpoint_attributes_name} --------------[/bold blue]\n")
+        self.console.print(f"\n[bold]{self.break_line}[/bold]")
+        self.console.print(f"Specify [bold black]{endpoint_attributes_name}[/bold black]\n")
 
         endpoint_attributes_dict = {}
         predefined_values = {}
@@ -131,13 +131,15 @@ class CliMenu():
 
         data_attributes = self.pipeline_meta_config.get('data_attributes')
 
-        self.console.print(f"\n[bold blue]---------- Specify default object settings --------------[/bold blue]")
+        self.console.print(f"\n[bold]{self.break_line}[/bold]")
+        self.console.print(f"[bold]Specify default object settings[/bold]")
 
         object_default_settings = data_attributes.get('object_default_settings')
         assigned_object_default_settings = self.assign_attributes(object_default_settings, predefined_values=None)
         self.composed_pipeline_config[0]['pipeline']['data_attributes'].update({"object_default_settings": assigned_object_default_settings})
 
-        self.console.print(f"\n[bold blue]---------- Specify data object attributes --------------[/bold blue]")
+        self.console.print(f"\n[bold]{self.break_line}[/bold]")
+        self.console.print(f"[bold]Specify data object attributes[/bold]")
 
         assigned_data_attributes = self.assign_attributes(data_attributes, predefined_values=None, exclude_key_list=[None])
         self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(assigned_data_attributes)

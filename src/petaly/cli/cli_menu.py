@@ -85,14 +85,14 @@ class CliMenu():
 
     def compose_endpoint_attributes(self, endpoint_attributes_name):
         self.console.print(f"\n[bold]{self.break_line}[/bold]")
-        self.console.print(f"Specify [bold black]{endpoint_attributes_name}[/bold black]\n")
+        self.console.print(f"Specify [bold]{endpoint_attributes_name}[/bold]\n")
 
         endpoint_attributes_dict = {}
         predefined_values = {}
 
         # step 1. specify endpoint type
         available_connectors = self.m_conf.get_available_connectors()
-        connector_type = prompt.Prompt.ask(f"Specify [bold yellow]{endpoint_attributes_name} connector[/bold yellow] type", choices=available_connectors)
+        connector_type = prompt.Prompt.ask(f"Specify [bold yellow]{endpoint_attributes_name}[/bold yellow] connector type", choices=available_connectors)
         predefined_values.update({'connector_type': connector_type})
 
         assigned_endpoint_attributes = self.assign_attributes(endpoint_attributes_dict, predefined_values=predefined_values)

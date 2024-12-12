@@ -27,6 +27,9 @@ class CsvExtractor(FExtractor):
     def extract_data(self):
         """
         """
+
+        logger.info(f"Extract - process started; connector-type: {self.pipeline.source_connector_id}")
+
         #object_list = super().get_data_object_list()
         object_list = self.pipeline.data_objects
 

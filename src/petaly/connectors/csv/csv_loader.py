@@ -27,6 +27,8 @@ class CsvLoader(FLoader):
 
     def load_data(self):
 
+        logger.info(f"Load - process started; connector-type: {self.pipeline.target_connector_id}")
+
         if self.pipeline.data_attributes.get("data_objects_spec_mode") == 'only':
             #object_list = super().get_data_object_list()
             object_list = self.pipeline.data_objects

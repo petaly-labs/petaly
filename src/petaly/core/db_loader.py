@@ -70,7 +70,11 @@ class DBLoader(ABC):
         # 1. get and run all objects
         object_list = self.composer.get_object_list_from_output_dir(self.pipeline)
 
+
         for object_name in object_list:
+
+            logger.info(f"Load - object {object_name}")
+
             loader_obj_conf = {}
             loader_obj_conf.update({'object_name': object_name})
 
@@ -103,7 +107,6 @@ class DBLoader(ABC):
             loader_obj_conf.update({'load_from_stmt': load_from_stmt})
 
             # 6. load data into table
-            logger.info(f"Load - object {object_name}")
             self.load_from(loader_obj_conf)
 
 

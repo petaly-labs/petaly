@@ -44,7 +44,6 @@ new structure of `data_objects_spec`:
 data_objects_spec:
 - object_spec:
     object_name: stocks
-    object_name: stocks
     destination_object_name:
     recreate_destination_object: true
     cleanup_linebreak_in_fields: true

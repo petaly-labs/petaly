@@ -45,14 +45,13 @@ class Composer():
 			return_list = self.get_data_objects_intersection(object_dir_list, pipeline_object_list)
 
 		return return_list
-	def get_data_objects_intersection(self, data_objects, pipeline_data_objects):
-		""" This function check if object defined in the second list pipeline_data_objects in pipeline.yaml -> data_objects_spec corresponds
-		with the first list data_objects which is usually a folder structure in output directory.
+	def get_data_objects_intersection(self, first_list, second_list):
+		"""
 		"""
 		return_list = []
 
-		for value in data_objects:
-			if value in pipeline_data_objects:
+		for value in first_list:
+			if value in second_list:
 				return_list.append(value)
 
 		return return_list

@@ -51,7 +51,7 @@ class ObjectMetadata():
         ]
         Result format:
         [{'table_schema': table_schema_1, 'table_name': table_name_1, 'columns': [all]},
-        {'table_schema': table_schema_2, 'table_name': table_name_2, 'columns': [all]}
+        {'table_schema': table_schema_1, 'table_name': table_name_2, 'columns': [all]}
         ]
         """
         distinct_object_list = []

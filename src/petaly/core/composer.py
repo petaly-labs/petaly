@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import sys
 
 from petaly.utils.file_handler import FileHandler
 
@@ -32,29 +33,28 @@ class Composer():
 		return column_name
 
 	def get_object_list_from_output_dir(self, pipeline):
+		""" This function check if object defined in the second list pipeline_data_objects in pipeline.yaml -> data_objects_spec corresponds
+				with the first list data_objects which is usually a folder structure in output directory.
+		"""
 		object_dir_list = self.f_handler.get_all_dir_names(pipeline.output_pipeline_dpath)
 		pipeline_object_list = pipeline.data_objects
 
-		return self.get_data_objects_intersection(pipeline, object_dir_list, pipeline_object_list)
+		if pipeline.data_objects_spec_mode in ("ignore","prefer"):
+			return_list = object_dir_list
+		else:
+			return_list = self.get_data_objects_intersection(object_dir_list, pipeline_object_list)
 
-	def get_data_objects_intersection(self, pipeline, data_objects, pipeline_data_objects):
-		""" This function check if data_object defined in pipeline.yaml data_objects corresponded with pipeline.yaml data_objects_spec.
-		If pipeline.json the data_objects is None or the first element is set to None all objects from the database_schema will be loaded.
-		In case it is a file export definition of objects is required
-
-		:return:
+		return return_list
+	def get_data_objects_intersection(self, data_objects, pipeline_data_objects):
+		""" This function check if object defined in the second list pipeline_data_objects in pipeline.yaml -> data_objects_spec corresponds
+		with the first list data_objects which is usually a folder structure in output directory.
 		"""
 		return_list = []
 
-		if pipeline.data_attributes.get('data_objects_spec_mode') == "ignore":
-			# return the first list without modification
-			return_list = data_objects
-		else:
-			for value in data_objects:
-				if value in pipeline_data_objects:
-					return_list.append(value)
-				else:
-					return_list = data_objects
+		for value in data_objects:
+			if value in pipeline_data_objects:
+				return_list.append(value)
+
 		return return_list
 
 	def save_data_objects(self, pipeline_all_obj, data_objects_spec, pipeline_fpath):

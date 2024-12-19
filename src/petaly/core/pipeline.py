@@ -75,7 +75,9 @@ class Pipeline:
 
         self.data_attributes = pipeline_dict.get('pipeline').get('data_attributes')
         self.data_objects_spec_mode = self.data_attributes.get('data_objects_spec_mode')
+        self.object_default_settings = self.get_object_default_settings()
 
+        # load second yaml document
         self.data_objects_spec = pipeline_all_obj[1]
         if self.data_objects_spec is None:
             logger.warning(
@@ -103,3 +105,31 @@ class Pipeline:
                 data_objects = self.data_objects
 
         return data_objects
+
+    def get_object_default_settings(self):
+        """
+        """
+        data_options = {'delimiter':None,
+                        'header': None,
+                        'quote_char': None
+                        }
+        object_default_settings = self.data_attributes.get('object_default_settings')
+        columns_delimiter = object_default_settings.get("columns_delimiter")
+
+        data_options.update({'delimiter': columns_delimiter})
+        if columns_delimiter == "\t":
+            data_options.update({'delimiter': '\\t'})
+
+        header = True if object_default_settings.get("header") is None or True else False
+        data_options.update({'header': header})
+
+        # 3. OPTIONALLY ENCLOSED BY
+        quote_char = object_default_settings.get("quote_char")
+        if quote_char == 'double-quote':
+            quote_char = "'\"'"
+        elif quote_char == 'single-quote':
+            quote_char = "\"'\""
+
+        data_options.update({'quote_char': quote_char})
+
+        return data_options

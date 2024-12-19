@@ -232,6 +232,22 @@ class FileHandler:
 
         return result_arr
 
+    def get_file_names_with_extensions(self, dir_path, *file_extensions):
+        """
+        """
+
+        # iterating over all files with determine extension
+        result_arr = []
+
+        for files in os.listdir(dir_path):
+            for file_extension in file_extensions:
+                if files.endswith(file_extension):
+                        result_arr.append(files)
+            else:
+                continue
+
+        return result_arr
+
     def get_all_dir_names(self, path_to_dir):
         """ """
         # iterating over all files with determine extension
@@ -300,7 +316,7 @@ class FileHandler:
 
         logger.debug(f"The file {base_fname} has been backed up to the: {os.path.join(target_dir,target_file)}")
 
-    def cleanup_files(self, path_to_dir, file_extension):
+    def deprecated_cleanup_files(self, path_to_dir, file_extension):
         """ This function remove all files in a folder of path_to_dir from specific extension.
         """
         files = self.get_all_dir_files(path_to_dir, file_extension)

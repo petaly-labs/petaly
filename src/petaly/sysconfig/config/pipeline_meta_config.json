@@ -13,7 +13,6 @@
                   "quote_char": {"in_use":true, "preassigned_values": ["double-quote","single-quote","none-quote"], "default_value":"double-quote", "key_type": "String", "key_comment": "Choose between double-quote, single-quote or none-quote. The default is double-quote. "},
                   "preferred_load_mode": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String",  "key_comment": "Only full load supported yet. "},
                   "data_transition_format": {"in_use":false, "preassigned_values": ["csv"], "default_value":"csv", "key_type": "String", "key_comment": "Only csv format supported yet. "}
-
                 }
      },
     "data_objects_spec": {

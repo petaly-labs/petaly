@@ -23,6 +23,7 @@ from petaly.core.f_loader import FLoader
 class CsvLoader(FLoader):
 
     def __init__(self, pipeline):
+        self.file_format = 'csv'
         super().__init__(pipeline)
 
     def load_data(self):
@@ -52,8 +53,7 @@ class CsvLoader(FLoader):
             dest_file_dpath = os.path.join(dest_file_dir, self.pipeline.pipeline_name, dest_object_name)
 
             # get target file format
-            target_file_format = 'csv'
-            logger.debug(f"Destination file format: csv")
+            logger.debug(f"Destination file format: {self.file_format}")
 
             dir_exists, files_in_dir = self.f_handler.check_dir(output_object_dir)
 
@@ -61,8 +61,9 @@ class CsvLoader(FLoader):
 
                 logger.debug(f"Output file dir: {output_object_dir}")
 
-                file_list = self.f_handler.get_all_dir_files(output_object_dir,
-                                            target_file_format, file_names_only=True)
+                # lists file with .csv extension, also files ends with .csv.gz. The logic can be improved.
+                #file_list = self.f_handler.get_all_dir_files(output_object_dir, '.' + self.file_format, file_names_only=True)
+                file_list = self.f_handler.get_file_names_with_extensions(output_object_dir, self.file_format,  self.file_format + '.gz')
 
                 logger.info(f"Load - object {object_name}; process upload to destination directory: {dest_file_dpath}")
 

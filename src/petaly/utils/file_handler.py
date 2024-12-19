@@ -214,7 +214,7 @@ class FileHandler:
         if not os.path.isdir(path_to_dir):
             os.makedirs(path_to_dir)
 
-    def get_all_dir_files(self, dir_path, file_extension, file_names_only=False):
+    def deprecated_get_all_dir_files(self, dir_path, file_extension, file_names_only=False):
         """
         """
 
@@ -319,7 +319,7 @@ class FileHandler:
     def deprecated_cleanup_files(self, path_to_dir, file_extension):
         """ This function remove all files in a folder of path_to_dir from specific extension.
         """
-        files = self.get_all_dir_files(path_to_dir, file_extension)
+        files = self.deprecated_get_all_dir_files(path_to_dir, file_extension)
         for file in files:
             os.remove(file)
         return True

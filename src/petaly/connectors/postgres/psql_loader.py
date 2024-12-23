@@ -71,38 +71,28 @@ class PsqlLoader(DBLoader):
 
         return loader_obj_conf
 
-    def compose_from_options(self):
+
+    def compose_from_options(self, loader_obj_conf):
         """
         """
-        copy_options = ""
+        load_options = ""
+        object_settings = loader_obj_conf.get('object_settings')
+        load_options += f", DELIMITER '{object_settings.get('columns_delimiter')}'"
+        load_options += f", HEADER {object_settings.get('header')}"
 
-        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
-        columns_delimiter = object_default_settings.get("columns_delimiter")
-        if columns_delimiter == "\t":
-            copy_options += f", DELIMITER '\\t'"
-        else:
-            copy_options += f", DELIMITER '{columns_delimiter}'"
+        columns_quote = object_settings.get('columns_quote')
+        if columns_quote == 'double':
+            load_options += f", QUOTE '\"'"
+        elif columns_quote == 'single':
+            load_options += f", QUOTE \"'\""
 
-        has_header = True if object_default_settings.get("header") is None or True else False
-        copy_options += f", HEADER {has_header}"
 
-        # 3. OPTIONALLY ENCLOSED BY
-        quote_char = object_default_settings.get("quote_char")
-        if quote_char == 'double-quote':
-            copy_options += f", QUOTE '\"'"
-        elif quote_char == 'single-quote':
-            copy_options += f", QUOTE \"'\""
-
-        client_encoding = self.pipeline.source_attr.get("client_encoding")
-        if client_encoding is not None:
-            copy_options += f", ENCODING '{client_encoding}'"
-
-        return copy_options
+        return load_options
 
     def compose_load_from_stmt(self, data_object, loader_obj_conf):
         """ Its compose a copy from statement """
 
-        copy_from_options = self.compose_from_options()
+        copy_from_options = self.compose_from_options(loader_obj_conf)
 
         load_from_stmt = self.f_handler.load_file(self.connector_load_from_stmt_fpath)
         table_ddl_dict = loader_obj_conf.get('table_ddl_dict')

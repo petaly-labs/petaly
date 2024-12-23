@@ -39,37 +39,24 @@ class PsqlExtractor(DBExtractor):
 
         self.db_connector.extract_to(extract_to_stmt, output_fpath)
 
-
     def compose_extract_options(self, extractor_obj_conf):
         "WITH (FORMAT CSV, DELIMITER ',', HEADER true, FORCE_QUOTE *, ENCODING 'UTF-8');"
-        copy_options = ""
+        object_settings = extractor_obj_conf.get('object_settings')
+        extract_options = ""
 
-        object_default_settings = extractor_obj_conf.get("object_default_settings")
-
-        columns_delimiter = object_default_settings.get("columns_delimiter")
-        if columns_delimiter == "\t":
-            copy_options += f", DELIMITER '\\t'"
-        else:
-            copy_options += f", DELIMITER '{columns_delimiter}'"
-
-        has_header = True if object_default_settings.get("header") is None or True else False
-        copy_options += f", HEADER {has_header}"
+        extract_options += f", DELIMITER '{object_settings.get('columns_delimiter')}'"
+        extract_options += f", HEADER {object_settings.get('header')}"
 
         # 3. OPTIONALLY ENCLOSED BY
-        quote_char = object_default_settings.get("quote_char")
-        if quote_char == 'double-quote':
-            copy_options += f", QUOTE '\"'"
-        elif quote_char == 'single-quote':
-            copy_options += f", QUOTE \"'\""
+        columns_quote = object_settings.get("columns_quote")
+        if columns_quote in ('double','single'):
+            if columns_quote == 'double':
+                extract_options += f", QUOTE '\"'"
+            elif columns_quote == 'single':
+                extract_options += f", QUOTE \"'\""
+            extract_options += f", FORCE_QUOTE *"
 
-        copy_options += f", FORCE_QUOTE *"
-
-        client_encoding = self.pipeline.source_attr.get("client_encoding")
-        if client_encoding is not None:
-            copy_options += f", ENCODING '{client_encoding}'"
-
-
-        return copy_options
+        return extract_options
 
     def compose_extract_to_stmt(self, extract_to_stmt, extractor_obj_conf) -> dict:
         """ Its save copy statement into file """

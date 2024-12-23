@@ -20,7 +20,6 @@ import sys
 
 from petaly.utils.file_handler import FileHandler
 
-
 class Pipeline:
     def __init__(self, pipeline_name, main_config):
         logger.debug("Load main ConfigHandler")
@@ -109,27 +108,28 @@ class Pipeline:
     def get_object_default_settings(self):
         """
         """
-        data_options = {'delimiter':None,
-                        'header': None,
-                        'quote_char': None
-                        }
-        object_default_settings = self.data_attributes.get('object_default_settings')
-        columns_delimiter = object_default_settings.get("columns_delimiter")
+        object_default_settings = self.data_attributes.get('object_default_settings').copy()
 
-        data_options.update({'delimiter': columns_delimiter})
+        columns_delimiter = object_default_settings.get('columns_delimiter')
+        object_default_settings.update({'columns_delimiter': columns_delimiter})
         if columns_delimiter == "\t":
-            data_options.update({'delimiter': '\\t'})
+            object_default_settings.update({'columns_delimiter': '\\t'})
 
-        header = True if object_default_settings.get("header") is None or True else False
-        data_options.update({'header': header})
+        header = object_default_settings.get('header')
+        if header is not True:
+            header = False
+
+        object_default_settings.update({'header': header})
 
         # 3. OPTIONALLY ENCLOSED BY
-        quote_char = object_default_settings.get("quote_char")
-        if quote_char == 'double-quote':
-            quote_char = "'\"'"
-        elif quote_char == 'single-quote':
-            quote_char = "\"'\""
+        columns_quote = object_default_settings.get('columns_quote')
+        if columns_quote in ('double', 'double-quote'):
+            columns_quote = 'double'
+        elif columns_quote in ('single', 'single-quote'):
+            columns_quote = 'single'
+        else:
+            columns_quote = 'none'
 
-        data_options.update({'quote_char': quote_char})
+        object_default_settings.update({'columns_quote': columns_quote})
 
-        return data_options
+        return object_default_settings

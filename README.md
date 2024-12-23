@@ -213,7 +213,7 @@ pipeline:
     object_default_settings:
       header: true
       columns_delimiter: ","
-      quote_char: none-quote
+      columns_quote: none-quote
 ---
 data_objects_spec:
 - object_spec:
@@ -381,8 +381,8 @@ It provides a standardized configuration to facilitate seamless data exchange be
         # The character delimiting individual cells in the CSV data.
         columns_delimiter: ","
         
-        # Choose between double-quote, single-quote or none-quote. The default is double-quote.
-        quote_char:  double-quote
+        # Choose between double, single or none. The default is double.
+        columns_quote:  double
         
 ```
 
@@ -541,7 +541,7 @@ pipeline:
     object_default_settings:
       header: true
       columns_delimiter: ','
-      quote_char: double-quote
+      columns_quote: double
 ---
 data_objects_spec:
 - object_spec:
@@ -576,7 +576,7 @@ pipeline:
     object_default_settings:
       header: true
       columns_delimiter: ","
-      quote_char: none
+      columns_quote: none
 ---
 data_objects_spec:
 - object_spec:
@@ -629,7 +629,7 @@ pipeline:
     object_default_settings:
       header: true
       columns_delimiter: ","
-      quote_char: double-quote
+      columns_quote: double
 ---
 data_objects_spec:
 - object_spec:

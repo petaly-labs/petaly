@@ -78,5 +78,5 @@ class CsvLoader(FLoader):
                     self.f_handler.cp_file(file_source_fpath, dest_file_dpath, target_file_name=dest_file_name)
 
             else:
-                logger.info(f"Load - object {object_name}; upload failed. Check the source and pipeline.yaml configuration.")
-                logger.debug(f"Load: Output directory doesn't exist or is empty: {output_object_dir}")
+                logger.error(f"Load - object {object_name}; upload failed. Check the source and pipeline.yaml configuration. "
+                             f"Output directory doesn't exist or is empty: {output_object_dir}")

@@ -10,7 +10,7 @@
                 {
                   "header": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean", "key_comment": "Specifies whether the file contains a header line with the names of each column in the file. "},
                   "columns_delimiter": {"in_use":true, "preassigned_values": [null], "default_value":",", "key_type": "String", "key_comment": "The character delimiting individual cells in the CSV data. "},
-                  "quote_char": {"in_use":true, "preassigned_values": ["double-quote","single-quote","none-quote"], "default_value":"double-quote", "key_type": "String", "key_comment": "Choose between double-quote, single-quote or none-quote. The default is double-quote. "},
+                  "columns_quote": {"in_use":true, "preassigned_values": ["double","single","none"], "default_value":"double", "key_type": "String", "key_comment": "Choose between double, single or none. The default is double. "},
                   "preferred_load_mode": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String",  "key_comment": "Only full load supported yet. "},
                   "data_transition_format": {"in_use":false, "preassigned_values": ["csv"], "default_value":"csv", "key_type": "String", "key_comment": "Only csv format supported yet. "}
                 }

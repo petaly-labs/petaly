@@ -27,8 +27,7 @@ class ObjectMetadata():
                                 "source_schema_name": None,
                                 "source_object_name": None,
                                 "output_file_format": None,
-                                "object_default_settings": None,
-                                "object_default_settings": {},
+                                "object_settings": {},
                                 "columns":[]
                                 }
 
@@ -56,7 +55,7 @@ class ObjectMetadata():
         """
         distinct_object_list = []
         formated_object_meta_list = []
-        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
+        #object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
 
         for i, val in enumerate(meta_query_result):
 
@@ -69,17 +68,19 @@ class ObjectMetadata():
                 new_dict.update({'source_schema_name': schema_name, 'source_object_name': source_object_name, 'columns': []})
                 formated_object_meta_list.append(new_dict)
 
-
         for i, val in enumerate(formated_object_meta_list):
-
             object_name = formated_object_meta_list[i].get('source_object_name')
             data_object = self.get_data_object(object_name)
             exclude_columns = [] if data_object.exclude_columns is None else data_object.exclude_columns
+            # make a new dict object_settings and add cleanup_linebreak_in_fields + object_default_settings for each object
+            #object_settings = {}
+            #object_settings.update({'header': data_object.object_settings.get('header')})
+            #object_settings.update({'columns_delimiter': data_object.object_settings.get('columns_delimiter')})
+            #object_settings.update({'columns_quote': data_object.object_settings.get('columns_quote')})
+            #object_settings.update({'cleanup_linebreak_in_fields': data_object.object_settings.get('cleanup_linebreak_in_fields')})
 
-            # make a copy of dict object and add cleanup_linebreak_in_fields to object_default_settings for each object
-            new_object_def_sett = object_default_settings.copy()
-            new_object_def_sett.update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
-            formated_object_meta_list[i].update({'object_default_settings': new_object_def_sett})
+            object_settings = data_object.object_settings
+            formated_object_meta_list[i].update({'object_settings': object_settings})
 
             for idx, value in enumerate(meta_query_result):
 
@@ -102,17 +103,18 @@ class ObjectMetadata():
     def compose_object_meta_from_file(self, object_name, columns_metadata_arr):
         """ Its creates a metadata file with all the attributes needed to recreate a table on the target.
         """
-        #object_meta = {}
+
         self.object_metadata_dict.update({'source_object_name': object_name})
         self.object_metadata_dict.update({'output_file_format': self.pipeline.source_attr.get("connector_type")})
 
-        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
-        self.object_metadata_dict.update({'object_default_settings': object_default_settings})
-
         data_object = self.get_data_object(object_name)
+        object_settings = {}
+        object_settings.update({'header': data_object.header})
+        object_settings.update({'columns_delimiter': data_object.columns_delimiter})
+        object_settings.update({'columns_quote': data_object.columns_quote})
+        object_settings.update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
 
-        # add cleanup_linebreak_in_fields to object_default_settings
-        self.object_metadata_dict['object_default_settings'].update({'cleanup_linebreak_in_fields': data_object.cleanup_linebreak_in_fields})
+        self.object_metadata_dict.update({'object_settings': object_settings})
         exclude_columns = [] if data_object.exclude_columns is None else data_object.exclude_columns
 
         columns_arr = []
@@ -178,3 +180,4 @@ class ObjectMetadata():
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)
+

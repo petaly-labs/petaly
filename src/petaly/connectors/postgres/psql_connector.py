@@ -26,7 +26,7 @@ class PsqlConnector():
         """
         """
         self.connector_id = 'postgres'
-        self.column_quotes = '"'
+        self.metaquery_quote = '"'
         self.conn = self.get_connection(endpoint_attr)
 
     def get_connection_dsn(selfg):

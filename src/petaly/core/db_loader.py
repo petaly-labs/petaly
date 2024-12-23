@@ -93,19 +93,19 @@ class DBLoader(ABC):
             table_ddl_dict = self.compose_table_ddl(data_object, table_metadata)
             loader_obj_conf.update({'table_ddl_dict': table_ddl_dict})
 
+            # 4. object_spec and default_settings
+            logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
+            loader_obj_conf.update({'object_settings': data_object.object_settings})
+
             # 4. drop and recreate table
             if data_object.recreate_destination_object == True:
                 self.drop_table(loader_obj_conf)
-
             self.create_table(loader_obj_conf)
-
             # 5. compose statement load_from
             output_load_from_stmt_fpath = self.pipeline.output_load_from_stmt_fpath.format(object_name=object_name)
             loader_obj_conf.update({'load_from_stmt_fpath': output_load_from_stmt_fpath})
-
             load_from_stmt = self.compose_load_from_stmt(data_object, loader_obj_conf)
             loader_obj_conf.update({'load_from_stmt': load_from_stmt})
-
             # 6. load data into table
             self.load_from(loader_obj_conf)
 
@@ -146,7 +146,7 @@ class DBLoader(ABC):
         # loop each line
         for i, column_meta in enumerate(columns_meta_arr):
 
-            column_name = self.db_connector.column_quotes + self.composer.normalise_column_name(column_meta.get('column_name')) + self.db_connector.column_quotes
+            column_name = self.db_connector.metaquery_quote + self.composer.normalise_column_name(column_meta.get('column_name')) + self.db_connector.metaquery_quote
             column_list += column_name
 
             column_datatype_list += column_name
@@ -205,7 +205,7 @@ class DBLoader(ABC):
         columns_list = ''
         for i, column_meta in enumerate(columns_meta_arr):
             column_name = self.composer.normalise_column_name(column_meta.get('column_name'))
-            columns_list += self.db_connector.column_quotes + column_name + self.db_connector.column_quotes
+            columns_list += self.db_connector.metaquery_quote + column_name + self.db_connector.metaquery_quote
             columns_list += ","
 
         columns_list = columns_list.rstrip(',')

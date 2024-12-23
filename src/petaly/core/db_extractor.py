@@ -83,7 +83,6 @@ class DBExtractor(ABC):
 			logger.info(f"Extract - object {object_name}")
 			self.extract_to(extractor_obj_conf)
 
-
 	def execute_meta_query(self, meta_query):
 		""" compose and execute meta query and store result in json file """
 		logger.debug("Execute meta-query and create extract scripts")
@@ -112,7 +111,10 @@ class DBExtractor(ABC):
 		extractor_obj_conf.update(extract_queries_dict)
 
 		# 3. add object_default_settings
-		extractor_obj_conf.update({'object_default_settings': table_metadata.get('object_default_settings')})
+		#extractor_obj_conf.update({'object_settings': table_metadata.get('object_settings')})
+		data_object = self.get_data_object(object_name)
+		logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
+		extractor_obj_conf.update({'object_settings': data_object.object_settings})
 
 		# 4. load stmt_extract_to.txt and transform it in later stage
 		extract_to_stmt = self.f_handler.load_file(self.connector_extract_to_stmt_fpath)
@@ -125,7 +127,6 @@ class DBExtractor(ABC):
 		self.f_handler.save_file(output_extract_to_stmt_fpath, extract_to_stmt)
 
 		# 6. create output_file_path
-
 		output_fpath = self.get_local_output_path(object_name)
 		extractor_obj_conf.update({'output_fpath': output_fpath})
 
@@ -199,7 +200,7 @@ class DBExtractor(ABC):
 				if column_transformation is not None:
 					column_list += column_transformation.format(column_name=val['column_name']) + ","
 				else:
-					column_list += f" {self.db_connector.column_quotes}{val['column_name']}{self.db_connector.column_quotes},"
+					column_list += f" {self.db_connector.metaquery_quote}{val['column_name']}{self.db_connector.metaquery_quote},"
 					#columns += self.normalise_column_name(val['column_name']) + ","
 
 			column_list = column_list.rstrip(',')

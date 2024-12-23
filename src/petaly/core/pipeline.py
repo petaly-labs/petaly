@@ -20,7 +20,6 @@ import sys
 
 from petaly.utils.file_handler import FileHandler
 
-
 class Pipeline:
     def __init__(self, pipeline_name, main_config):
         logger.debug("Load main ConfigHandler")
@@ -75,7 +74,9 @@ class Pipeline:
 
         self.data_attributes = pipeline_dict.get('pipeline').get('data_attributes')
         self.data_objects_spec_mode = self.data_attributes.get('data_objects_spec_mode')
+        self.object_default_settings = self.get_object_default_settings()
 
+        # load second yaml document
         self.data_objects_spec = pipeline_all_obj[1]
         if self.data_objects_spec is None:
             logger.warning(
@@ -103,3 +104,32 @@ class Pipeline:
                 data_objects = self.data_objects
 
         return data_objects
+
+    def get_object_default_settings(self):
+        """
+        """
+        object_default_settings = self.data_attributes.get('object_default_settings').copy()
+
+        columns_delimiter = object_default_settings.get('columns_delimiter')
+        object_default_settings.update({'columns_delimiter': columns_delimiter})
+        if columns_delimiter == "\t":
+            object_default_settings.update({'columns_delimiter': '\\t'})
+
+        header = object_default_settings.get('header')
+        if header is not True:
+            header = False
+
+        object_default_settings.update({'header': header})
+
+        # 3. OPTIONALLY ENCLOSED BY
+        columns_quote = object_default_settings.get('columns_quote')
+        if columns_quote in ('double', 'double-quote'):
+            columns_quote = 'double'
+        elif columns_quote in ('single', 'single-quote'):
+            columns_quote = 'single'
+        else:
+            columns_quote = 'none'
+
+        object_default_settings.update({'columns_quote': columns_quote})
+
+        return object_default_settings

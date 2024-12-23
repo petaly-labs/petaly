@@ -1,5 +1,23 @@
 # ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
 
+## [v0.0.9] - 2024-12-24
+
+### Added
+
+### Changed
+The attribute in pipeline.yaml file: data_attributes:object_default_settings:quote_char was renamed to columns_quote
+The possible option for this attribute is changed to: ["double","single","none"]
+```
+pipeline:
+
+  object_default_settings:
+    header: true
+    columns_delimiter: ','
+    columns_quote: double
+```
+
+### Fixed
+
 ## [v0.0.8] - 2024-12-12
 
 ### Added

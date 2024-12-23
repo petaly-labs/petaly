@@ -29,7 +29,7 @@ class MysqlConnector():
     def __init__(self, endpoint_attr):
         """ """
         self.connector_id = "mysql"
-        self.column_quotes = ""
+        self.metaquery_quote = ""
 
         self.conn = self.get_connection(endpoint_attr)
         self.database = endpoint_attr.get('database_name')
@@ -144,7 +144,7 @@ class MysqlConnector():
             for row in result:
                 logger.debug(row)
 
-    def extract_to_fetchmany(self, extract_to_stmt, data_fpath, batch_size=10000):
+    def extract_to_fetchmany(self, extract_to_stmt, data_fpath, extract_options, batch_size=10000):
         """ """
         try:
             cur = self.get_cursor()
@@ -152,8 +152,14 @@ class MysqlConnector():
 
             with (open(data_fpath, 'w', newline='') as file):
                 row = cur.fetchone()
-                csvwriter = csv.DictWriter(file, fieldnames=row, delimiter=',', quotechar='"',
-                                           quoting=csv.QUOTE_MINIMAL)
+                csvwriter = csv.DictWriter(file,
+                                           fieldnames=row,
+                                           delimiter=extract_options.get("delimiter"),
+                                           quotechar=extract_options.get("quotechar"),
+                                           escapechar=extract_options.get("escapechar"),
+                                           quoting=extract_options.get("quoting"),
+                                           lineterminator=extract_options.get("lineterminator"),
+                                          )
                 csvwriter.writeheader()
                 csvwriter.writerow(row)
 
@@ -171,7 +177,7 @@ class MysqlConnector():
             logger.error(error)
 
     @measure_time
-    def extract_to_fetchall(self, extract_to_stmt, data_fpath):
+    def extract_to_fetchall(self, extract_to_stmt, data_fpath, extract_options):
         """  """
         try:
             cur = self.get_cursor()
@@ -179,8 +185,15 @@ class MysqlConnector():
 
             with (open(data_fpath, 'w', newline='') as file):
                 row = cur.fetchone()
-                csvwriter = csv.DictWriter(file, fieldnames=row, delimiter=',', quotechar='"',
-                                           quoting=csv.QUOTE_MINIMAL)
+                csvwriter = csv.DictWriter(file,
+                                           fieldnames=row,
+                                           delimiter=extract_options.get("delimiter"),
+                                           quotechar=extract_options.get("quotechar"),
+                                           escapechar=extract_options.get("escapechar"),
+                                           quoting=extract_options.get("quoting"),
+                                           lineterminator=extract_options.get("lineterminator"),
+                                           )
+
                 csvwriter.writeheader()
                 csvwriter.writerow(row)
                 rows = cur.fetchall()

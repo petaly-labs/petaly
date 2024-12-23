@@ -29,8 +29,6 @@ class CsvExtractor(FExtractor):
         """
 
         logger.info(f"Extract - process started; connector-type: {self.pipeline.source_connector_id}")
-
-        #object_list = super().get_data_object_list()
         object_list = self.pipeline.data_objects
 
         # cleanup pipeline directory before run
@@ -54,8 +52,8 @@ class CsvExtractor(FExtractor):
             file_list = data_object_dict.file_names
 
             if len(file_list) == 0 or file_list[0] is None:
-                file_list = self.f_handler.get_all_dir_files(data_object_dict.object_source_dir, self.file_format, file_names_only=True)
-
+                #file_list = self.f_handler.get_all_dir_files(data_object_dict.object_source_dir, self.file_format, file_names_only=True)
+                file_list = self.f_handler.get_file_names_with_extensions(data_object_dict.object_source_dir, self.file_format)
 
             output_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
 

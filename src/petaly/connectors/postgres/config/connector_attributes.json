@@ -6,8 +6,8 @@
   "database_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database name"},
   "database_schema": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specifies database schema"},
   "database_server_version":  {"in_use":false, "preassigned_values": ["17", "16", "15", "14", "13", "older"], "default_value": "17", "key_type": "String", "key_comment": "Specifies the database server version."},
-  "client_encoding": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] Define client or file encoding; If in doubt, leave it blank or use UTF8."},
-  "additional_options":
+  "encoding_charset": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] Define client or file encoding; If in doubt, leave it blank or use UTF8."},
+  "object_connector_settings":
       {
        "force_quote": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "Forces quoting to be used for all non-NULL values in each specified column. NULL output is never quoted. If true is specified, non-NULL values will be quoted in all columns."},
        "force_not_null": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "Do not match the specified columns' values against the null string. In the default case where the null string is empty, this means that empty values will be read as zero-length strings rather than nulls, even when they are not quoted. If true is specified, the option will be applied to all columns."},

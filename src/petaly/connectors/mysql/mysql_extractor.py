@@ -32,52 +32,41 @@ class MysqlExtractor(DBExtractor):
     def get_query_result(self, meta_query):
         return self.db_connector.get_query_result(meta_query)
 
-    def compose_extract_options(self, extractor_obj_conf)->dict:
+    def compose_extract_options(self, extractor_obj_conf) -> dict:
         """
         """
-        object_default_settings = extractor_obj_conf.get("object_default_settings")
+        object_settings = extractor_obj_conf.get('object_settings')
+
         extract_options = {}
 
-        # 1. FIELDS TERMINATED BY (COLUMNS DELIMITER)
-        columns_delimiter = object_default_settings.get("columns_delimiter")
-        extract_options.update({"delimiter": columns_delimiter})
-        if columns_delimiter == "\\t":
-            extract_options.update({"delimiter": "\t"})
+        extract_options.update({"delimiter": object_settings.get("columns_delimiter")})
 
-        # 2. OPTIONALLY ENCLOSED BY
-        quote_char = object_default_settings.get("quote_char")
-        if quote_char == 'double-quote':
+        columns_quote = object_settings.get("columns_quote")
+        extract_options.update({"quoting": csv.QUOTE_ALL})
+        if columns_quote == 'double':
             extract_options.update({"quotechar": "\""})
-            extract_options.update({"quoting": csv.QUOTE_ALL})
-        elif quote_char == 'single-quote':
+        elif columns_quote == 'single':
             extract_options.update({"quotechar": "\'"})
-            extract_options.update({"quoting": csv.QUOTE_ALL})
         else:
             extract_options.update({"quotechar": None})
             extract_options.update({"quoting": csv.QUOTE_NONE})
 
-        # 3. ESCAPED BY
         extract_options.update({"escapechar": "\\"})
-
-        # 5. LINES TERMINATED BY
         extract_options.update({"lineterminator": "\n"})
 
-        # 6. Has Header
-        has_header = True if object_default_settings.get("header") else False
-        extract_options.update({"header": has_header})
+        extract_options.update({"header": object_settings.get("header")})
 
-        # 7. check cleanup_linebreak_in_fields
-        cleanup_linebreak_in_fields = True if object_default_settings.get("cleanup_linebreak_in_fields") else False
+        cleanup_linebreak_in_fields = object_settings.get("cleanup_linebreak_in_fields")
         extract_options.update({"cleanup_linebreak_in_fields": cleanup_linebreak_in_fields})
 
         return extract_options
 
     def extract_to(self, extractor_obj_conf):
+        """
+        """
         output_fpath = extractor_obj_conf.get("output_fpath")
         extract_to_stmt = extractor_obj_conf.get("extract_to_stmt")
-
         extract_options = self.compose_extract_options(extractor_obj_conf)
-
         logger.debug(f"Output File: {output_fpath}")
         logger.debug(f"Statement to execute:\n{extract_to_stmt}")
 

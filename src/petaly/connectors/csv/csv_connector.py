@@ -17,4 +17,4 @@ class CsvConnector():
 
     def __init__(self):
         self.connector_id = "csv"
-        self.column_quotes = ''
+        self.metaquery_quote = ''

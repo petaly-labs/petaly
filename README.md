@@ -213,7 +213,7 @@ pipeline:
     object_default_settings:
       header: true
       columns_delimiter: ","
-      columns_quote: none-quote
+      columns_quote: none
 ---
 data_objects_spec:
 - object_spec:

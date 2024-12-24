@@ -14,7 +14,7 @@
             "class": "rich.logging.RichHandler",
             "formatter": "format_console",
             "level": "INFO",
-            "show_level": false,
+            "show_level": true,
             "show_path": false,
             "enable_link_path": false,
             "omit_repeated_times": false

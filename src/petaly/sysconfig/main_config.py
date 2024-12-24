@@ -43,6 +43,7 @@ class MainConfig:
         self.load_from_stmt_fname = 'load_from_stmt.sql'
         self.create_table_stmt_fname = 'create_table_stmt.sql'
         self.connector_attributes_fname = 'connector_attributes.json'
+        self.pipeline_outdated_arguments_fname = 'pipeline_outdated_arguments.json'
 
         self.base_dpath = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -57,6 +58,7 @@ class MainConfig:
         self.logging_config_fpath = os.path.join(self.sysconfig_config, self.logging_config_fname)
         self.pipeline_meta_config_fpath = os.path.join(self.sysconfig_config, self.pipeline_meta_config_fname)
         self.class_sysconfig_fpath = os.path.join(self.sysconfig_config, self.class_config_fname)
+        self.pipeline_outdated_arguments_fpath = os.path.join(self.sysconfig_config, self.pipeline_outdated_arguments_fname)
 
         self.workspace_config = {
                                             "pipeline_dir_path": None,
@@ -275,3 +277,6 @@ class MainConfig:
     def get_connector_category(self, connector_id):
         connector_category = self.get_connector_class_config(connector_id).get('connector_category')
         return connector_category
+
+    def get_pipeline_outdated_arguments(self):
+        return self.f_handler.load_json(self.pipeline_outdated_arguments_fpath)

@@ -23,6 +23,7 @@ from petaly.utils.file_handler import FileHandler
 class Pipeline:
     def __init__(self, pipeline_name, main_config):
         logger.debug("Load main ConfigHandler")
+
         self.m_conf = main_config
         self.pipeline_dpath = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name)
         self.pipeline_fpath = os.path.join(self.pipeline_dpath, main_config.pipeline_fname)
@@ -108,7 +109,9 @@ class Pipeline:
     def get_object_default_settings(self):
         """
         """
+
         object_default_settings = self.data_attributes.get('object_default_settings').copy()
+        self.check_pipeline_outdated_arguments(object_default_settings)
 
         columns_delimiter = object_default_settings.get('columns_delimiter')
         object_default_settings.update({'columns_delimiter': columns_delimiter})
@@ -123,6 +126,7 @@ class Pipeline:
 
         # 3. OPTIONALLY ENCLOSED BY
         columns_quote = object_default_settings.get('columns_quote')
+
         if columns_quote in ('double', 'double-quote'):
             columns_quote = 'double'
         elif columns_quote in ('single', 'single-quote'):
@@ -133,3 +137,27 @@ class Pipeline:
         object_default_settings.update({'columns_quote': columns_quote})
 
         return object_default_settings
+
+    def check_pipeline_outdated_arguments(self, dict_to_check):
+        """ Check if one of pass dict include an outdated parameters. In case it has output the log message.
+
+        """
+        pipeline_outdated_arguments = self.m_conf.get_pipeline_outdated_arguments()
+
+        for item_name in dict_to_check:
+            item_value = pipeline_outdated_arguments.get(item_name)
+            if item_value is not None:
+                log_status = item_value.get('log_status').upper()
+                item_message = f"The params {item_name} is outdated. {item_value.get('message')} For further information regarding this parameter, review the documentation."
+
+                if log_status == 'CRITICAL':
+                    logger.critical(item_message)
+                elif log_status == 'ERROR':
+                    logger.error(item_message)
+                elif log_status == 'WARNING':
+                    logger.warning(item_message)
+                else:
+                    logger.info(item_message)
+
+                if item_value.get('action').lower() == 'exit':
+                    sys.exit()

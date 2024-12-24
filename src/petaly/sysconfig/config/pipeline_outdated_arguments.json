@@ -1,0 +1,5 @@
+{"quote_char":
+    { "log_status": "critical",
+      "action": "exit",
+      "message": "The params quote_char was renamed to columns_quote with following options [double, single, none]."}
+}

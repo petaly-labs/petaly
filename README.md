@@ -629,7 +629,7 @@ pipeline:
     object_default_settings:
       header: true
       columns_delimiter: ","
-      columns_quote: double
+      columns_quote: single
 ---
 data_objects_spec:
 - object_spec:

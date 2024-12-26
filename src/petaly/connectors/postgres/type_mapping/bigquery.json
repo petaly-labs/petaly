@@ -1,0 +1,17 @@
+{
+    "INT64": "bigint",
+    "FLOAT64": "double precision",
+    "NUMERIC": "numeric",
+    "BOOL": "boolean",
+    "STRING": "character varying",
+    "TIME": "time",
+    "DATETIME": "timestamp",
+    "TIMESTAMP": "timestamp",
+    "GEOGRAPHY": "geometry",
+    "JSON": "json",
+    "INTERVAL": "interval",
+    "BYTES": "bytea",
+    "ARRAY": "array",
+    "null": "character varying"
+
+  }

@@ -1,0 +1,8 @@
+{
+    "string": "STRING",
+    "int32": "INT32",
+    "int64": "INT64",
+    "date32[day]": "DATETIME",
+    "double": "FLOAT64",
+    "null": "STRING"
+  }

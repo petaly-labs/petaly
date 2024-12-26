@@ -15,8 +15,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import time
 from abc import ABC, abstractmethod
-
 from petaly.core.composer import Composer
 from petaly.utils.utils import measure_time
 from petaly.utils.file_handler import FileHandler
@@ -65,15 +65,16 @@ class DBLoader(ABC):
     def load_data(self):
         """  Load data into Database. Recreate table if parameter recreate_table=True. """
 
-        logger.info(f"Load - process started; connector-type: {self.pipeline.target_connector_id}")
-
+        logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
+        start_total_time = time.time()
         # 1. get and run all objects
         object_list = self.composer.get_object_list_from_output_dir(self.pipeline)
 
 
         for object_name in object_list:
 
-            logger.info(f"Load - object {object_name}")
+            logger.info(f"Load object: {object_name} started...")
+            start_time = time.time()
 
             loader_obj_conf = {}
             loader_obj_conf.update({'object_name': object_name})
@@ -109,6 +110,11 @@ class DBLoader(ABC):
             # 6. load data into table
             self.load_from(loader_obj_conf)
 
+            end_time = time.time()
+            logger.info(f"Load object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+
+        end_total_time = time.time()
+        logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)

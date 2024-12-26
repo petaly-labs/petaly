@@ -32,17 +32,18 @@ class CliInitializer():
 		self.f_handler = FileHandler()
 
 	### Init Workspace
-	def init_workspace(self):
+	def init_workspace(self, skip_message_if_exist=False):
 		"""
 		"""
-		self.create_dir(self.m_conf.pipeline_base_dpath, "Pipeline base")
-		self.create_dir(self.m_conf.output_base_dpath, "Output base")
-		self.create_dir(self.m_conf.logs_base_dpath, "Logs base")
+		self.create_dir(self.m_conf.pipeline_base_dpath, "Pipeline base", skip_message_if_exist)
+		self.create_dir(self.m_conf.output_base_dpath, "Output base", skip_message_if_exist)
+		self.create_dir(self.m_conf.logs_base_dpath, "Logs base", skip_message_if_exist)
 
-	def create_dir(self, dpath, dir_type_message):
+	def create_dir(self, dpath, dir_type_message, skip_message_if_exist):
 
 		if self.f_handler.is_dir(dpath):
-			self.console.print (f"{dir_type_message} directory {dpath} already exists.")
+			if not skip_message_if_exist:
+				self.console.print (f"{dir_type_message} directory {dpath} already exists.")
 		else:
 			self.f_handler.make_dirs(dpath)
 			self.console.print(f"{dir_type_message} directory {dpath} is created.")
@@ -164,4 +165,3 @@ class CliInitializer():
 		else:
 			self.console.print(
 				f"Data-Objects weren't specified for pipeline {pipeline.pipeline_name}. For further configuration review the yaml file: {pipeline.pipeline_fpath} ")
-

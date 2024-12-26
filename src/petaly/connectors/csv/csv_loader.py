@@ -15,8 +15,10 @@
 
 import logging
 logger = logging.getLogger(__name__)
+
 import os
 import sys
+import time
 from petaly.core.f_loader import FLoader
 
 
@@ -28,7 +30,8 @@ class CsvLoader(FLoader):
 
     def load_data(self):
 
-        logger.info(f"Load - process started; connector-type: {self.pipeline.target_connector_id}")
+        logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
+        start_total_time = time.time()
 
         if self.pipeline.data_attributes.get("data_objects_spec_mode") == 'only':
             #object_list = super().get_data_object_list()
@@ -60,12 +63,11 @@ class CsvLoader(FLoader):
             if dir_exists is True and files_in_dir> 0:
 
                 logger.debug(f"Output file dir: {output_object_dir}")
+                logger.info(f"Load object: {object_name} started.. | destination directory: {dest_file_dpath}")
+                start_time = time.time()
 
                 # lists file with .csv extension, also files ends with .csv.gz. The logic can be improved.
-                #file_list = self.f_handler.get_all_dir_files(output_object_dir, '.' + self.file_format, file_names_only=True)
                 file_list = self.f_handler.get_file_names_with_extensions(output_object_dir, self.file_format,  self.file_format + '.gz')
-
-                logger.info(f"Load - object {object_name}; process upload to destination directory: {dest_file_dpath}")
 
                 for file in file_list:
                     logger.debug(f"File: {file}")
@@ -77,6 +79,13 @@ class CsvLoader(FLoader):
                     logger.debug(f"Load: Upload performed to destination path: {os.path.join(dest_file_dpath, dest_file_name)}")
                     self.f_handler.cp_file(file_source_fpath, dest_file_dpath, target_file_name=dest_file_name)
 
+                end_time = time.time()
+                logger.info(f"Load object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+
+
             else:
-                logger.error(f"Load - object {object_name}; upload failed. Check the source and pipeline.yaml configuration. "
+                logger.error(f"Load object {object_name} failed. Check the source and pipeline.yaml configuration. "
                              f"Output directory doesn't exist or is empty: {output_object_dir}")
+
+        end_total_time = time.time()
+        logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")

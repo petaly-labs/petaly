@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
 import logging
 logger = logging.getLogger(__name__)
+
+import os
+import sys
+import time
 from petaly.core.f_extractor import FExtractor
 
 class CsvExtractor(FExtractor):
@@ -28,7 +30,8 @@ class CsvExtractor(FExtractor):
         """
         """
 
-        logger.info(f"Extract - process started; connector-type: {self.pipeline.source_connector_id}")
+        logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
+        start_total_time = time.time()
         object_list = self.pipeline.data_objects
 
         # cleanup pipeline directory before run
@@ -47,7 +50,8 @@ class CsvExtractor(FExtractor):
                                f"\n    object_source_dir: IS EMPTY")
                 sys.exit()
 
-            logger.info(f"Extract - object {object_name}; source dir: {data_object_dict.object_source_dir}")
+            logger.info(f"Extract object: {object_name} started.. | source dir: {data_object_dict.object_source_dir}")
+            start_time = time.time()
 
             file_list = data_object_dict.file_names
 
@@ -70,3 +74,9 @@ class CsvExtractor(FExtractor):
             self.save_metadata_into_file(meta_table)
 
             # self.describe_parquet_metadata(parquet_fpath)
+
+            end_time = time.time()
+            logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+
+        end_total_time = time.time()
+        logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")

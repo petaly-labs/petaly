@@ -1,0 +1,6 @@
+{
+  "database_schema": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify BigQuery dataset as a schema"},
+  "object_connector_settings": {
+            "max_bad_records": {"in_use":true, "preassigned_values": [null], "default_value":0, "key_type": "Integer", "key_comment": "This parameter is defines how many rows can be ignored during the upload process. Valid for bigquery"}
+            }
+}

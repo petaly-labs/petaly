@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import logging
 logger = logging.getLogger(__name__)
 
+import os
 import sys
+import time
 from abc import ABC, abstractmethod
 from petaly.utils.utils import measure_time
 from petaly.utils.file_handler import FileHandler
@@ -59,8 +60,8 @@ class DBExtractor(ABC):
 		""" Its export data as csv into pipeline output directory.
 		"""
 
-		logger.info(f"Extract - process started; connector-type: {self.pipeline.source_connector_id}")
-
+		logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
+		start_total_time = time.time()
 		# 1. Start with cleanup
 		self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
 
@@ -76,12 +77,20 @@ class DBExtractor(ABC):
 		# 5. run loop for each object
 		for object_name in object_list:
 
+			logger.info(f"Extract object: {object_name} started...")
+			start_time = time.time()
+
 			# 5. get all export scripts and store data into output directory
 			extractor_obj_conf = self.get_extractor_obj_conf(object_name)
 
 			# 6. run export data
-			logger.info(f"Extract - object {object_name}")
 			self.extract_to(extractor_obj_conf)
+
+			end_time = time.time()
+			logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+
+		end_total_time = time.time()
+		logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
 
 	def execute_meta_query(self, meta_query):
 		""" compose and execute meta query and store result in json file """

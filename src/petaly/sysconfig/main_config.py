@@ -147,7 +147,6 @@ class MainConfig:
         section_name = 'workspace_config'
 
         conf_parser = self.load_main_config_file()
-
         if self.check_main_config_section(conf_parser, section_name):
             if self.validate_workspace_abs_paths(conf_parser):
                 self.pipeline_base_dpath = conf_parser.get(section_name,'pipeline_dir_path')

@@ -23,10 +23,23 @@
               "loader": {"module_path": "mysql_loader", "class_name": "MysqlLoader"},
               "type_mapping": ["petaly.connectors.mysql.type_mapping"],
               "supported_platforms": ["local"]
-            }
+            },
+            "bigquery": {
+            "connector_category": "database",
+            "connector_dpath": "petaly.connectors.bigquery",
+            "extractor": {"module_path": "bq_extractor", "class_name": "BQExtractor"},
+            "loader": {"module_path": "bq_loader", "class_name": "BQLoader"},
+            "type_mapping": ["petaly.connectors.bigquery.type_mapping"],
+            "supported_platforms": ["gcp"]
+          }
     },
     "platforms": {
-            "local": {
-            }
+        "local": {},
+        "gcp": {
+                "gcp_project_id": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify GCP project ID"},
+                "gcp_region": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optionally] Specify GCP region/location"},
+                "gcp_bucket_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify GCP bucket name without the gs:// prefix. Leave it empty if loading from a local folder is preferred."},
+                "gcp_service_account": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optionally] Specify GCP service account."}
+        }
     }
 }

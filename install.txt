@@ -1,6 +1,6 @@
 pip3 install --upgrade pip
 
-# OPS
+# Open Source
 pip3 install "psycopg[binary]"
 pip3 install PyYAML
 pip3 install PyMySQL
@@ -8,5 +8,11 @@ pip3 install cryptography
 pip3 install pyarrow
 pip3 install mysql-connector-python
 pip3 install rich
+
+# GCP
+pip install --upgrade google-cloud
+pip install --upgrade google-cloud-bigquery
+pip install --upgrade google-cloud-storage
+pip install --upgrade google-api-python-client oauth2client
 
 pip3 freeze > requirements.txt

@@ -86,7 +86,7 @@ class MainConfig:
                 sys.exit()
 
         # 3. exit, if file hasn't *.ini file extension
-        if self.f_handler.check_file_extension(config_file_path, 'ini') is False:
+        if self.f_handler.check_file_extension(config_file_path, '.ini') is False:
             self.console.print(self.missing_main_config_file_message())
             sys.exit()
 
@@ -147,7 +147,6 @@ class MainConfig:
         section_name = 'workspace_config'
 
         conf_parser = self.load_main_config_file()
-
         if self.check_main_config_section(conf_parser, section_name):
             if self.validate_workspace_abs_paths(conf_parser):
                 self.pipeline_base_dpath = conf_parser.get(section_name,'pipeline_dir_path')
@@ -243,15 +242,13 @@ class MainConfig:
 
         return self.f_handler.load_json(connector_attributes_fpath)
 
-    def get_type_mapping_paths(self, connector_id):
+    def get_type_mapping_path(self, connector_id, source_connector_id):
 
-        connector_class_config = self.get_connector_class_config(connector_id)
+        type_mapping_path = self.get_connector_class_config(connector_id).get("type_mapping")
+        type_mapping_fpath = os.path.join(self.src_dpath, *type_mapping_path.split('.'), self.type_mapping_fname)
+        type_mapping_fpath = type_mapping_fpath.format(source_connector_id=source_connector_id)
 
-        type_mapping_path_list = []
-        for type_mapping_path in connector_class_config.get("type_mapping"):
-            type_mapping_dpath = os.path.join(self.src_dpath, *type_mapping_path.split('.'))
-            type_mapping_path_list.append(os.path.join(type_mapping_dpath, self.type_mapping_fname))
-        return type_mapping_path_list
+        return type_mapping_fpath
 
     def get_extractor_type_transformer_fpath(self, connector_id):
 

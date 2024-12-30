@@ -64,13 +64,13 @@ class MysqlExtractor(DBExtractor):
     def extract_to(self, extractor_obj_conf):
         """
         """
-        output_fpath = extractor_obj_conf.get("output_fpath")
+        output_object_fpath = extractor_obj_conf.get("output_object_fpath")
         extract_to_stmt = extractor_obj_conf.get("extract_to_stmt")
         extract_options = self.compose_extract_options(extractor_obj_conf)
-        logger.debug(f"Output File: {output_fpath}")
+        logger.debug(f"Output File: {output_object_fpath}")
         logger.debug(f"Statement to execute:\n{extract_to_stmt}")
 
-        self.db_connector.extract_to(extract_to_stmt, output_fpath, extract_options)
+        self.db_connector.extract_to(extract_to_stmt, output_object_fpath, extract_options)
 
     def compose_extract_to_stmt(self, extract_to_stmt, extractor_obj_conf) -> dict:
         """ Its save copy statement into file

@@ -66,9 +66,7 @@ class MainCtl():
         """ Call this function to run pipeline target part
         """
         logger.debug("Load target config")
-
         class_obj = self.m_conf.get_loader_class(pipe.target_connector_id)
-
         # run loader
         if class_obj is not None:
             loader = class_obj(pipe)

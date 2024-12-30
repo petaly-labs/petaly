@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import logging
 logger = logging.getLogger(__name__)
 
+import os
 import sys
+import time
 from abc import ABC, abstractmethod
 from petaly.utils.utils import measure_time
 from petaly.utils.file_handler import FileHandler
@@ -59,8 +60,8 @@ class DBExtractor(ABC):
 		""" Its export data as csv into pipeline output directory.
 		"""
 
-		logger.info(f"Extract - process started; connector-type: {self.pipeline.source_connector_id}")
-
+		logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
+		start_total_time = time.time()
 		# 1. Start with cleanup
 		self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
 
@@ -76,12 +77,20 @@ class DBExtractor(ABC):
 		# 5. run loop for each object
 		for object_name in object_list:
 
+			logger.info(f"Extract object: {object_name} started...")
+			start_time = time.time()
+
 			# 5. get all export scripts and store data into output directory
 			extractor_obj_conf = self.get_extractor_obj_conf(object_name)
 
 			# 6. run export data
-			logger.info(f"Extract - object {object_name}")
 			self.extract_to(extractor_obj_conf)
+
+			end_time = time.time()
+			logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+
+		end_total_time = time.time()
+		logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
 
 	def execute_meta_query(self, meta_query):
 		""" compose and execute meta query and store result in json file """
@@ -127,8 +136,8 @@ class DBExtractor(ABC):
 		self.f_handler.save_file(output_extract_to_stmt_fpath, extract_to_stmt)
 
 		# 6. create output_file_path
-		output_fpath = self.get_local_output_path(object_name)
-		extractor_obj_conf.update({'output_fpath': output_fpath})
+		output_object_fpath = self.get_local_output_path(object_name)
+		extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
 
 		logger.debug(f"Config for data extract: {extractor_obj_conf}")
 		return extractor_obj_conf
@@ -138,8 +147,8 @@ class DBExtractor(ABC):
 		object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
 
 		self.f_handler.make_dirs(object_dpath)
-		output_fpath = os.path.join(object_dpath, object_name + '.csv')
-		return output_fpath
+		output_object_fpath = os.path.join(object_dpath, object_name + '.csv')
+		return output_object_fpath
 
 	def compose_meta_query(self):
 		""" Its compose a meta query by using a meta query file and adding schema, tables and column definitions
@@ -190,7 +199,6 @@ class DBExtractor(ABC):
 			column_list = ''
 
 			transformation = self.type_mapping.get_extractor_type_transformer()
-
 			col_obj = dict_obj.get('columns')
 
 			for idx, val in enumerate(col_obj):

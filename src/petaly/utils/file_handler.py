@@ -104,8 +104,7 @@ class FileHandler:
         """
         """
         path_in_arr = os.path.splitext(file_fpath)
-
-        return path_in_arr[1].lstrip('.') == file_extension
+        return path_in_arr[1] == file_extension
 
     def save_dict_to_file(self, file_fpath, dict_data, file_format='yaml'):
         """
@@ -316,27 +315,35 @@ class FileHandler:
 
         logger.debug(f"The file {base_fname} has been backed up to the: {os.path.join(target_dir,target_file)}")
 
-    def deprecated_cleanup_files(self, path_to_dir, file_extension):
-        """ This function remove all files in a folder of path_to_dir from specific extension.
-        """
-        files = self.deprecated_get_all_dir_files(path_to_dir, file_extension)
-        for file in files:
-            os.remove(file)
-        return True
-
     def cleanup_dir(self, path_to_dir):
         """ This function remove all subfolders from path_to_dir. The folder path_to_dir will be not removed.
 
         :param path_to_dir:
         :return:
         """
+        logger.debug(f"The files and folders from directory:{path_to_dir} will be removed")
+        subfolders_are_not_exist = True
+        files_are_not_exist = True
         for folder_name, subfolders, filenames in os.walk(path_to_dir):
-            logger.debug('Following subfolders are removed:')
-            # clean up all subfolders in directory path
-            for subfolder in subfolders:
-                folder_to_remove = os.path.join(folder_name, subfolder)
-                shutil.rmtree(folder_to_remove)
-                logger.debug(folder_to_remove)
+            if len(subfolders)>0:
+                subfolders_are_not_exist = False
+                # clean up all subfolders in directory path
+                logger.debug('Following subfolders are removed:')
+                for subfolder in subfolders:
+                    folder_to_remove = os.path.join(folder_name, subfolder)
+                    shutil.rmtree(folder_to_remove)
+                    logger.debug(folder_to_remove)
+            else:
+                for filename in filenames:
+                    files_are_not_exist = False
+                    file_to_remove = os.path.join(folder_name, filename)
+                    os.remove(file_to_remove)
+
+        if subfolders_are_not_exist:
+            logger.debug('Directory has no subfolders')
+
+        if files_are_not_exist:
+            logger.debug('Directory has no files')
 
     def copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
         """ This function copy templates file without comments to the specified pipeline
@@ -417,15 +424,15 @@ class FileHandler:
             logger.error(e)
             return None
 
-    def gunzip_all_files(self, gz_dpath, cleanup_file=True):
+    def gunzip_csv_files(self, gz_dpath, cleanup_file=True):
         gz_file_list = self.get_specific_files(gz_dpath, '*.csv.gz')
         for gz_fpath in gz_file_list:
-            self.gunzip_file(gz_fpath, cleanup_file=True)
+            self.gunzip_file(gz_fpath, cleanup_file)
 
-    def gzip_all_files(self, gz_dpath, cleanup_file=True):
+    def gzip_csv_files(self, gz_dpath, cleanup_file=True):
         gz_file_list = self.get_specific_files(gz_dpath, '*.csv')
         for gz_fpath in gz_file_list:
-            self.gzip_file(gz_fpath, cleanup_file=True)
+            self.gzip_file(gz_fpath, cleanup_file)
 
     def check_dict_key_exist(self, doc_dict: dict, key: str) -> bool:
         result = False
@@ -434,3 +441,20 @@ class FileHandler:
             result = True
 
         return result
+
+    def is_file_gzip(self, file_path):
+        try:
+            with open(file_path, 'rb') as test_f:
+                if test_f.read(2) == b'\x1f\x8b':
+                    return True
+                else:
+                    return False
+
+        except  OSError as err:
+            logger.error(f"The attempt to open file: {file_path} throws exception: {err}")
+
+    def add_extension(self, file_path, extension):
+        path_with_extension=file_path+extension
+        os.rename(file_path, path_with_extension)
+        return path_with_extension
+

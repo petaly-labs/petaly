@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "petaly"
-version = "0.0.8post2"
+version = "0.0.9"
 license = {file = "LICENSE.md"}
 description = "Python ETL tool"
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -22,23 +22,23 @@ classifiers = [
 requires-python = ">= 3.10"
 keywords = ["petaly", "etl", "ingestion", "database"]
 dependencies =[
-    'cffi==1.17.1',
-    'cryptography==43.0.1',
-    'markdown-it-py==3.0.0',
-    'mdurl==0.1.2',
-    'mysql-connector-python==9.1.0',
-    'numpy==2.1.1',
-    'psycopg==3.2.1',
-    'psycopg-binary==3.2.1',
-    'pyarrow==17.0.0',
-    'pycparser==2.22',
-    'Pygments==2.18.0',
-    'PyMySQL==1.1.1',
-    'PyYAML==6.0.2',
-    'rich==13.8.0',
-    'typing_extensions==4.12.2'
-    ]
-
+        "PyYAML",
+        "PyMySQL",
+        "cryptography",
+        "pyarrow",
+        "rich",
+        "psycopg",
+        "psycopg-binary",
+        "mysql-connector-python"
+        ]
+[project.optional-dependencies]
+gcp = [
+        "google-cloud",
+        "google-cloud-bigquery",
+        "google-cloud-storage",
+        "google-api-python-client",
+        "oauth2client"
+        ]
 [tool.setuptools.packages.find]
 where = ["src"]
 

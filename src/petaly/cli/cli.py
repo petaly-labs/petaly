@@ -107,11 +107,12 @@ class Cli():
     def run_p(self, args):
         """
         """
-
         self.m_conf.set_main_config_fpath(args.config_file_path)
         self.m_conf.set_workspace_dpaths()
         self.m_conf.set_global_settings()
 
+        initialize = CliInitializer(self.m_conf)
+        initialize.init_workspace(skip_message_if_exist=True)
 
         if args.pipeline_name:
 

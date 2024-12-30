@@ -1,0 +1,16 @@
+{
+    "INT64": "INT64",
+    "FLOAT64": "FLOAT64",
+    "NUMERIC": "NUMERIC",
+    "BOOL": "BOOL",
+    "STRING": "STRING",
+    "TIME": "TIME",
+    "DATETIME": "DATETIME",
+    "TIMESTAMP": "TIMESTAMP",
+    "GEOGRAPHY": "GEOGRAPHY",
+    "JSON": "JSON",
+    "INTERVAL": "INTERVAL",
+    "BYTES": "BYTES",
+    "ARRAY": "ARRAY",
+    "null": "STRING"
+  }

@@ -5,7 +5,7 @@
               "connector_dpath": "petaly.connectors.csv",
               "extractor": {"module_path": "csv_extractor", "class_name": "CsvExtractor"},
               "loader": {"module_path": "csv_loader", "class_name": "CsvLoader"},
-              "type_mapping": ["petaly.connectors.csv.type_mapping"],
+              "type_mapping": "petaly.connectors.csv.type_mapping",
               "supported_platforms": ["local"]
               },
           "postgres": {
@@ -13,7 +13,7 @@
               "connector_dpath": "petaly.connectors.postgres",
               "extractor": {"module_path": "psql_extractor", "class_name": "PsqlExtractor"},
               "loader":{"module_path": "psql_loader", "class_name": "PsqlLoader"},
-              "type_mapping": ["petaly.connectors.postgres.type_mapping"],
+              "type_mapping": "petaly.connectors.postgres.type_mapping",
               "supported_platforms": ["local"]
             },
           "mysql": {
@@ -21,12 +21,41 @@
               "connector_dpath": "petaly.connectors.mysql",
               "extractor": {"module_path": "mysql_extractor", "class_name": "MysqlExtractor"},
               "loader": {"module_path": "mysql_loader", "class_name": "MysqlLoader"},
-              "type_mapping": ["petaly.connectors.mysql.type_mapping"],
+              "type_mapping": "petaly.connectors.mysql.type_mapping",
               "supported_platforms": ["local"]
-            }
+            },
+          "bigquery": {
+            "connector_category": "database",
+            "connector_dpath": "petaly.connectors.gcp.bigquery",
+            "extractor": {"module_path": "bq_extractor", "class_name": "BQExtractor"},
+            "loader": {"module_path": "bq_loader", "class_name": "BQLoader"},
+            "type_mapping": "petaly.connectors.gcp.bigquery.type_mapping",
+            "supported_platforms": ["gcp"]
+          },
+          "gcp.bucket": {
+            "connector_category": "storage",
+            "connector_dpath": "petaly.connectors.gcp.gs",
+            "extractor": {"module_path": "gs_extractor", "class_name": "GSExtractor"},
+            "loader": {"module_path": "gs_loader", "class_name": "GSLoader"},
+            "type_mapping": "petaly.connectors.gcp.gs.type_mapping",
+            "supported_platforms": ["gcp"]
+          },
+          "bigquery.old": {
+            "connector_category": "database",
+            "connector_dpath": "petaly.connectors.temp.bigquery",
+            "extractor": {"module_path": "bq_extractor", "class_name": "BQExtractor"},
+            "loader": {"module_path": "bq_loader", "class_name": "BQLoader"},
+            "type_mapping": "petaly.connectors.temp.bigquery.type_mapping",
+            "supported_platforms": ["gcp"]
+          }
     },
     "platforms": {
-            "local": {
-            }
+        "local": {},
+        "gcp": {
+                "gcp_project_id": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify GCP project ID"},
+                "gcp_region": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optionally] Specify GCP region/location"},
+                "gcp_bucket_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify GCP bucket name without the gs:// prefix. Leave it empty if loading from a local folder is preferred."},
+                "gcp_service_account": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optionally] Specify GCP service account."}
+        }
     }
 }

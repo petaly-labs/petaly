@@ -15,8 +15,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import time
 from abc import ABC, abstractmethod
-
 from petaly.core.composer import Composer
 from petaly.utils.utils import measure_time
 from petaly.utils.file_handler import FileHandler
@@ -41,9 +41,9 @@ class DBLoader(ABC):
             self.connector_create_table_stmt_fpath = self.m_conf.connector_create_table_stmt_fpath
 
 
-    @abstractmethod
-    def execute_sql(self, create_table_stmt):
-        pass
+    #@abstractmethod
+    #def execute_sql(self, create_table_stmt):
+    #    pass
 
     @abstractmethod
     def load_from(self, object_load_conf):
@@ -54,10 +54,6 @@ class DBLoader(ABC):
         pass
 
     @abstractmethod
-    def drop_table(self, loader_obj_conf: dict):
-        pass
-
-    @abstractmethod
     def create_table(self, loader_obj_conf: dict):
         pass
 
@@ -65,50 +61,67 @@ class DBLoader(ABC):
     def load_data(self):
         """  Load data into Database. Recreate table if parameter recreate_table=True. """
 
-        logger.info(f"Load - process started; connector-type: {self.pipeline.target_connector_id}")
-
+        logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
+        start_total_time = time.time()
         # 1. get and run all objects
         object_list = self.composer.get_object_list_from_output_dir(self.pipeline)
 
-
         for object_name in object_list:
 
-            logger.info(f"Load - object {object_name}")
+            logger.info(f"Load object: {object_name} started...")
+            start_time = time.time()
 
-            loader_obj_conf = {}
-            loader_obj_conf.update({'object_name': object_name})
+            # 1. compose loader_obj_conf
+            loader_obj_conf = self.get_loader_obj_conf(object_name)
 
-            output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
-            loader_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
+            ## 2. drop and recreate table relocated to connector loader
+            #if loader_obj_conf.get('recreate_destination_object') == True:
+            #    self.drop_table(loader_obj_conf)
+            #self.create_table(loader_obj_conf)
 
-            output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-            loader_obj_conf.update({'output_data_object_dir': output_data_object_dir})
-
-            # 2. search for metadata file and load table metadata
-            metadata_file = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
-            table_metadata = self.f_handler.load_file_as_dict(metadata_file, 'json')
-
-            # 3. compose table DDL components
-            data_object = DataObject(self.pipeline, object_name)
-            table_ddl_dict = self.compose_table_ddl(data_object, table_metadata)
-            loader_obj_conf.update({'table_ddl_dict': table_ddl_dict})
-
-            # 4. object_spec and default_settings
-            logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
-            loader_obj_conf.update({'object_settings': data_object.object_settings})
-
-            # 4. drop and recreate table
-            if data_object.recreate_destination_object == True:
-                self.drop_table(loader_obj_conf)
-            self.create_table(loader_obj_conf)
-            # 5. compose statement load_from
-            output_load_from_stmt_fpath = self.pipeline.output_load_from_stmt_fpath.format(object_name=object_name)
-            loader_obj_conf.update({'load_from_stmt_fpath': output_load_from_stmt_fpath})
-            load_from_stmt = self.compose_load_from_stmt(data_object, loader_obj_conf)
-            loader_obj_conf.update({'load_from_stmt': load_from_stmt})
-            # 6. load data into table
+            # 3. load data into table
             self.load_from(loader_obj_conf)
 
+            end_time = time.time()
+            logger.info(f"Load object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+
+        end_total_time = time.time()
+        logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
+
+    def get_loader_obj_conf(self, object_name) ->dict:
+        loader_obj_conf = {}
+        loader_obj_conf.update({'object_name': object_name})
+
+        output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
+        loader_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
+
+        output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        loader_obj_conf.update({'output_data_object_dir': output_data_object_dir})
+
+        # 2. search for metadata file and load table metadata
+        metadata_file = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
+        table_metadata = self.f_handler.load_file_as_dict(metadata_file, 'json')
+
+        # 3. compose table DDL components
+        data_object = DataObject(self.pipeline, object_name)
+        table_ddl_dict = self.compose_table_ddl(data_object, table_metadata)
+        loader_obj_conf.update({'table_ddl_dict': table_ddl_dict})
+
+        # 4. object_spec and default_settings
+        logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
+        loader_obj_conf.update({'object_settings': data_object.object_settings})
+
+        if data_object.recreate_destination_object == True:
+            loader_obj_conf.update({'recreate_destination_object': True})
+
+        # 5. compose statement load_from
+        output_load_from_stmt_fpath = self.pipeline.output_load_from_stmt_fpath.format(object_name=object_name)
+        loader_obj_conf.update({'load_from_stmt_fpath': output_load_from_stmt_fpath})
+
+        load_from_stmt = self.compose_load_from_stmt(data_object, loader_obj_conf)
+        loader_obj_conf.update({'load_from_stmt': load_from_stmt})
+
+        return loader_obj_conf
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)
@@ -136,8 +149,8 @@ class DBLoader(ABC):
         table_ddl_dict.update({'table_name': table_name})
         table_ddl_dict.update({'schema_name': schema_name})
         columns_meta_arr = table_metadata.get('columns')
-
         connector_create_table_stmt_fpath = self.f_handler.load_file(self.connector_create_table_stmt_fpath)
+
         type_mapping = self.type_mapping.get_type_mapping()
         column_list = ""
         column_datatype_list = ""
@@ -181,6 +194,7 @@ class DBLoader(ABC):
         table_ddl_dict.update({'column_datatype_list':column_datatype_list, 'primary_key':primary_key, 'column_list':column_list})
         table_ddl_dict.update({'create_table_stmt_fpath': create_table_stmt_fpath, 'create_table_stmt': connector_create_table_stmt_fpath})
 
+        logger.debug(f"The DDL for table: {schema_table_name} was composed")
         return table_ddl_dict
 
     def get_column_type_with_precision(self, column_meta, type_mapping):

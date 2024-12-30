@@ -15,15 +15,19 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import os, sys
-from pyarrow import csv, parquet
+from abc import ABC, abstractmethod
+
+import os
+import sys
+import time
+from pyarrow import csv, parquet, lib as pyarrow_lib
 
 from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
 from petaly.core.data_object import DataObject
 
 
-class FExtractor():
+class FExtractor(ABC):
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
@@ -32,6 +36,86 @@ class FExtractor():
         self.object_default_settings = pipeline.data_attributes.get("object_default_settings")
         pass
 
+    @abstractmethod
+    def extract_to(self, extractor_obj_conf):
+        pass
+
+    def extract_data(self):
+        """ Its export data as csv into pipeline output directory.
+        """
+
+        logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
+        start_total_time = time.time()
+
+        # 1. Start with cleanup
+        #self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
+
+        # 4. save metadata and export scripts
+        object_list = self.pipeline.data_objects
+
+        # 5. run loop for each object
+        for object_name in object_list:
+            logger.info(f"Extract object: {object_name} started...")
+            start_time = time.time()
+
+            extractor_obj_conf = self.get_extractor_obj_conf(object_name)
+            self.extract_to(extractor_obj_conf)
+            end_time = time.time()
+            logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+
+        end_total_time = time.time()
+        logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
+
+    def get_extractor_obj_conf(self, object_name) -> dict:
+
+        extractor_obj_conf = {'object_name': object_name}
+
+        # 1. compose output data dir
+        output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
+        extractor_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
+
+        # 2. get and compose metadata query
+        #metadata_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
+        #table_metadata = self.f_handler.load_file_as_dict(metadata_fpath, 'json')
+        #extract_queries_dict = self.compose_extract_queries(table_metadata)
+        #extractor_obj_conf.update(extract_queries_dict)
+
+        # 3. add object_default_settings
+        # extractor_obj_conf.update({'object_settings': table_metadata.get('object_settings')})
+        data_object = self.get_data_object(object_name)
+
+        if data_object.object_source_dir is None:
+            logger.error(f"Incorrect object specification in file: {self.pipeline.pipeline_fpath} "
+                           f"\ndata_objects_spec: "
+                           f"\n- object_spec:"
+                           f"\n    object_name: {object_name}"
+                           f"\n    object_source_dir: IS EMPTY")
+            sys.exit()
+
+        extractor_obj_conf.update({'object_source_dir': data_object.object_source_dir})
+        extractor_obj_conf.update({'file_names': data_object.file_names})
+
+        logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
+        extractor_obj_conf.update({'object_settings': data_object.object_settings})
+
+        # 6. create output object dir and output_file_path
+        output_object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        extractor_obj_conf.update({'output_object_dpath': output_object_dpath})
+
+        self.f_handler.make_dirs(output_object_dpath)
+
+        output_object_fpath = os.path.join(output_object_dpath, object_name + '.csv')
+        extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
+
+        logger.debug(f"Config for data extract: {extractor_obj_conf}")
+        return extractor_obj_conf
+
+    def deprecated_get_local_output_path(self, object_name):
+
+        object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        self.f_handler.make_dirs(object_dpath)
+        output_object_fpath = os.path.join(object_dpath, object_name + '.csv')
+        return output_object_fpath
 
     def save_metadata_into_file(self,meta_table):
         """ Its save a table result as a metadata into file
@@ -130,26 +214,34 @@ class FExtractor():
             output_text += row_str + '\n'
         return output_text
 
-    def analyse_file_structure(self, source_file, data_object_dict, file_format):
+    def analyse_file_structure(self, output_source_file, object_name, file_format_extension):
         """ Analyse the csv file to determine the column format.
         Transform the source file to parquet format to read the column data type.
         Finally, store the result of this discovery to the metadata file
         """
-        is_file = self.f_handler.is_file(source_file)
+
+        is_file = self.f_handler.is_file(output_source_file)
         if is_file == False:
-            logger.error(f"Source file {source_file} doesn't exists")
+            logger.error(f"Output source file {output_source_file} doesn't exists")
             sys.exit()
 
-        if  self.f_handler.check_file_extension(source_file, file_format) == False:
+        if  self.f_handler.check_file_extension(output_source_file, file_format_extension) == False:
             logger.error(f"File format doesn't match")
             sys.exit()
 
         # transform csv to parquet
         parse_options = csv.ParseOptions(delimiter=self.object_default_settings.get("columns_delimiter"))
-        file_data = csv.read_csv(source_file, parse_options=parse_options)
 
-        pq_file_name = self.f_handler.replace_file_extension(source_file, '.parquet')
-        parquet_fpath = os.path.join(self.pipeline.output_object_data_dpath.format(object_name=data_object_dict.object_name), pq_file_name)
+        try:
+            logger.debug(f"Start reading the csv file: {output_source_file}")
+            file_data = csv.read_csv(output_source_file, parse_options=parse_options)
+        except pyarrow_lib.ArrowInvalid as err:
+            logger.error(f"Error {err}")
+            logger.info(f"Check that the {output_source_file} file matches the parsing options: {self.object_default_settings}")
+            sys.exit()
+
+        pq_file_name = self.f_handler.replace_file_extension(output_source_file, '.parquet')
+        parquet_fpath = os.path.join(self.pipeline.output_object_data_dpath.format(object_name=object_name), pq_file_name)
         parquet.write_table(file_data, parquet_fpath)
 
         return parquet_fpath

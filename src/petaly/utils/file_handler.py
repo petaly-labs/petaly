@@ -321,18 +321,29 @@ class FileHandler:
         :param path_to_dir:
         :return:
         """
+        logger.debug(f"The files and folders from directory:{path_to_dir} will be removed")
+        subfolders_are_not_exist = True
+        files_are_not_exist = True
         for folder_name, subfolders, filenames in os.walk(path_to_dir):
-            logger.debug('Following subfolders are removed:')
-            # clean up all subfolders in directory path
             if len(subfolders)>0:
+                subfolders_are_not_exist = False
+                # clean up all subfolders in directory path
+                logger.debug('Following subfolders are removed:')
                 for subfolder in subfolders:
                     folder_to_remove = os.path.join(folder_name, subfolder)
                     shutil.rmtree(folder_to_remove)
                     logger.debug(folder_to_remove)
             else:
                 for filename in filenames:
+                    files_are_not_exist = False
                     file_to_remove = os.path.join(folder_name, filename)
                     os.remove(file_to_remove)
+
+        if subfolders_are_not_exist:
+            logger.debug('Directory has no subfolders')
+
+        if files_are_not_exist:
+            logger.debug('Directory has no files')
 
     def copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
         """ This function copy templates file without comments to the specified pipeline
@@ -430,3 +441,20 @@ class FileHandler:
             result = True
 
         return result
+
+    def is_file_gzip(self, file_path):
+        try:
+            with open(file_path, 'rb') as test_f:
+                if test_f.read(2) == b'\x1f\x8b':
+                    return True
+                else:
+                    return False
+
+        except  OSError as err:
+            logger.error(f"The attempt to open file: {file_path} throws exception: {err}")
+
+    def add_extension(self, file_path, extension):
+        path_with_extension=file_path+extension
+        os.rename(file_path, path_with_extension)
+        return path_with_extension
+

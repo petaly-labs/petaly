@@ -14,6 +14,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
+from pprint import pprint
+
 import time
 from functools import wraps
 
@@ -37,3 +39,6 @@ class FormatDict(dict):
     """
     def __missing__(self, key):
         return '{' + str(key) + '}'
+
+def ptprint(msg):
+    pprint(msg)

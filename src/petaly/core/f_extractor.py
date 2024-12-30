@@ -20,7 +20,7 @@ from abc import ABC, abstractmethod
 import os
 import sys
 import time
-from pyarrow import csv, parquet
+from pyarrow import csv, parquet, lib as pyarrow_lib
 
 from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
@@ -219,6 +219,7 @@ class FExtractor(ABC):
         Transform the source file to parquet format to read the column data type.
         Finally, store the result of this discovery to the metadata file
         """
+
         is_file = self.f_handler.is_file(output_source_file)
         if is_file == False:
             logger.error(f"Output source file {output_source_file} doesn't exists")
@@ -230,8 +231,14 @@ class FExtractor(ABC):
 
         # transform csv to parquet
         parse_options = csv.ParseOptions(delimiter=self.object_default_settings.get("columns_delimiter"))
-        file_data = csv.read_csv(output_source_file, parse_options=parse_options)
 
+        try:
+            logger.debug(f"Start reading the csv file: {output_source_file}")
+            file_data = csv.read_csv(output_source_file, parse_options=parse_options)
+        except pyarrow_lib.ArrowInvalid as err:
+            logger.error(f"Error {err}")
+            logger.info(f"Check that the {output_source_file} file matches the parsing options: {self.object_default_settings}")
+            sys.exit()
 
         pq_file_name = self.f_handler.replace_file_extension(output_source_file, '.parquet')
         parquet_fpath = os.path.join(self.pipeline.output_object_data_dpath.format(object_name=object_name), pq_file_name)

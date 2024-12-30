@@ -136,8 +136,8 @@ class DBExtractor(ABC):
 		self.f_handler.save_file(output_extract_to_stmt_fpath, extract_to_stmt)
 
 		# 6. create output_file_path
-		output_fpath = self.get_local_output_path(object_name)
-		extractor_obj_conf.update({'output_fpath': output_fpath})
+		output_object_fpath = self.get_local_output_path(object_name)
+		extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
 
 		logger.debug(f"Config for data extract: {extractor_obj_conf}")
 		return extractor_obj_conf
@@ -147,8 +147,8 @@ class DBExtractor(ABC):
 		object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
 
 		self.f_handler.make_dirs(object_dpath)
-		output_fpath = os.path.join(object_dpath, object_name + '.csv')
-		return output_fpath
+		output_object_fpath = os.path.join(object_dpath, object_name + '.csv')
+		return output_object_fpath
 
 	def compose_meta_query(self):
 		""" Its compose a meta query by using a meta query file and adding schema, tables and column definitions
@@ -199,7 +199,6 @@ class DBExtractor(ABC):
 			column_list = ''
 
 			transformation = self.type_mapping.get_extractor_type_transformer()
-
 			col_obj = dict_obj.get('columns')
 
 			for idx, val in enumerate(col_obj):

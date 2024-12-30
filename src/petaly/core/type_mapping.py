@@ -28,30 +28,19 @@ class TypeMapping():
         """ get target-source type mapping. Return the first founded.
 
         """
-        # 1. load type_mapping from pipeline if exists and return
-        pipeline_type_mapping_fpath = os.path.join(self.pipeline.pipeline_dpath, self.m_conf.type_mapping_fname)
+        type_mapping_fpath = self.pipeline.pipeline_type_mapping_fpath.format(source_connector_id=self.pipeline.source_connector_id)
+        if not self.f_handler.is_file(type_mapping_fpath):
+            type_mapping_fpath = self.m_conf.get_type_mapping_path(self.pipeline.target_connector_id, self.pipeline.source_connector_id)
 
-        if self.f_handler.is_file(pipeline_type_mapping_fpath):
-            logger.debug(f"Load data type mapping from: {pipeline_type_mapping_fpath}")
-            type_mapping_dict = self.f_handler.load_json(pipeline_type_mapping_fpath)
-            return type_mapping_dict
+        logger.debug(f"Load data type mapping from: {type_mapping_fpath}")
+        type_mapping_dict = self.f_handler.load_json(type_mapping_fpath)
+        return type_mapping_dict
 
-        # 2. load type_mapping as configured in class_config paths
-        type_mapping_path_list = self.m_conf.get_type_mapping_paths(self.pipeline.target_connector_id)
-
-        for type_mapping_fpath in type_mapping_path_list:
-            type_mapping_fpath = type_mapping_fpath.format(source_connector_id=self.pipeline.source_connector_id)
-
-            if self.f_handler.is_file(type_mapping_fpath):
-                logger.debug(f"Load data type mapping from: {type_mapping_fpath}")
-                type_mapping_dict = self.f_handler.load_json(type_mapping_fpath)
-                return type_mapping_dict
 
     def get_extractor_type_transformer(self):
 
         extractor_type_transformer_fpath = self.m_conf.get_extractor_type_transformer_fpath(self.pipeline.source_connector_id)
         type_mapping_dict = self.f_handler.load_json(extractor_type_transformer_fpath)
-
         if self.f_handler.is_file(self.pipeline.pipeline_extract_type_transformer_fpath):
             type_mapping_dict = self.f_handler.load_json(self.pipeline.pipeline_extract_type_transformer_fpath)
         return type_mapping_dict

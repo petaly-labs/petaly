@@ -1,0 +1,8 @@
+{
+    "source_format": "",
+    "skip_leading_rows": 1,
+    "autodetect": false,
+    "max_bad_records": 0,
+    "field_delimiter": ",",
+    "quote_character": ""
+}

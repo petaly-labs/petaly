@@ -32,12 +32,12 @@ class PsqlExtractor(DBExtractor):
         return self.db_connector.get_query_result(meta_query)
 
     def extract_to(self,extractor_obj_conf):
-        output_fpath = extractor_obj_conf.get('output_fpath')
+        output_object_fpath = extractor_obj_conf.get('output_object_fpath')
         extract_to_stmt = extractor_obj_conf.get('extract_to_stmt')
-        logger.debug(f"Output file: {output_fpath}")
+        logger.debug(f"Output file: {output_object_fpath}")
         logger.debug(f"Statement to execute:\n{extract_to_stmt}")
 
-        self.db_connector.extract_to(extract_to_stmt, output_fpath)
+        self.db_connector.extract_to(extract_to_stmt, output_object_fpath)
 
     def compose_extract_options(self, extractor_obj_conf):
         "WITH (FORMAT CSV, DELIMITER ',', HEADER true, FORCE_QUOTE *, ENCODING 'UTF-8');"

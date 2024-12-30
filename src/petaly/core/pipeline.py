@@ -33,7 +33,7 @@ class Pipeline:
         self.object_metadata_fname = 'object_meta.json'
 
         self.pipeline_type_mapping_fpath = os.path.join(self.pipeline_dpath, self.m_conf.type_mapping_fname)
-        self.pipeline_extract_type_transformer_fpath = os.path.join(self.pipeline_dpath,self.m_conf.extractor_type_transformer_fname)
+        self.pipeline_extract_type_transformer_fpath = os.path.join(self.pipeline_dpath, self.m_conf.extractor_type_transformer_fname)
 
         self.output_pipeline_dpath = os.path.join(self.m_conf.output_base_dpath, pipeline_name)
         self.output_object_data_dpath = os.path.join(self.output_pipeline_dpath, '{object_name}', self.data_dname)

@@ -35,7 +35,8 @@ def setup_logging(logging_config_fpath, log_dir, logging_mode='INFO'):
         config['loggers']['petaly'].update({'level':logging_mode})
         config['root'].update({'level':logging_mode})
         config['formatters']['format_file'].update({"format":"%(asctime)s - %(name)s - %(levelname)s - %(message)s"})
-        config['formatters']['format_console'].update({"format": "%(name)s - %(message)s"})
+        #config['formatters']['format_console'].update({"format": "%(name)s - %(message)s"})
+        config['formatters']['format_console'].update({"format": "%(message)s"})
 
     log_fpath = os.path.join(log_dir, config.get('handlers').get('file').get('filename'))
     config['handlers']['file'].update({'filename': log_fpath})

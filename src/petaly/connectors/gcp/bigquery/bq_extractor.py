@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 import os
 import logging
 
-from petaly.connectors.bigquery.bq_connector import BQConnector
+from petaly.connectors.gcp.bigquery.bq_connector import BQConnector
+from petaly.connectors.gcp.gs.gs_connector import GSConnector
 from petaly.core.db_extractor import DBExtractor
 from petaly.utils.utils import FormatDict
 
@@ -26,6 +27,7 @@ from petaly.utils.utils import FormatDict
 class BQExtractor(DBExtractor):
     def __init__(self, pipeline):
         self.db_connector = BQConnector()
+        self.gs_connector = GSConnector()
 
         super().__init__(pipeline)
         self.cloud_bucket_name = self.pipeline.source_attr.get('gcp_bucket_name')
@@ -43,7 +45,7 @@ class BQExtractor(DBExtractor):
     def extract_to(self, extractor_obj_conf):
 
         object_name = extractor_obj_conf.get('object_name')
-        self.db_connector.delete_gs_folder(self.cloud_bucket_name, object_name)
+        self.gs_connector.delete_gs_folder(self.cloud_bucket_name, object_name)
 
         # run export data
         extract_to_stmt = extractor_obj_conf.get('extract_to_stmt')
@@ -53,12 +55,15 @@ class BQExtractor(DBExtractor):
 
         self.db_connector.extract_to(table_ref, destination_uri, self.cloud_region)
 
-        output_file_dir = os.path.dirname(extractor_obj_conf.get('output_fpath'))
+        output_file_dir = os.path.dirname(extractor_obj_conf.get('output_object_fpath'))
 
+        blob_prefix = (self.pipeline.pipeline_name +'/'+ object_name).strip('/')
         # download export from bucket into local folder
-        downloaded_file_list = self.db_connector.download_files_from_bucket(self.cloud_bucket_name,
-                                                     self.pipeline.pipeline_name +'/'+ object_name,
-                                                      output_file_dir)
+        downloaded_file_list = self.gs_connector.download_files_from_bucket(
+                                                    self.cloud_bucket_name,
+                                                    blob_prefix,
+                                                    specific_file_list=None,
+                                                    destination_directory=output_file_dir)
 
         logging.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
 
@@ -71,7 +76,7 @@ class BQExtractor(DBExtractor):
         table_name = extractor_obj_conf.get('source_object_name')
 
         destination_blob_name = f"{self.pipeline.pipeline_name}/{object_name}/{object_name}_*.csv"
-        destination_uri = f"{self.db_connector.bucket_prefix }{self.cloud_bucket_name}/{destination_blob_name}"
+        destination_uri = f"{self.gs_connector.bucket_prefix }{self.cloud_bucket_name}/{destination_blob_name}"
         table_ref = f"{project_id}.{dataset_id}.{table_name}"
 
         extract_to_stmt = extract_to_stmt.format_map(FormatDict(table_ref=table_ref, destination_uri=destination_uri))

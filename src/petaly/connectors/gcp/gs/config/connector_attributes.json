@@ -1,0 +1,7 @@
+{
+  "destination_blob_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Define the absolute path to your destination file directory. This directory will serve as the final destination for your extracted files."},
+  "compress_format": {"in_use":false, "preassigned_values": [null], "default_value":"gz", "key_type": "String", "key_comment": "Define the compress format for files"},
+  "object_connector_settings":
+  {}
+}
+

@@ -30,11 +30,8 @@ class MysqlLoader(DBLoader):
     def load_data(self):
         super().load_data()
 
-    def drop_table(self, table_name):
-        self.db_connector.drop_table(table_name)
-
-    def execute_sql(self, create_table_stmt):
-        self.db_connector.execute_sql(create_table_stmt)
+    #def execute_sql(self, create_table_stmt):
+    #    self.db_connector.execute_sql(create_table_stmt)
 
     def load_from(self, loader_obj_conf):
 
@@ -43,9 +40,15 @@ class MysqlLoader(DBLoader):
         output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
 
         # Unzip any compressed files that may be present.
-        self.f_handler.gunzip_all_files(output_data_object_dir)
+        self.f_handler.gunzip_csv_files(output_data_object_dir)
 
         file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv')
+
+        # 2. drop and recreate table
+        if loader_obj_conf.get('recreate_destination_object') == True:
+            self.drop_table(loader_obj_conf)
+
+        self.create_table(loader_obj_conf)
 
         #logger.debug(f"Load data to table: {object_name}")
 

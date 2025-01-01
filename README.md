@@ -24,7 +24,7 @@ Explore the documentation below:
 <br>**[4. Run the pipeline](#petaly-run-pipeline)**
 <br>**[5. Load CSV to Postgres](#petaly-load-csv-postgres-examples)** (Step-by-Step Tutorial)
 <br>**[6. Pipeline better explained](#petaly-pipeline-explained)**
-<br>**[7. More Examples](#petaly-pipeline-more-examples)**
+
 
 
 ## Tool Features
@@ -49,18 +49,30 @@ It's possible that the tool will work with other operating systems and other dat
 <a id="petaly-install"></a>
 
 ## 1. Installation
-
 Petaly can be installed using `pip` or downloaded directly from this repository.
 
 ### Install with pip
+To install the default libraries with support for all open-source endpoints, including PostgreSQL, MySQL, and CSV, use: `pip install petaly`
 ```
 $ mkdir petaly
 $ cd petaly
 $ python3 -m venv .venv
 $ source .venv/bin/activate
-$ pip3 install petaly
+$ python3 -m pip install petaly
+```
+
+#### Install with GCP
+In case GCP BigQuery or Google Cloud Storage support is required, install it using: `pip install petaly[gcp]`
 
 ```
+$  python3 -m pip install petaly[gcp]
+
+```
+
+To use your GCP resources, the first step is to install the Google Cloud SDK (gcloud) from the official webpage: [Google Cloud SDK Installation](https://cloud.google.com/sdk/docs/install-sdk)
+Follow the instructions to configure access to your Google Project, BigQuery, and GCS (bucket).
+Petaly supports access via a service account authentication key in JSON format, saved locally and configured with gcloud.
+
 ### Alternatively, download and install from GitHub
 
 ```
@@ -508,147 +520,7 @@ pipeline:
     destination_file_dir: /your-path-to-destination-folder
 ```
 
-<a id="petaly-pipeline-more-examples"></a>
-
-## 7. More Examples
-
-#### MySQL to Postgres
-
-The following example exports a table `stocks` from Mysql into PostgreSQL under the name `stocks_in_postgres`
-
-```
-pipeline:
-  pipeline_attributes:
-    pipeline_name: mysql2psql
-    is_enabled: true
-  source_attributes:
-    connector_type: mysql
-    database_user: root
-    database_password: db-password
-    database_host: localhost
-    database_port: 3306
-    database_name: petaly_tutorial
-  target_attributes:
-    connector_type: postgres
-    database_user: postgres
-    database_password: db-password
-    database_host: localhost
-    database_port: 5432
-    database_name: petalydb
-    database_schema: petaly_tutorial
-  data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
-      header: true
-      columns_delimiter: ','
-      columns_quote: double
----
-data_objects_spec:
-- object_spec:
-    object_name: stocks
-    destination_object_name: stocks_in_postgres
-    recreate_destination_object: false
-    cleanup_linebreak_in_fields: false
-    exclude_columns:
-    -
-```
-
-#### CSV to MySQL
-
-The following example create a new table and load csv file stocks.csv into Mysql database.
-
-```
-pipeline:
-  pipeline_attributes:
-    pipeline_name: csv2mysql
-    is_enabled: true
-  source_attributes:
-    connector_type: csv
-  target_attributes:
-    connector_type: mysql
-    database_user: root
-    database_password: db-password
-    database_host: localhost
-    database_port: 3306
-    database_name: petaly_tutorial
-  data_attributes:
-    use_data_objects_spec: only
-    object_default_settings:
-      header: true
-      columns_delimiter: ","
-      columns_quote: none
----
-data_objects_spec:
-- object_spec:
-    object_name: stocks
-    destination_object_name:
-    recreate_destination_object: true
-    cleanup_linebreak_in_fields: false
-    exclude_columns:
-    -
-    object_source_dir: /your-path-to-csv-folder/stocks
-    file_names:
-    - 
-- object_spec:
-    object_name: options
-    destination_object_name:
-    recreate_destination_object: true
-    cleanup_linebreak_in_fields: false
-    exclude_columns:
-    -
-    object_source_dir: /your-directory-path-to-csv-files
-    file_names:
-    - options.csv
-    - options2.csv    
-```
-
-
-#### Postgres to CSV
-
-The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_file_dir: /your-path-to-destination-folder`
-It also exclude columns ***likebroadway***, ***likemusicals*** of table **users** from export.
-
-```
-pipeline:
-  pipeline_attributes:
-    pipeline_name: psql2csv
-    is_enabled: true
-  source_attributes:
-    connector_type: postgres
-    database_user: postgres
-    database_password: db-password
-    database_host: localhost
-    database_port: 5432
-    database_name: petalydb
-    database_schema: petaly_schema
-  target_attributes:
-    connector_type: csv
-    destination_file_dir: /your-path-to-destination-folder
-  data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
-      header: true
-      columns_delimiter: ","
-      columns_quote: single
----
-data_objects_spec:
-- object_spec:
-    object_name: stocks
-    destination_object_name: stocks_as_csv
-    recreate_destination_object: true
-    cleanup_linebreak_in_fields: true
-    exclude_columns:
-    - 
-- object_spec:
-    object_name: users
-    destination_object_name: users_as_csv
-    recreate_destination_object: true
-    cleanup_linebreak_in_fields: true
-    exclude_columns:
-    - likebroadway
-    - likemusicals
-```
-
+[More Pipeline Examples](./docs/tutorial/pipeline_examples.md)
 
 ## Let's Build Together  🌱
 

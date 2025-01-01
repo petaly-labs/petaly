@@ -32,20 +32,12 @@
             "type_mapping": "petaly.connectors.gcp.bigquery.type_mapping",
             "supported_platforms": ["gcp"]
           },
-          "gcp.bucket": {
+          "gcs": {
             "connector_category": "storage",
             "connector_dpath": "petaly.connectors.gcp.gs",
             "extractor": {"module_path": "gs_extractor", "class_name": "GSExtractor"},
             "loader": {"module_path": "gs_loader", "class_name": "GSLoader"},
             "type_mapping": "petaly.connectors.gcp.gs.type_mapping",
-            "supported_platforms": ["gcp"]
-          },
-          "bigquery.old": {
-            "connector_category": "database",
-            "connector_dpath": "petaly.connectors.temp.bigquery",
-            "extractor": {"module_path": "bq_extractor", "class_name": "BQExtractor"},
-            "loader": {"module_path": "bq_loader", "class_name": "BQLoader"},
-            "type_mapping": "petaly.connectors.temp.bigquery.type_mapping",
             "supported_platforms": ["gcp"]
           }
     },

@@ -3,6 +3,9 @@
 ## [v0.0.9] - 2024-12-24
 
 ### Added
+GCP connectors added:
+- BigQuery
+- Google Storage (GS-Bucket)
 
 ### Changed
 The attribute in pipeline.yaml file: data_attributes:object_default_settings:quote_char was renamed to columns_quote
@@ -17,6 +20,8 @@ pipeline:
 ```
 
 ### Fixed
+several bug fixes
+
 
 ## [v0.0.8] - 2024-12-12
 

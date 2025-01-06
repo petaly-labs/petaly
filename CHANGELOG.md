@@ -112,7 +112,7 @@ For pipelines created with the previous version, it is recommended to rebuild al
 ### Changed
 The following pipeline parameters have been modified:
 - `endpoint_type` to `connector_type`
-- `use_data_objects_spec` to `data_objects_spec_mode`; The behaviour has also changed. New modes have been added: ***only***, ***ignore***, ***prefer***
+- `use_data_objects_spec` to `data_objects_spec_mode`; The behaviour has also changed. New modes have been added: ***only***, ***prefer***
 - Removed all unused parameters
 - Simplified the entire pipeline to make it easier to use
       

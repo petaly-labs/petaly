@@ -7,7 +7,14 @@
 Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by and for data professionals! 
 Our mission is to simplify data movement across different platforms with a tool that truly understands the needs of the data community.
 
-Designed for seamless data exchange, Petaly supports PostgreSQL, MySQL and CSV formats, with plans to expand and integrate additional open-source technologies. 
+Petaly is designed for seamless data exchange, currently supporting the following endpoints:
+
+- PostgreSQL
+- MySQL
+- BigQuery
+- Google Cloud Storage (GCS Bucket)
+- CSV files
+
 It makes connecting and transferring data across various systems effortless. Petaly is user-friendly and requires no programming knowledge. 
 Data pipelines can be easily configured using the YAML format, making the tool ready to use immediately after installation.
 

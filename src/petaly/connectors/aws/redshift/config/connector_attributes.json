@@ -1,0 +1,9 @@
+{
+  "database_user": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database user name"},
+  "database_password": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database user password"},
+  "database_host": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database hostname or IP address"},
+  "database_port": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database port"},
+  "database_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database name"},
+  "database_schema": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database schema"},
+  "object_connector_settings": {}
+}

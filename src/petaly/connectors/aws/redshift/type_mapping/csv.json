@@ -1,0 +1,8 @@
+{
+    "string": "character varying",
+    "int32": "integer",
+    "int64": "bigint",
+    "date32[day]": "date",
+    "double": "double precision",
+    "null": "character varying"
+  }

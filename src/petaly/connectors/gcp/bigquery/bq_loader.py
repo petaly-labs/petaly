@@ -51,10 +51,6 @@ class BQLoader(DBLoader):
 
         object_name = loader_obj_conf.get('object_name')
 
-        #bq_job_config = loader_obj_conf.get('load_from_stmt')
-
-        #bq_job_config_dict = self.f_handler.string_to_dict(bq_job_config)
-
         table_id = self.get_table_id(loader_obj_conf.get('table_ddl_dict'))
         output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
 

@@ -1,0 +1,4 @@
+{
+  "geometry": "ST_AsGeoJson(ST_Transform(\"{column_name}\", 4326))",
+  "": ""
+}

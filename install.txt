@@ -15,4 +15,7 @@ pip install --upgrade google-cloud-bigquery
 pip install --upgrade google-cloud-storage
 pip install --upgrade google-api-python-client oauth2client
 
+# AWS
+pip install --upgrade "redshift_connector[full]"
+
 pip3 freeze > requirements.txt

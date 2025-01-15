@@ -107,23 +107,23 @@ class BQLoader(DBLoader):
 
         self.db_connector.execute_sql(loader_obj_conf.get('table_ddl_dict').get('create_table_stmt'))
 
-    def compose_from_options(self):
+    def compose_from_options(self, loader_obj_conf):
         """
         """
         load_options = {}
 
-        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
-        columns_delimiter = object_default_settings.get("columns_delimiter")
+        object_settings = loader_obj_conf.get("object_settings")
+        columns_delimiter = object_settings.get("columns_delimiter")
 
         load_options.update({'delimiter': columns_delimiter})
         if columns_delimiter == "\t":
             load_options.update({'delimiter': '\\t'})
 
-        header = True if object_default_settings.get("header") is None or True else False
+        header = True if object_settings.get("header") is None or True else False
         load_options.update({'header': header})
 
         # 3. OPTIONALLY ENCLOSED BY
-        columns_quote = object_default_settings.get("columns_quote")
+        columns_quote = object_settings.get("columns_quote")
         quote_char = None
         if columns_quote == 'double':
             quote_char = '"'
@@ -135,7 +135,7 @@ class BQLoader(DBLoader):
 
     def compose_load_from_stmt(self, data_object, loader_obj_conf):
         """ Its compose a copy from statement """
-        load_data_options = self.compose_from_options()
+        load_data_options = self.compose_from_options(loader_obj_conf)
         bq_load_from_stmt_fpath = self.f_handler.replace_file_extension(self.connector_load_from_stmt_fpath,'.json')
         load_from_stmt = self.f_handler.load_json(bq_load_from_stmt_fpath)
 

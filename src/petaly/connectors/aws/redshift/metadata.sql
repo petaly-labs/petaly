@@ -9,14 +9,12 @@ SELECT tb.table_schema as source_schema_name,
        cl.numeric_scale as numeric_scale,
        cnst.column_name as primary_key
 FROM information_schema.tables tb
---JOIN information_schema.columns cl ON tb.table_schema = cl.table_schema AND tb.table_name = cl.table_name
 JOIN svv_columns cl ON tb.table_schema = cl.table_schema AND tb.table_name = cl.table_name
 LEFT JOIN
     (SELECT tc.table_schema, tc.table_name, cu.column_name
         FROM information_schema.table_constraints tc
         JOIN information_schema.key_column_usage cu ON tc.table_schema = cu.table_schema AND tc.table_name=cu.table_name AND tc.constraint_name=cu.constraint_name
-        WHERE tc.constraint_type ='PRIMARY KEY')
-         cnst ON tb.table_schema= cnst.table_schema AND tb.table_name=cnst.table_name AND cl.column_name=cnst.column_name
+        WHERE tc.constraint_type ='PRIMARY KEY') cnst ON tb.table_schema= cnst.table_schema AND tb.table_name=cnst.table_name AND cl.column_name=cnst.column_name
 WHERE tb.table_type in ('BASE TABLE', 'VIEW')
 AND tb.table_schema in ('{schema}')
 {table_statement_list}

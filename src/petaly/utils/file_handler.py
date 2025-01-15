@@ -237,11 +237,10 @@ class FileHandler:
 
         # iterating over all files with determine extension
         result_arr = []
-
         for files in os.listdir(dir_path):
             for file_extension in file_extensions:
                 if files.endswith(file_extension):
-                        result_arr.append(files)
+                    result_arr.append(files)
             else:
                 continue
 

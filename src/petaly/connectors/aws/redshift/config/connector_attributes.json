@@ -5,5 +5,13 @@
   "database_port": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database port"},
   "database_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database name"},
   "database_schema": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify database schema"},
-  "object_connector_settings": {}
+  "object_connector_settings":
+  {
+       "maxerror": {"in_use":false, "preassigned_values": [null], "default_value":0, "key_type": "Integer", "key_comment": ""},
+       "timeformat": {"in_use":false, "preassigned_values": [null], "default_value":"YYYY-MM-DD HH:MI:SS", "key_type": "String", "key_comment": ""},
+       "gzip": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": ""},
+       "allowoverwrite": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": ""},
+       "parallel_on": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": ""},
+       "maxfilesize": {"in_use":false, "preassigned_values": [null], "default_value":100, "key_type": "Integer", "key_comment": "In MB"}
+      }
 }

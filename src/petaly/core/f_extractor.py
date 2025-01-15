@@ -60,6 +60,7 @@ class FExtractor(ABC):
 
             extractor_obj_conf = self.get_extractor_obj_conf(object_name)
             self.extract_to(extractor_obj_conf)
+
             end_time = time.time()
             logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
 

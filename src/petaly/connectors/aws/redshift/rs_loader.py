@@ -35,7 +35,6 @@ class RSLoader(DBLoader):
     def load_from(self, loader_obj_conf):
 
         object_name = loader_obj_conf.get('object_name')
-
         # 1. cleanup object from bucket
         self.db_connector.drop_object_from_bucket(self.cloud_bucket_name, object_name)
 
@@ -81,22 +80,22 @@ class RSLoader(DBLoader):
     def compose_from_options(self, loader_obj_conf):
         """
         """
-
         load_options = ""
-        object_default_settings = loader_obj_conf.get("object_default_settings")
+        object_settings = loader_obj_conf.get("object_settings")
         load_options += "FORMAT AS CSV "
 
-        columns_delimiter = object_default_settings.get("columns_delimiter")
+        columns_delimiter = object_settings.get("columns_delimiter")
+
         if columns_delimiter == '\t':
             load_options += "DELIMITER '\\t' "
         else:
             load_options += f"DELIMITER '{columns_delimiter}' "
 
         load_options += "GZIP "
-        skip_leading_rows = 1 if object_default_settings.get("header") is None or True else 0
+        skip_leading_rows = 1 if object_settings.get("header") is None or True else 0
         load_options += f"IGNOREHEADER {skip_leading_rows} "
 
-        columns_quote = object_default_settings.get("columns_quote")
+        columns_quote = object_settings.get("columns_quote")
         if columns_quote not in ('double','single'):
             load_options += "REMOVEQUOTES "
 
@@ -104,9 +103,9 @@ class RSLoader(DBLoader):
 
     def compose_load_from_stmt(self, data_object, loader_obj_conf):
         """ Its compose a copy from statement """
-
-        load_data_options = self.compose_from_options()
+        load_data_options = self.compose_from_options(loader_obj_conf)
         load_from_stmt = self.f_handler.load_file(self.connector_load_from_stmt_fpath)
+
         table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
         schema_table_name = f"{table_ddl_dict.get('schema_name')}.{table_ddl_dict.get('table_name')}"
         column_list = '' if table_ddl_dict.get('column_list') == None else '(' + table_ddl_dict.get('column_list') + ')'
@@ -115,7 +114,6 @@ class RSLoader(DBLoader):
                                                                column_list=column_list,
                                                               iam_role=self.cloud_iam_role,
                                                               load_from_options=load_data_options))
-
         load_from_file_fpath = loader_obj_conf.get('load_from_stmt_fpath')
         self.f_handler.save_file(load_from_file_fpath, load_from_stmt)
 

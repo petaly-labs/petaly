@@ -252,3 +252,107 @@ data_objects_spec:
       - 2013-01-09stocks.csv
 
 ```
+
+#### CSV to Redshift
+
+```
+pipeline:
+  pipeline_attributes:
+    pipeline_name: csv2rs
+    is_enabled: true
+  source_attributes:
+    connector_type: csv
+  target_attributes:
+    connector_type: redshift
+    database_user: redshift-user
+    database_password: 'db-password'
+    database_host: redshift-host
+    database_port: 5439
+    database_name: dev
+    database_schema: public
+    platform_type: aws
+    aws_account: null
+    aws_region: 'eu-north-1'
+    aws_bucket_name: 'bucket-name'
+    aws_iam_role: 'arn:aws:iam::xxxxxxxx:role/YourRedshiftRole'
+  data_attributes:
+    data_objects_spec_mode: only
+    object_default_settings:
+      header: true
+      columns_delimiter: ','
+      columns_quote: double
+---
+data_objects_spec:
+- object_spec:
+    object_name: stocks
+    destination_object_name: stocks_part
+    recreate_destination_object: true
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    -
+    object_source_dir: /opt/petaly_labs/data/source_data/csv/test_data/stocks
+    file_names:
+    - 2013-01-02stocks.csv
+    - 2013-01-04stocks.csv
+    - 2013-01-08stocks.csv
+- object_spec:
+    object_name: options
+    destination_object_name:
+    recreate_destination_object: true
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    -
+    object_source_dir: /opt/petaly_labs/data/source_data/csv/test_data/options
+    file_names:
+    - 2013-01-11options.csv
+    - 2013-01-14options.csv
+
+```
+
+#### Redshift to CSV
+
+```
+pipeline:
+  pipeline_attributes:
+    pipeline_name: rs2csv
+    is_enabled: true
+  source_attributes:
+    connector_type: redshift
+    database_user: redshift-user
+    database_password: 'db-password'
+    database_host: redshift-host
+    database_port: 5437
+    database_name: dev
+    database_schema: public
+    platform_type: aws
+    aws_account: null
+    aws_region: 'eu-north-1'
+    aws_bucket_name: 'sigmaql-bucket-01'
+    aws_iam_role: 'arn:aws:iam::xxxxxxxxx:role/YourRedshiftRole'
+  target_attributes:
+    connector_type: csv
+    destination_file_dir: /opt/petaly_labs/data/dest_data
+  data_attributes:
+    data_objects_spec_mode: only
+    object_default_settings:
+      header: true
+      columns_delimiter: '\t'
+      columns_quote: none
+---
+data_objects_spec:
+- object_spec:
+    object_name: stocks
+    destination_object_name:
+    recreate_destination_object: false
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    -
+- object_spec:
+    object_name: options
+    destination_object_name:
+    recreate_destination_object: false
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    -
+
+```

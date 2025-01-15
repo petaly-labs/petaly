@@ -13,13 +13,12 @@ Petaly is designed for seamless data exchange, currently supporting the followin
 - MySQL
 - BigQuery
 - Google Cloud Storage (GCS Bucket)
+- Redshift
+- S3 Bucket
 - CSV files
 
 It makes connecting and transferring data across various systems effortless. Petaly is user-friendly and requires no programming knowledge. 
 Data pipelines can be easily configured using the YAML format, making the tool ready to use immediately after installation.
-
-## Important
-This is an Alpha version of the Petaly project!
 
 ## Getting Started
 

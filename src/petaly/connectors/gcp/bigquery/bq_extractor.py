@@ -55,7 +55,7 @@ class BQExtractor(DBExtractor):
 
         self.db_connector.extract_to(table_ref, destination_uri, self.cloud_region)
 
-        output_file_dir = os.path.dirname(extractor_obj_conf.get('output_object_fpath'))
+        output_data_object_dir = extractor_obj_conf.get('output_data_object_dir')
 
         blob_prefix = (self.pipeline.pipeline_name +'/'+ object_name).strip('/')
         # download export from bucket into local folder
@@ -63,7 +63,7 @@ class BQExtractor(DBExtractor):
                                                     self.cloud_bucket_name,
                                                     blob_prefix,
                                                     specific_file_list=None,
-                                                    destination_directory=output_file_dir)
+                                                    destination_directory=output_data_object_dir)
 
         logging.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
 

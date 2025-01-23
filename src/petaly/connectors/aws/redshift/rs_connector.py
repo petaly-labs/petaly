@@ -1,63 +1,194 @@
-import logging
+# Copyright © 2024-2025 Pavel Rabaev
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+import logging
 logger = logging.getLogger(__name__)
 
-import os, sys
-import redshift_connector
+import os
+import sys
+import time
+
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from petaly.utils.file_handler import FileHandler
 
-class RSConnector():
+class RSConnectorIAM():
 
     def __init__(self, endpoint_attr):
         """
         """
         self.connector_id = 'redshift'
         self.metaquery_quote = '"'
-        #self.pipeline = pipeline
-        self.bucket_prefix = 's3://'
-        #self.conn = self.get_connection()
+        self.endpoint_attr = endpoint_attr
+        self.aws_session = self.get_aws_session()
+        self.f_handler = FileHandler()
+        self.statement_timeout = 300
+
+    def get_aws_session(self):
+
+        aws_access_key_id = self.endpoint_attr.get('aws_access_key_id')
+        aws_secret_access_key = self.endpoint_attr.get('aws_secret_access_key')
+        aws_profile_name = self.endpoint_attr.get('aws_profile_name')
+        aws_region = self.endpoint_attr.get('aws_region')
+        try:
+
+            session = boto3.session.Session(aws_access_key_id=aws_access_key_id,
+                                            aws_secret_access_key=aws_secret_access_key,
+                                            profile_name=aws_profile_name,
+                                            region_name=aws_region)
+            return session
+
+        except ClientError as e:
+            logger.error(e)
+            sys.exit()
+
+
+    def execute_sql(self, sql, sleep_sec=1):
+        try:
+            rs_client = self.aws_session.client(service_name='redshift-data')
+            database_name = self.endpoint_attr.get('database_name')
+            database_user = self.endpoint_attr.get('database_user')
+
+            if self.endpoint_attr.get('is_serverless') == True:
+                workgroup_name = self.endpoint_attr.get('workgroup_name')
+                request_metadata = rs_client.execute_statement(
+                    WorkgroupName=workgroup_name,
+                    Database=database_name,
+                    Sql=sql,
+                )
+
+            else:
+                cluster_identifier = self.endpoint_attr.get('cluster_identifier')
+                request_metadata = rs_client.execute_statement(
+                    ClusterIdentifier=cluster_identifier,
+                    Database=database_name,
+                    DbUser=database_user,
+                    Sql=sql
+                )
+
+            if request_metadata is not None:
+                request_id = request_metadata.get('Id')
+                logger.info(f"Query with Id: {request_id} was executed:\n{sql}")
+            else:
+                logger.error(f"Unexpected Error during the execution:\n{sql}")
+                sys.exit()
+
+            last_query_status = ""
+            result = False
+            finished = False
+            result_data = None
+
+            statement_timeout = self.statement_timeout
+
+            while statement_timeout > 0 and not finished:
+                time.sleep(sleep_sec)
+                statement_timeout -= sleep_sec
+
+                statement_description = rs_client.describe_statement(Id=request_id)
+                query_status = statement_description.get('Status')
+
+                if query_status == "FINISHED":
+                    finished = True
+                    result = statement_description.get('HasResultSet')
+
+                elif query_status == "FAILED":
+                    finished = True
+                    logger.debug(f"Query {query_status}: {statement_description.get('Error')}")
+                else:
+                    if query_status != last_query_status:
+                        last_query_status = query_status
+                        logger.debug(f"The last query status is: {last_query_status}")
+
+            if not finished:
+                logger.debug(f"The query statement_timeout of {self.statement_timeout} sec is expired.")
+
+            if result:
+                result_data = rs_client.get_statement_result(Id=request_id)
+
+
+            return result_data, request_id
+
+        except ClientError as e:
+            logger.error(e)
+
+    def get_metaquery_result(self, sql):
+        """
+        """
+        result_data, request_id = self.execute_sql(sql, sleep_sec=1)
+
+        result_records = result_data.get("Records")
+        mapped_result = self.map_result_to_metaquery(result_records)
+        return mapped_result
+
+    def map_result_to_metaquery(self, result_records):
+        """
+        """
+        meta_query_structure = ['source_schema_name', 'source_object_name', 'ordinal_position', 'column_name', 'is_nullable', 'data_type', 'character_maximum_length', 'numeric_precision', 'numeric_scale', 'primary_key']
+        rec_array = []
+        for rec in result_records:
+            new_rec = {}
+
+
+            for idx in range(len(rec)):
+                value=None
+                for k, v in rec[idx].items():
+                    value=v
+                    if value is True or value is False:
+                        value=None
+                new_rec.update({meta_query_structure[idx]: value})
+            rec_array.append(new_rec)
+
+        return rec_array
+
+    def extract_to(self, extract_to_stmt):
+        """
+        """
+        result_data, request_id = self.execute_sql(extract_to_stmt, sleep_sec=5)
+        return result_data
+
+    def load_from(self, load_from_stmt):
+        """
+        """
+        result_data, request_id = self.execute_sql(load_from_stmt, sleep_sec=5)
+        return result_data
+
+    def drop_table(self, schema_table_name):
+
+        sql = f"DROP TABLE IF EXISTS {schema_table_name}"
+        result_data, request_id = self.execute_sql(sql, sleep_sec=1)
+        return result_data
+
+import redshift_connector
+
+class RSConnectorTCP():
+
+    def __init__(self, endpoint_attr):
+        """
+        """
+        self.connector_id = 'redshift'
+        self.metaquery_quote = '"'
         self.conn = self.get_connection(endpoint_attr)
         self.f_handler = FileHandler()
 
-    def get_s3_client(self, aws_access_key_id, aws_secret_access_key, region_name):
-
-        config = Config(
-            region_name=region_name,
-            client_context_params={
-                'AWS_ACCESS_KEY_ID': aws_access_key_id,
-                'AWS_SECRET_ACCESS_KEY': aws_secret_access_key
-            }
-        )
-        return boto3.client('s3', config=config)
-
-    def get_connection_dsn(selfg):
-        """
-        :return:
-        """
-        return os.getenv("RS_DSN")
-
-    def compose_connection_params(self, endpoint_attr, use_iam=False):
+    def compose_connection_params(self, endpoint_attr):
         connection_params = {"user": endpoint_attr.get('database_user'),
                              "password": endpoint_attr.get('database_password'),
                              "host": endpoint_attr.get('database_host'),
                              "port": endpoint_attr.get('database_port'),
                              "database": endpoint_attr.get('database_name')}
-
-
-        # ToDo: not in use now
-        if use_iam == True:
-            connection_params.update(
-                {   'iam': True,
-                    'cluster_identifier': 'cluster-name',
-                    'region': 'my_region',
-                    'profile': 'my_profile',
-                    'access_key_id': 'my_aws_access_key_id',
-                    'secret_access_key': 'my_aws_secret_access_key',
-                    'session_token': 'my_aws_session_token',
-                })
 
         return connection_params
     def get_connection(self, endpoint_conn_attr):
@@ -79,6 +210,12 @@ class RSConnector():
             sys.exit()
 
         return conn
+
+    def get_metaquery_result(self, sql):
+        """
+        """
+        result_data = self.get_query_result(sql)
+        return result_data
 
     def get_query_result(self, sql):
         """
@@ -139,54 +276,4 @@ class RSConnector():
             logging.info(sql)
             logging.error(error)
 
-
-    def drop_object_from_bucket(self, bucket_name, file_object_name):
-        s3_resource = boto3.resource('s3')
-        bucket = s3_resource.Bucket(bucket_name)
-        for object_summary in bucket.objects.filter(Prefix=file_object_name):
-            object_summary.delete()
-
-    def download_files_from_bucket(self, bucket_name, object_name, output_pipeline_dpath):
-
-        object_list = self.get_bucket_file_list(bucket_name, object_name)
-        s3_client = boto3.client('s3')
-
-        for object_fpath in object_list:
-            path_extensions = self.f_handler.get_file_extensions(object_fpath)
-            path_extensions.insert(0, '.csv')
-            object_path_extensions = ''.join(path_extensions)
-
-            destination_object_fpath = self.f_handler.replace_file_extension(object_fpath, object_path_extensions)
-
-            s3_client.download_file(bucket_name, object_fpath,
-                                    os.path.join(output_pipeline_dpath, destination_object_fpath))
-
-    def get_bucket_file_list(self, bucket_name, object_name):
-        try:
-            s3_resource = boto3.resource('s3')
-            bucket = s3_resource.Bucket(bucket_name)
-            object_list = []
-
-            for object_summary in bucket.objects.filter(Prefix=object_name):
-                object_list.append(object_summary.key)
-
-            return object_list
-
-        except (Exception) as error:
-            logging.info(bucket_name, object_name)
-            logging.error(error)
-
-    def load_files_to_s3_bucket(self, bucket_name, object_name, object_file_list):
-
-        try:
-
-            s3_client = boto3.client('s3')
-            for object_fpath in object_file_list:
-                bucket_path = object_name + "/" + os.path.basename(object_fpath)
-                s3_client.upload_file(object_fpath, bucket_name, bucket_path)
-                logging.info(f"Load file {object_fpath} to destination s3://{bucket_name}/{bucket_path}")
-
-        except (Exception, s3_client.exceptions) as error:
-            logging.info(bucket_name, object_name, object_file_list)
-            logging.error(error)
 

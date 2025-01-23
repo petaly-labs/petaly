@@ -33,8 +33,8 @@ class CsvExtractor(FExtractor):
         """
         """
         # cleanup pipeline directory before run
-        output_object_dpath = extractor_obj_conf.get('output_object_dpath')
-        self.f_handler.cleanup_dir(output_object_dpath)
+        output_data_object_dir = extractor_obj_conf.get('output_data_object_dir')
+        self.f_handler.cleanup_dir(output_data_object_dir)
 
         object_name = extractor_obj_conf.get('object_name')
         object_source_dir = extractor_obj_conf.get('object_source_dir')
@@ -46,12 +46,12 @@ class CsvExtractor(FExtractor):
         for file_name in file_names:
             file_source_fpath = os.path.join(object_source_dir, file_name)
             if self.f_handler.is_file(file_source_fpath):
-                self.f_handler.cp_file(file_source_fpath, output_object_dpath)
+                self.f_handler.cp_file(file_source_fpath, output_data_object_dir)
             else:
                 logger.error(f"The file: {file_source_fpath} wasn't found. Check the source and pipeline.yaml configuration.")
                 return False
 
-        first_file_fpath = os.path.join(output_object_dpath, file_names[0])
+        first_file_fpath = os.path.join(output_data_object_dir, file_names[0])
 
         logger.info(f"Check if the file {first_file_fpath} is compressed.")
         # check if file is gzip. if gzip unzip it

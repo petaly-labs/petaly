@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024 - 2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,37 +52,8 @@ class GSLoader(FLoader):
         file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv.gz')
 
         if self.load_from_bucket == True:
-            blob_prefix_dir = self.pipeline.target_attr.get('destination_blob_dir')
+            blob_prefix_dir = self.pipeline.target_attr.get('destination_prefix_path')
             bucket_file_list = self.load_files_to_gs(file_list, self.cloud_bucket_name, blob_prefix_dir, object_name)
-
-
-    def deprecated_cleanup_cloud(self):
-        """ function to recursively search for files named object_metadata.yaml in the pipeline's output directory.
-        """
-
-        dir_files = self.f_handler.get_specific_files(self.pipeline.output_pipeline_dpath, self.pipeline.object_metadata_fname)
-
-        for file in dir_files:
-            # Conduct Paths and Names
-            self.gs_connector.delete_gs_folder(self.cloud_bucket_name, file)
-
-        self.f_connector.delete_gs_folder(self.cloud_bucket_name, self.pipeline.pipeline_name)
-
-    def deprecated_load_file_to_gs(self, file_local_fpath, cloud_bucket_name, object_name ):
-        """ upload file to GS bucket
-        """
-
-        file_name = os.path.basename(file_local_fpath)
-
-        blob_prefix_dir = cloud_bucket_name
-        if blob_prefix_dir is None:
-            blob_prefix_dir = ''
-
-        blob_dir = blob_prefix_dir + '/'+ self.pipeline.pipeline_name + "/" + object_name
-
-        blob_path = blob_dir + "/" + file_name
-        self.gs_connector.upload_blob(file_local_fpath, cloud_bucket_name, blob_path)
-        return self.cloud_bucket_path + blob_path
 
     def load_files_to_gs(self, local_file_list, cloud_bucket_name, blob_prefix_dir, object_name):
         """ upload file to GS bucket

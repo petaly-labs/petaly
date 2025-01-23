@@ -106,7 +106,7 @@ class CliMenu():
 
         exclude_key_list = [None]
         if connector_category in ('file','storage') and endpoint_attributes_name == 'source_attributes':
-            exclude_key_list = ['destination_file_dir', 'destination_blob_dir']
+            exclude_key_list = ['destination_file_dir', 'destination_prefix_path']
 
         assigned_connector_attributes = self.assign_attributes(connector_attributes, exclude_key_list=exclude_key_list, predefined_values=None)
         self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)
@@ -193,13 +193,18 @@ class CliMenu():
                         assigned_attributes.update({key: assigned_value})
                         continue
 
+
                 # 2. define default and preassigned_values
                 preassigned_values = value.get('preassigned_values')
                 default_value =  None if value.get('default_value') is None else value.get('default_value')
                 preassigned_values = None if preassigned_values[0] is None else preassigned_values
                 assigned_value = default_value
 
-                # 3. compose key comment and default value
+                # 3. check dependency
+                if not self.include_based_on_dependency(assigned_attributes, value.get('dependency')):
+                    continue
+
+                # 4. compose key comment and default value
                 console_message = "\n"
 
                 console_message += f"{value.get('key_comment')}"
@@ -239,3 +244,17 @@ class CliMenu():
                 assigned_attributes.update({key: assigned_value})
 
         return assigned_attributes
+
+    def include_based_on_dependency(self, assigned_attributes, dependency_dict):
+
+        include = True
+        if dependency_dict is None or dependency_dict == {}:
+            return include
+
+        for key, value in dependency_dict.items():
+            if assigned_attributes.get(key) == value:
+                include = True
+            else:
+                return False
+
+        return include

@@ -225,7 +225,7 @@ pipeline:
     connector_type: csv
   target_attributes:
     connector_type: gcs
-    destination_blob_dir: abcd/test
+    destination_prefix_path: abcd/test
     compress_format: gz
     platform_type: gcp
     gcp_project_id: 'my-project

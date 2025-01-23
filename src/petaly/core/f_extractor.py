@@ -72,10 +72,13 @@ class FExtractor(ABC):
         extractor_obj_conf = {'object_name': object_name}
 
         # 1. compose output data dir
+        output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
+
+
+        # 2. compose metadata directory
         output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
         extractor_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
-
-        # 2. get and compose metadata query
         #metadata_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
         #table_metadata = self.f_handler.load_file_as_dict(metadata_fpath, 'json')
         #extract_queries_dict = self.compose_extract_queries(table_metadata)
@@ -99,13 +102,13 @@ class FExtractor(ABC):
         logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
         extractor_obj_conf.update({'object_settings': data_object.object_settings})
 
-        # 6. create output object dir and output_file_path
-        output_object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-        extractor_obj_conf.update({'output_object_dpath': output_object_dpath})
+        # 6. create output object data dir and output_file_path
+        output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
 
-        self.f_handler.make_dirs(output_object_dpath)
+        self.f_handler.make_dirs(output_data_object_dir)
 
-        output_object_fpath = os.path.join(output_object_dpath, object_name + '.csv')
+        output_object_fpath = os.path.join(output_data_object_dir, object_name + '.csv')
         extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
 
         logger.debug(f"Config for data extract: {extractor_obj_conf}")

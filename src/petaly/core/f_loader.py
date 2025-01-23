@@ -53,7 +53,6 @@ class FLoader(ABC):
 
             loader_obj_conf = {}
             loader_obj_conf.update({'object_name': object_name})
-
             output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
             loader_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
 

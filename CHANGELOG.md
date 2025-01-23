@@ -1,5 +1,20 @@
 # ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
 
+
+## [v0.0.10] - 2025-02-05
+
+### Added
+AWS connectors added:
+- Redshift Connectors:
+  - Cluster IAM + TCP
+  - Serverless IAM + TCP
+- AWS S3-Bucket
+
+### Changed
+The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `destination_prefix_path`
+
+### Fixed
+
 ## [v0.0.9] - 2024-12-24
 
 ### Added

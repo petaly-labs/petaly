@@ -54,9 +54,9 @@ class RSExtractor(DBExtractor):
         extract_to_stmt = extractor_obj_conf.get('extract_to_stmt')
         logging.info(f"Statement to execute:{extract_to_stmt}")
 
-        blob_prefix = (self.pipeline.pipeline_name).strip('/')
+        blob_prefix = (self.pipeline.pipeline_name + '/' + object_name).strip('/')
         # cleanup object from s3 bucket
-        self.s3_connector.drop_object_from_bucket(self.cloud_bucket_name, blob_prefix, object_name)
+        self.s3_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
 
         # export data into s3 bucket
         self.db_connector.extract_to(extract_to_stmt)
@@ -64,7 +64,10 @@ class RSExtractor(DBExtractor):
         # download export from s3 into local folder
         output_data_object_dir=extractor_obj_conf.get('output_data_object_dir')
 
-        self.s3_connector.download_object_from_bucket(self.cloud_bucket_name, blob_prefix, object_name, output_data_object_dir)
+        self.s3_connector.download_files_from_bucket(self.cloud_bucket_name,
+                                                      blob_prefix,
+                                                      file_names=None,
+                                                      destination_dpath=output_data_object_dir)
 
     def compose_extract_to_stmt(self, extract_to_stmt, extractor_obj_conf) -> dict:
         """ Its save copy statement into file

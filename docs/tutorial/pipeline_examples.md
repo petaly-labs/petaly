@@ -95,7 +95,7 @@ data_objects_spec:
 
 #### Postgres to CSV
 
-The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_file_dir: /your-path-to-destination-folder`
+The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_dir: /your-path-to-destination-folder`
 It also exclude columns ***likebroadway***, ***likemusicals*** of table **users** from export.
 
 ```
@@ -113,7 +113,7 @@ pipeline:
     database_schema: petaly_schema
   target_attributes:
     connector_type: csv
-    destination_file_dir: /your-path-to-destination-folder
+    destination_dir: /your-path-to-destination-folder
   data_attributes:
     data_objects_spec_mode: only
     object_default_settings:
@@ -158,7 +158,7 @@ pipeline:
     gcp_bucket_name: 'bucket-name'
   target_attributes:
     connector_type: csv
-    destination_file_dir: /opt/petaly_labs/data/dest_data/
+    destination_dir: /opt/petaly_labs/data/dest_data/
   data_attributes:
     data_objects_spec_mode: only
     object_default_settings:
@@ -225,7 +225,7 @@ pipeline:
     connector_type: csv
   target_attributes:
     connector_type: gcs
-    destination_prefix_path: abcd/test
+    destination_path_prefix: abcd/test
     compress_format: gz
     platform_type: gcp
     gcp_project_id: 'my-project
@@ -331,7 +331,7 @@ pipeline:
     aws_iam_role: 'arn:aws:iam::xxxxxxxxx:role/YourRedshiftRole'
   target_attributes:
     connector_type: csv
-    destination_file_dir: /opt/petaly_labs/data/dest_data
+    destination_dir: /opt/petaly_labs/data/dest_data
   data_attributes:
     data_objects_spec_mode: only
     object_default_settings:

@@ -21,7 +21,7 @@ import logging
 from petaly.connectors.gcp.gs.gs_connector import GSConnector
 from petaly.core.f_extractor import FExtractor
 from petaly.utils.file_handler import FileHandler
-from petaly.utils.utils import FormatDict
+
 
 class GSExtractor(FExtractor):
     def __init__(self, pipeline):
@@ -37,24 +37,13 @@ class GSExtractor(FExtractor):
         super().extract_data()
 
     def extract_to(self, extractor_obj_conf):
-
-        output_data_object_dir = extractor_obj_conf.get('output_data_object_dir')
-        self.f_handler.cleanup_dir(output_data_object_dir)
-
-        object_source_dir = extractor_obj_conf.get('object_source_dir')
-        blob_prefix = object_source_dir.strip('/')
-        file_names = extractor_obj_conf.get('file_names')
-
-        file_names_full_path = []
-        for file_name in file_names:
-            file_names_full_path.append(f"{blob_prefix}/{file_name}")
-
-        # download export from bucket into local folder
+        """ Download export from bucket into local folder
+        """
         downloaded_file_list = self.gs_connector.download_files_from_bucket(
-                                                    self.cloud_bucket_name,
-                                                    blob_prefix,
-                                                    specific_file_list=file_names_full_path,
-                                                    destination_directory=output_data_object_dir)
+                                                    bucket_name=self.cloud_bucket_name,
+                                                    blob_prefix=extractor_obj_conf.get('blob_prefix'),
+                                                    file_names=extractor_obj_conf.get('file_names'),
+                                                    destination_dpath=extractor_obj_conf.get('output_data_object_dir'))
 
         logging.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
 

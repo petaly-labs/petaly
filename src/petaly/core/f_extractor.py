@@ -75,14 +75,9 @@ class FExtractor(ABC):
         output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
         extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
 
-
         # 2. compose metadata directory
         output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
         extractor_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
-        #metadata_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
-        #table_metadata = self.f_handler.load_file_as_dict(metadata_fpath, 'json')
-        #extract_queries_dict = self.compose_extract_queries(table_metadata)
-        #extractor_obj_conf.update(extract_queries_dict)
 
         # 3. add object_default_settings
         # extractor_obj_conf.update({'object_settings': table_metadata.get('object_settings')})
@@ -97,7 +92,13 @@ class FExtractor(ABC):
             sys.exit()
 
         extractor_obj_conf.update({'object_source_dir': data_object.object_source_dir})
-        extractor_obj_conf.update({'file_names': data_object.file_names})
+        extractor_obj_conf.update({'blob_prefix': data_object.object_source_dir.strip('/')})
+
+        file_names = data_object.file_names
+        if len(file_names) == 0 or file_names[0] is None:
+            file_names = None
+
+        extractor_obj_conf.update({'file_names': file_names})
 
         logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
         extractor_obj_conf.update({'object_settings': data_object.object_settings})
@@ -106,6 +107,7 @@ class FExtractor(ABC):
         output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
         extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
 
+        self.f_handler.cleanup_dir(output_data_object_dir)
         self.f_handler.make_dirs(output_data_object_dir)
 
         output_object_fpath = os.path.join(output_data_object_dir, object_name + '.csv')
@@ -113,13 +115,6 @@ class FExtractor(ABC):
 
         logger.debug(f"Config for data extract: {extractor_obj_conf}")
         return extractor_obj_conf
-
-    def deprecated_get_local_output_path(self, object_name):
-
-        object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-        self.f_handler.make_dirs(object_dpath)
-        output_object_fpath = os.path.join(object_dpath, object_name + '.csv')
-        return output_object_fpath
 
     def save_metadata_into_file(self,meta_table):
         """ Its save a table result as a metadata into file
@@ -252,3 +247,4 @@ class FExtractor(ABC):
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)
+

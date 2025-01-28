@@ -20,7 +20,6 @@ import sys
 from petaly.utils.utils import FormatDict
 from petaly.core.db_loader import DBLoader
 
-#from petaly.connectors.aws.redshift.rs_connector import RSConnector
 from petaly.connectors.aws.redshift.rs_connector import RSConnectorIAM, RSConnectorTCP
 from petaly.connectors.aws.s3.s3_connector import S3Connector
 
@@ -32,7 +31,7 @@ class RSLoader(DBLoader):
 
         if pipeline.target_attr.get('connection_method') == 'iam':
             self.db_connector = RSConnectorIAM(pipeline.target_attr)
-            self.s3_connector = S3Connector(pipeline.source_attr, self.db_connector.aws_session)
+            self.s3_connector = S3Connector(pipeline.source_attr, aws_session=self.db_connector.aws_session)
         elif pipeline.target_attr.get('connection_method') == 'tcp':
             self.db_connector = RSConnectorTCP(pipeline.target_attr)
             self.s3_connector = S3Connector(pipeline.source_attr, aws_session=None)
@@ -40,8 +39,8 @@ class RSLoader(DBLoader):
             logger.error(f"The connection_method: {pipeline.source_attr.get('connection_method')} is not supported for AWS load.")
             sys.exit()
 
-
         super().__init__(pipeline)
+
         self.cloud_bucket_name = self.pipeline.target_attr.get('aws_bucket_name')
         self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name
         self.aws_iam_role = self.pipeline.target_attr.get('aws_iam_role')
@@ -68,7 +67,7 @@ class RSLoader(DBLoader):
         object_name = loader_obj_conf.get('object_name')
         blob_prefix = (self.pipeline.pipeline_name + '/' + object_name).strip('/')
         # 1. cleanup object from bucket
-        self.s3_connector.drop_object_from_bucket(self.cloud_bucket_name, blob_prefix, object_name)
+        self.s3_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
 
         # 2. drop and recreate table
         if loader_obj_conf.get('recreate_destination_object') == True:
@@ -79,10 +78,11 @@ class RSLoader(DBLoader):
 
         self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
 
-        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv.gz')
+        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv*')
 
-        self.s3_connector.load_files_to_s3_bucket(self.cloud_bucket_name, blob_prefix, object_name, file_list)
-        s3_file_list = self.s3_connector.get_bucket_file_list(self.cloud_bucket_name, blob_prefix, object_name)
+        self.s3_connector.load_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
+
+        s3_file_list = self.s3_connector.get_bucket_file_list(self.cloud_bucket_name, blob_prefix)
         load_from_stmt = loader_obj_conf.get('load_from_stmt')
 
         for data_fpath in s3_file_list:
@@ -151,5 +151,5 @@ class RSLoader(DBLoader):
 
         return load_from_stmt
 
-    def cleanup_object_relations(self, blob_prefix, object_name):
-        self.s3_connector.drop_object_from_bucket(self.cloud_bucket_name, blob_prefix, object_name)
+    def deprecated_cleanup_object_relations(self, blob_prefix):
+        self.s3_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)

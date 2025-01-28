@@ -59,11 +59,11 @@ class BQLoader(DBLoader):
         self.create_table(loader_obj_conf)
 
         self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
-        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv.gz')
-
+        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv*')
         if self.load_from_bucket == True:
-            self.gs_connector.delete_gs_folder(self.cloud_bucket_name, self.pipeline.pipeline_name + '/' + object_name)
-            bucket_file_list = self.load_files_to_gs(file_list, self.cloud_bucket_name, self.pipeline.pipeline_name, object_name)
+            blob_prefix = self.pipeline.pipeline_name + '/' + object_name
+            self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
+            bucket_file_list = self.gs_connector.load_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
 
             if len(bucket_file_list) > 0:
                 file_list = bucket_file_list
@@ -157,21 +157,3 @@ class BQLoader(DBLoader):
         self.f_handler.save_dict_to_json(load_from_file_fpath, load_from_stmt)
 
         return load_from_stmt
-
-    def load_files_to_gs(self, local_file_list, cloud_bucket_name, pipeline_name, object_name):
-        """ upload file to GS bucket
-        """
-        bucket_file_list = []
-        for file_local_fpath in local_file_list:
-            file_name = os.path.basename(file_local_fpath)
-
-            blob_path = pipeline_name + '/' + object_name + '/' + file_name
-            self.gs_connector.upload_blob(file_local_fpath, cloud_bucket_name, blob_path)
-
-            full_blob_path = self.gs_connector.bucket_prefix + cloud_bucket_name + '/' + blob_path
-
-            bucket_file_list.append(full_blob_path)
-
-            logging.debug(f"File upload: {full_blob_path}")
-
-        return bucket_file_list

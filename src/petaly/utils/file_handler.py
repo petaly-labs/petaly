@@ -213,24 +213,6 @@ class FileHandler:
         if not os.path.isdir(path_to_dir):
             os.makedirs(path_to_dir)
 
-    def deprecated_get_all_dir_files(self, dir_path, file_extension, file_names_only=False):
-        """
-        """
-
-        # iterating over all files with determine extension
-        result_arr = []
-
-        for files in os.listdir(dir_path):
-            if files.endswith(file_extension):
-                if file_names_only == False:
-                    result_arr.append(os.path.join(dir_path,files))
-                else:
-                    result_arr.append(files)
-            else:
-                continue
-
-        return result_arr
-
     def get_file_names_with_extensions(self, dir_path, *file_extensions):
         """
         """
@@ -450,10 +432,15 @@ class FileHandler:
                     return False
 
         except  OSError as err:
-            logger.error(f"The attempt to open file: {file_path} throws exception: {err}")
+            logger.warning(f"The attempt to open file: {file_path} throws exception: {err}")
 
     def add_extension(self, file_path, extension):
         path_with_extension=file_path+extension
         os.rename(file_path, path_with_extension)
         return path_with_extension
+
+    def remove_file(self, file_path):
+        os.remove(file_path)
+        logger.debug(f"File : {file_path} was removed")
+
 

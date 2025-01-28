@@ -33,17 +33,10 @@ class DBLoader(ABC):
         self.composer = Composer()
         self.m_conf = pipeline.m_conf
         self.object_metadata = ObjectMetadata(pipeline)
-
         self.type_mapping = TypeMapping(self.pipeline)
-
         if self.m_conf.set_loader_paths(self.pipeline.target_connector_id):
             self.connector_load_from_stmt_fpath = self.m_conf.connector_load_from_stmt_fpath
             self.connector_create_table_stmt_fpath = self.m_conf.connector_create_table_stmt_fpath
-
-
-    #@abstractmethod
-    #def execute_sql(self, create_table_stmt):
-    #    pass
 
     @abstractmethod
     def load_from(self, object_load_conf):
@@ -74,12 +67,7 @@ class DBLoader(ABC):
             # 1. compose loader_obj_conf
             loader_obj_conf = self.get_loader_obj_conf(object_name)
 
-            ## 2. drop and recreate table relocated to connector loader
-            #if loader_obj_conf.get('recreate_destination_object') == True:
-            #    self.drop_table(loader_obj_conf)
-            #self.create_table(loader_obj_conf)
-
-            # 3. load data into table
+            # 2. load data into table
             self.load_from(loader_obj_conf)
 
             end_time = time.time()

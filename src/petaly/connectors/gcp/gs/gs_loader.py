@@ -15,12 +15,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import os
-import logging
-
 from petaly.utils.file_handler import FileHandler
 from petaly.core.f_loader import FLoader
-from petaly.utils.utils import FormatDict
 from petaly.connectors.gcp.gs.gs_connector import GSConnector
 
 
@@ -31,48 +27,17 @@ class GSLoader(FLoader):
 
         super().__init__(pipeline)
         self.cloud_bucket_name = self.pipeline.target_attr.get('gcp_bucket_name')
-        self.cloud_project_id = self.pipeline.target_attr.get('gcp_project_id')
-        self.cloud_region = self.pipeline.target_attr.get('gcp_region')
-        #self.cloud_service_account = self.pipeline.target_attr.get('gcp_service_account')
-
         self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
         self.load_from_bucket = False if self.cloud_bucket_name is None else True
+        self.cloud_region = self.pipeline.target_attr.get('gcp_region')
+        self.cloud_project_id = self.pipeline.target_attr.get('gcp_project_id')
 
     def load_data(self):
-        super().load_data()
+        super().load_data(file_to_gzip=True)
 
     def load_from(self, loader_obj_conf):
-
-        object_name = loader_obj_conf.get('object_name')
-
-        self.gs_connector.delete_gs_folder(self.cloud_bucket_name, object_name)
-
-        output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
-        self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
-        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv.gz')
-
-        if self.load_from_bucket == True:
-            blob_prefix_dir = self.pipeline.target_attr.get('destination_prefix_path')
-            bucket_file_list = self.load_files_to_gs(file_list, self.cloud_bucket_name, blob_prefix_dir, object_name)
-
-    def load_files_to_gs(self, local_file_list, cloud_bucket_name, blob_prefix_dir, object_name):
-        """ upload file to GS bucket
+        """ Load files to bucket
         """
-        bucket_file_list = []
-        for file_local_fpath in local_file_list:
-            file_name = os.path.basename(file_local_fpath)
+        self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix') )
+        self.gs_connector.load_files_to_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'),loader_obj_conf.get('file_list') )
 
-            if blob_prefix_dir is None:
-                blob_prefix_dir = ''
-
-            blob_prefix_dir = blob_prefix_dir.strip('/')
-
-            blob_path = blob_prefix_dir + '/' + object_name + '/' + file_name
-            self.gs_connector.upload_blob(file_local_fpath, cloud_bucket_name, blob_path)
-
-            full_blob_path = self.gs_connector.bucket_prefix + cloud_bucket_name + '/' + blob_path
-            bucket_file_list.append(self.gs_connector.bucket_prefix + cloud_bucket_name + '/' + blob_path)
-
-            logging.debug(f"File upload: {full_blob_path}")
-
-        return bucket_file_list

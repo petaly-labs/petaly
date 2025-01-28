@@ -515,7 +515,7 @@ Alternatively, to load specific files from `object_source_dir` set:
 The target file format is specified through connector_type: csv.
 
 The initial data is loaded into the output folder defined in the petaly.ini file. 
-The destination_file_dir defines the final directory after download the data in the output folder first.
+The destination_dir defines the final directory after download the data in the output folder first.
 
 
 ```
@@ -523,7 +523,7 @@ pipeline:
   ....
   target_attributes:
     connector_type: csv
-    destination_file_dir: /your-path-to-destination-folder
+    destination_dir: /your-path-to-destination-folder
 ```
 
 [More Pipeline Examples](./docs/tutorial/pipeline_examples.md)

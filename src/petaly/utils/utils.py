@@ -37,7 +37,3 @@ class FormatDict(dict):
     def __missing__(self, key):
         return '{' + str(key) + '}'
 
-def petprint(msg):
-    from pprint import pprint
-
-    pprint(msg)

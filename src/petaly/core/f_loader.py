@@ -35,7 +35,7 @@ class FLoader(ABC):
     def load_from(self, loader_obj_conf):
         pass
 
-    def load_data(self):
+    def load_data(self, file_to_gzip=False):
 
         logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
         start_total_time = time.time()
@@ -61,6 +61,21 @@ class FLoader(ABC):
 
             output_load_from_stmt_fpath = self.pipeline.output_load_from_stmt_fpath.format(object_name=object_name)
             loader_obj_conf.update({'load_from_stmt_fpath': output_load_from_stmt_fpath})
+
+            if file_to_gzip:
+                self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
+
+            file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.*')
+            loader_obj_conf.update({'file_list': file_list})
+
+            destination_path_prefix = self.pipeline.target_attr.get('destination_path_prefix')
+            if destination_path_prefix is not None and destination_path_prefix != '':
+                blob_prefix = destination_path_prefix + '/'
+            else:
+                blob_prefix = ''
+            blob_prefix += self.pipeline.pipeline_name + '/' + object_name
+
+            loader_obj_conf.update({'blob_prefix': blob_prefix})
 
             self.load_from(loader_obj_conf)
 

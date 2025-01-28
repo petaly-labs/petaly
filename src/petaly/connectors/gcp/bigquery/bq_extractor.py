@@ -45,7 +45,6 @@ class BQExtractor(DBExtractor):
     def extract_to(self, extractor_obj_conf):
 
         object_name = extractor_obj_conf.get('object_name')
-        self.gs_connector.delete_gs_folder(self.cloud_bucket_name, object_name)
 
         # run export data
         extract_to_stmt = extractor_obj_conf.get('extract_to_stmt')
@@ -57,13 +56,15 @@ class BQExtractor(DBExtractor):
 
         output_data_object_dir = extractor_obj_conf.get('output_data_object_dir')
 
-        blob_prefix = (self.pipeline.pipeline_name +'/'+ object_name).strip('/')
+        blob_prefix = (self.pipeline.pipeline_name + '/' + object_name).strip('/')
+        self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
+
         # download export from bucket into local folder
         downloaded_file_list = self.gs_connector.download_files_from_bucket(
                                                     self.cloud_bucket_name,
                                                     blob_prefix,
                                                     specific_file_list=None,
-                                                    destination_directory=output_data_object_dir)
+                                                    destination_dpath=output_data_object_dir)
 
         logging.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
 

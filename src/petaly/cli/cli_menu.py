@@ -106,7 +106,7 @@ class CliMenu():
 
         exclude_key_list = [None]
         if connector_category in ('file','storage') and endpoint_attributes_name == 'source_attributes':
-            exclude_key_list = ['destination_file_dir', 'destination_prefix_path']
+            exclude_key_list = ['destination_dir', 'destination_path_prefix']
 
         assigned_connector_attributes = self.assign_attributes(connector_attributes, exclude_key_list=exclude_key_list, predefined_values=None)
         self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)
@@ -152,7 +152,7 @@ class CliMenu():
         connector_category = self.m_conf.get_connector_category(pipeline.source_attr.get('connector_type'))
 
         # exclude params for file load (csv, etc..)
-        if connector_category not in ('file','storage'):
+        if connector_category in ('database'):
             exclude_key_list.append('object_source_dir')
             exclude_key_list.append('file_names')
 
@@ -192,7 +192,6 @@ class CliMenu():
                         assigned_value = predefined_values.get(key)
                         assigned_attributes.update({key: assigned_value})
                         continue
-
 
                 # 2. define default and preassigned_values
                 preassigned_values = value.get('preassigned_values')

@@ -67,6 +67,7 @@ class MainCtl():
         """
         logger.debug("Load target config")
         class_obj = self.m_conf.get_loader_class(pipe.target_connector_id)
+        logger.debug(f"Load class: {class_obj}")
         # run loader
         if class_obj is not None:
             loader = class_obj(pipe)

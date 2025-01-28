@@ -11,7 +11,9 @@ AWS connectors added:
 - AWS S3-Bucket
 
 ### Changed
-The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `destination_prefix_path`
+The attribute in pipeline.yaml file: `destination_file_dir` was renamed to `destination_dir`
+The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `destination_path_prefix`
+
 
 ### Fixed
 

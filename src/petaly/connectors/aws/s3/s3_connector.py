@@ -28,6 +28,7 @@ class S3Connector():
         self.connector_id = 's3'
         self.metaquery_quote = '"'
         self.bucket_prefix = 's3://'
+        self.bucket_path_delimiter = '/'
         self.endpoint_attr = endpoint_attr
 
         if aws_session is None:
@@ -57,75 +58,81 @@ class S3Connector():
 
     def get_s3_client(self):
         return self.aws_session.client(service_name='s3')
-    def drop_object_from_bucket(self, bucket_name, blob_prefix, object_name):
+
+    def delete_object_in_bucket(self, bucket_name, blob_prefix):
         s3_resource = boto3.resource('s3')
         bucket = s3_resource.Bucket(bucket_name)
 
-        if blob_prefix is not None:
-            object_name = blob_prefix + '/' + object_name
-
-        for object_summary in bucket.objects.filter(Prefix=object_name):
+        for object_summary in bucket.objects.filter(Prefix=blob_prefix):
             object_summary.delete()
 
-    def download_object_from_bucket(self, bucket_name, blob_prefix, object_name, destination_dpath):
+    def download_files_from_bucket(self, bucket_name, blob_prefix, file_names, destination_dpath):
+        logger.debug(
+            f"Download files from bucket-name: {bucket_name}; blob-prefix: {blob_prefix}; file-names: {file_names}; destination-directory: {destination_dpath}")
 
-        logging.debug(
-            f"Download files from bucket-name: {bucket_name}; blob-prefix: {blob_prefix}; object-name: {object_name}; destination-directory: {destination_dpath}")
-
-        object_list = self.get_bucket_file_list(bucket_name, blob_prefix, object_name)
+        object_list = []
+        if file_names is None:
+            object_list = self.get_bucket_file_list(bucket_name, blob_prefix)
+        else:
+            for file_name in file_names:
+                file_name = blob_prefix + self.bucket_path_delimiter + file_name
+                object_list.append(file_name)
 
         s3_client = self.get_s3_client()
+        downloaded_file_list = []
 
         for object_fpath in object_list:
-            object_fname = object_fpath.split('/')[-1]
-            s3_client.download_file(bucket_name, object_fpath, os.path.join(destination_dpath, object_fname))
+            object_fname = object_fpath.split(self.bucket_path_delimiter)[-1]
+            target_fpath = os.path.join(destination_dpath, object_fname)
 
-    def download_files_from_bucket(self, bucket_name, file_names, destination_directory):
+            if not self.f_handler.check_file_extension(target_fpath, '.gz'):
+                if self.f_handler.is_file_gzip(target_fpath):
+                    target_fpath += '.gz'
 
-        logging.debug(
-            f"Download files from bucket-name: {bucket_name}; file-names: {file_names}; destination-directory: {destination_directory}")
+            s3_client.download_file(bucket_name, object_fpath, target_fpath)
 
-        s3_client = self.get_s3_client()
+            downloaded_file_list.append(target_fpath)
+            logger.debug(f"Download file from {self.bucket_prefix + bucket_name + self.bucket_path_delimiter + object_fpath} to output directory: {target_fpath}")
 
-        for file_path in file_names:
-            fname = file_path.split('/')[-1]
-            s3_client.download_file(bucket_name, file_path, os.path.join(destination_directory, fname))
+        return downloaded_file_list
 
-    def get_bucket_file_list(self, bucket_name, blob_prefix, object_name):
+    def get_bucket_file_list(self, bucket_name, blob_prefix):
         try:
             s3_resource = boto3.resource('s3')
             bucket = s3_resource.Bucket(bucket_name)
-            if blob_prefix is not None:
-                object_name = blob_prefix + '/' + object_name
 
             object_list = []
-
-            for object_summary in bucket.objects.filter(Prefix=object_name):
+            for object_summary in bucket.objects.filter(Prefix=blob_prefix):
                 object_list.append(object_summary.key)
 
             return object_list
 
         except (Exception) as error:
-            logger.info(bucket_name, object_name)
+            logger.info(bucket_name, blob_prefix)
             logger.error(error)
 
-    def load_files_to_s3_bucket(self, bucket_name, blob_prefix, object_name, object_file_list):
+    def load_files_to_bucket(self, bucket_name, blob_prefix, object_file_list):
 
         try:
-            if blob_prefix is not None:
-                object_name = blob_prefix + '/' + object_name
-
             s3_client = boto3.client('s3')
             for object_fpath in object_file_list:
-                # to add pipeline_name
-
-                bucket_fpath = object_name + "/" + os.path.basename(object_fpath)
+                bucket_fpath = blob_prefix + self.bucket_path_delimiter + os.path.basename(object_fpath)
 
                 s3_client.upload_file(object_fpath, bucket_name, bucket_fpath)
-                logging.info(f"Load file {object_fpath} to destination s3://{bucket_name}/{bucket_fpath}")
+                logger.debug(f"Upload file {object_fpath} to destination s3://{bucket_name}/{bucket_fpath}")
 
         except (Exception, s3_client.exceptions, S3UploadFailedError) as error:
-            logger.error("Upload failed for: ",bucket_name, object_name, object_file_list)
+            logger.error("Upload failed for: ",bucket_name, blob_prefix, object_file_list)
             logger.error(error)
 
+    def deprecated_load_files_to_s3(self, bucket_name, blob_prefix, local_file_list):
+        """ upload file to S3 bucket
+        """
+        file_list = []
+
+        for file_local_fpath in local_file_list:
+            file_list.append(file_local_fpath)
+
+        logger.debug(f"Upload files to S3; Bucket: {bucket_name}, Prefix: {blob_prefix}, File-List: {file_list}")
+        #self.s3_connector.load_files_to_bucket(bucket_name, blob_prefix, file_list)
 

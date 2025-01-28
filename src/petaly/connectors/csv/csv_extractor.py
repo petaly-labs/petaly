@@ -40,7 +40,7 @@ class CsvExtractor(FExtractor):
         object_source_dir = extractor_obj_conf.get('object_source_dir')
         file_names = extractor_obj_conf.get('file_names')
 
-        if len(file_names) == 0 or file_names[0] is None:
+        if file_names is None:
             file_names = self.f_handler.get_file_names_with_extensions(object_source_dir, self.file_format)
 
         for file_name in file_names:
@@ -53,7 +53,7 @@ class CsvExtractor(FExtractor):
 
         first_file_fpath = os.path.join(output_data_object_dir, file_names[0])
 
-        logger.info(f"Check if the file {first_file_fpath} is compressed.")
+        logger.debug(f"Check if the file {first_file_fpath} is compressed.")
         # check if file is gzip. if gzip unzip it
         if self.f_handler.is_file_gzip(first_file_fpath):
             if not self.f_handler.check_file_extension(first_file_fpath, '.gz'):
@@ -65,5 +65,7 @@ class CsvExtractor(FExtractor):
 
         meta_table = self.compose_metadata_file(parquet_fpath, object_name)
         self.save_metadata_into_file(meta_table)
-
         # self.describe_parquet_metadata(parquet_fpath)
+
+        # remove temp parquet file
+        self.f_handler.remove_file(parquet_fpath)

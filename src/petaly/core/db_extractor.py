@@ -147,14 +147,6 @@ class DBExtractor(ABC):
 		logger.debug(f"Config for data extract: {extractor_obj_conf}")
 		return extractor_obj_conf
 
-	def deprecated_get_local_output_path(self, object_name):
-
-		object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-
-		self.f_handler.make_dirs(object_dpath)
-		output_object_fpath = os.path.join(object_dpath, object_name + '.csv')
-		return output_object_fpath
-
 	def compose_meta_query(self):
 		""" Its compose a meta query by using a meta query file and adding schema, tables and column definitions
 

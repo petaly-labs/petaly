@@ -98,14 +98,6 @@ class Pipeline:
         pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)
         return pipeline_all_obj
 
-    def deprecated_get_data_objects(self):
-        data_objects = []
-        if self.data_objects is not None:
-            if self.data_objects[0] is not None:
-                data_objects = self.data_objects
-
-        return data_objects
-
     def get_object_default_settings(self):
         """
         """

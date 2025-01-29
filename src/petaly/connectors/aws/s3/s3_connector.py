@@ -39,17 +39,14 @@ class S3Connector():
         self.f_handler = FileHandler()
 
     def get_aws_session(self):
-
-        aws_access_key_id = self.endpoint_attr.get('aws_access_key_id')
-        aws_secret_access_key = self.endpoint_attr.get('aws_secret_access_key')
-        aws_profile_name = self.endpoint_attr.get('aws_profile_name')
-        aws_region = self.endpoint_attr.get('aws_region')
+        """
+        """
         try:
 
-            session = boto3.session.Session(aws_access_key_id=aws_access_key_id,
-                                            aws_secret_access_key=aws_secret_access_key,
-                                            profile_name=aws_profile_name,
-                                            region_name=aws_region)
+            session = boto3.session.Session(aws_access_key_id=self.endpoint_attr.get('aws_access_key_id'),
+                                            aws_secret_access_key=self.endpoint_attr.get('aws_secret_access_key'),
+                                            profile_name=self.endpoint_attr.get('aws_profile_name'),
+                                            region_name=self.endpoint_attr.get('aws_region'))
             return session
 
         except ClientError as e:
@@ -124,15 +121,3 @@ class S3Connector():
         except (Exception, s3_client.exceptions, S3UploadFailedError) as error:
             logger.error("Upload failed for: ",bucket_name, blob_prefix, object_file_list)
             logger.error(error)
-
-    def deprecated_load_files_to_s3(self, bucket_name, blob_prefix, local_file_list):
-        """ upload file to S3 bucket
-        """
-        file_list = []
-
-        for file_local_fpath in local_file_list:
-            file_list.append(file_local_fpath)
-
-        logger.debug(f"Upload files to S3; Bucket: {bucket_name}, Prefix: {blob_prefix}, File-List: {file_list}")
-        #self.s3_connector.load_files_to_bucket(bucket_name, blob_prefix, file_list)
-

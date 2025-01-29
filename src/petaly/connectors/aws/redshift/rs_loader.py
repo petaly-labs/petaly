@@ -151,5 +151,3 @@ class RSLoader(DBLoader):
 
         return load_from_stmt
 
-    def deprecated_cleanup_object_relations(self, blob_prefix):
-        self.s3_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)

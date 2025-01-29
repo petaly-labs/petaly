@@ -36,25 +36,22 @@ class RSConnectorIAM():
         self.aws_session = self.get_aws_session()
         self.f_handler = FileHandler()
         self.statement_timeout = 300
+        self.is_serverless = True if str(self.endpoint_attr.get('is_serverless')).lower() == 'true' else False
 
     def get_aws_session(self):
-
-        aws_access_key_id = self.endpoint_attr.get('aws_access_key_id')
-        aws_secret_access_key = self.endpoint_attr.get('aws_secret_access_key')
-        aws_profile_name = self.endpoint_attr.get('aws_profile_name')
-        aws_region = self.endpoint_attr.get('aws_region')
+        """
+        """
         try:
-
-            session = boto3.session.Session(aws_access_key_id=aws_access_key_id,
-                                            aws_secret_access_key=aws_secret_access_key,
-                                            profile_name=aws_profile_name,
-                                            region_name=aws_region)
+            session = boto3.session.Session(aws_access_key_id=self.endpoint_attr.get('aws_access_key_id'),
+                                            aws_secret_access_key=self.endpoint_attr.get('aws_secret_access_key'),
+                                            profile_name=self.endpoint_attr.get('aws_profile_name'),
+                                            region_name=self.endpoint_attr.get('aws_region')
+                                            )
             return session
 
         except ClientError as e:
             logger.error(e)
             sys.exit()
-
 
     def execute_sql(self, sql, sleep_sec=1):
         try:
@@ -62,7 +59,7 @@ class RSConnectorIAM():
             database_name = self.endpoint_attr.get('database_name')
             database_user = self.endpoint_attr.get('database_user')
 
-            if self.endpoint_attr.get('is_serverless') == True:
+            if self.is_serverless is True:
                 workgroup_name = self.endpoint_attr.get('workgroup_name')
                 request_metadata = rs_client.execute_statement(
                     WorkgroupName=workgroup_name,
@@ -98,6 +95,7 @@ class RSConnectorIAM():
                 statement_timeout -= sleep_sec
 
                 statement_description = rs_client.describe_statement(Id=request_id)
+
                 query_status = statement_description.get('Status')
 
                 if query_status == "FINISHED":
@@ -106,7 +104,8 @@ class RSConnectorIAM():
 
                 elif query_status == "FAILED":
                     finished = True
-                    logger.debug(f"Query {query_status}: {statement_description.get('Error')}")
+                    logger.error(f"Query {query_status}: {statement_description.get('Error')}")
+
                 else:
                     if query_status != last_query_status:
                         last_query_status = query_status
@@ -171,6 +170,8 @@ class RSConnectorIAM():
         result_data, request_id = self.execute_sql(sql, sleep_sec=1)
         return result_data
 
+### --------------------------------------------------------------- ###
+
 import redshift_connector
 
 class RSConnectorTCP():
@@ -193,10 +194,8 @@ class RSConnectorTCP():
         return connection_params
     def get_connection(self, endpoint_conn_attr):
         """
-
         :return:
         """
-
         connection_params = self.compose_connection_params(endpoint_conn_attr)
 
         try:

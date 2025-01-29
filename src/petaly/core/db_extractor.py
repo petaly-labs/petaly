@@ -130,6 +130,9 @@ class DBExtractor(ABC):
 		extract_to_stmt = self.compose_extract_to_stmt(extract_to_stmt, extractor_obj_conf)
 		extractor_obj_conf.update({'extract_to_stmt': extract_to_stmt})
 
+		# blob-prefix, used for storage in cloud services (e.g. Redshift (s3), Bigquery (GCS))
+		extractor_obj_conf.update({'blob_prefix': (self.pipeline.pipeline_name + '/' + object_name).strip('/')})
+
 		# 5.  save extract_to_stmt under output_extract_to_file_fpath
 		output_extract_to_stmt_fpath = self.pipeline.output_extract_to_stmt_fpath.format(object_name=object_name)
 		extractor_obj_conf.update({'extract_to_stmt_fpath': output_extract_to_stmt_fpath})

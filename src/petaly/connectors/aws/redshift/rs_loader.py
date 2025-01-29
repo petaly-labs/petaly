@@ -86,7 +86,7 @@ class RSLoader(DBLoader):
         load_from_stmt = loader_obj_conf.get('load_from_stmt')
 
         for data_fpath in s3_file_list:
-            path_to_data_file = self.cloud_bucket_path + '/' + self.pipeline.pipeline_name + '/' + data_fpath
+            path_to_data_file = self.cloud_bucket_path + '/' + data_fpath
             load_from_stmt = load_from_stmt.format_map(
                 FormatDict(path_to_data_file=path_to_data_file))
 

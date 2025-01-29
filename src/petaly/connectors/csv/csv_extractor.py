@@ -54,10 +54,11 @@ class CsvExtractor(FExtractor):
         first_file_fpath = os.path.join(output_data_object_dir, file_names[0])
 
         logger.debug(f"Check if the file {first_file_fpath} is compressed.")
-        # check if file is gzip. if gzip unzip it
-        if self.f_handler.is_file_gzip(first_file_fpath):
-            if not self.f_handler.check_file_extension(first_file_fpath, '.gz'):
-                first_file_fpath = self.f_handler.add_extension(first_file_fpath,'.gz')
+
+        # check if file is gzipped. if gzipped try to unzip it
+        is_gzipped, first_file_fpath = self.f_handler.check_gzip_modify_path(first_file_fpath)
+
+        if is_gzipped:
             first_file_fpath = self.f_handler.gunzip_file(first_file_fpath, cleanup_file=True)
 
         # analyse file structure

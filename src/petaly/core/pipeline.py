@@ -64,7 +64,7 @@ class Pipeline:
             sys.exit()
 
         # PIPELINE ATTRIBUTE
-        self.is_enabled = pipeline_attr.get('is_enabled')
+        self.is_enabled = True if str(pipeline_attr.get('is_enabled')).lower() == 'true' else False
 
         if self.is_enabled != True:
             logger.warning(f"The pipeline: {pipeline_name} is disabled. To enable pipeline {self.pipeline_dpath} set the parameter is_enabled: true ")

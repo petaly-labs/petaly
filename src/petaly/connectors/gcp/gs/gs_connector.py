@@ -33,9 +33,6 @@ class GSConnector():
         self.bucket_path_delimiter = '/'
         pass
 
-
-
-
     def rename_blob(self, bucket_name, blob_file_name, new_blob_name = None):
         """ Function renamed blob by giving time sequence suffix in millisecond.
 
@@ -95,7 +92,6 @@ class GSConnector():
         try:
             storage_client = storage.Client()
             bucket = storage_client.get_bucket(bucket_name)
-
             object_list = []
             if file_names is None:
                 object_list = self.get_bucket_file_list(bucket_name, blob_prefix)
@@ -111,15 +107,15 @@ class GSConnector():
                 object_fname = blob_fpath.split(self.bucket_path_delimiter)[-1]
 
                 target_fpath = os.path.join(destination_dpath, object_fname)
-                if not self.f_handler.check_file_extension(target_fpath, '.gz'):
-                    if self.f_handler.is_file_gzip(target_fpath):
-                        target_fpath += '.gz'
+
 
                 blob.download_to_filename(filename=target_fpath)
-                downloaded_file_list.append(target_fpath)
+                is_gzipped, target_fpath = self.f_handler.check_gzip_modify_path(target_fpath)
 
+                downloaded_file_list.append(target_fpath)
+                message_gzipped = 'gzipped ' if is_gzipped else ' '
                 logger.debug(
-                    f"Download file fromm {self.bucket_prefix + bucket_name + self.bucket_path_delimiter + blob_fpath} to output directory: {target_fpath}")
+                    f"Download {message_gzipped}file fromm {self.bucket_prefix + bucket_name + self.bucket_path_delimiter + blob_fpath} to output directory: {target_fpath}")
 
             return downloaded_file_list
 

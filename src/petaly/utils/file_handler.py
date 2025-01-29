@@ -326,7 +326,7 @@ class FileHandler:
         if files_are_not_exist:
             logger.debug('Directory has no files')
 
-    def copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
+    def deprecated_copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
         """ This function copy templates file without comments to the specified pipeline
         """
         target_file = open(path_to_target_file, 'w')
@@ -443,4 +443,16 @@ class FileHandler:
         os.remove(file_path)
         logger.debug(f"File : {file_path} was removed")
 
+    def check_gzip_modify_path(self, file_path):
+        """ Add .gz extension if file is gzipped compressed and missing .gz extension
+        """
+        is_gzipped = False
+        gz_fpath = file_path
 
+        if self.is_file_gzip(file_path):
+            is_gzipped = True
+            if not self.check_file_extension(file_path, '.gz'):
+                gz_fpath = file_path + '.gz'
+                os.rename(file_path, gz_fpath)
+
+        return is_gzipped, gz_fpath

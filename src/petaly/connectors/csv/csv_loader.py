@@ -34,7 +34,6 @@ class CsvLoader(FLoader):
 
         object_name = loader_obj_conf.get('object_name')
 
-        #output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
         output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
         data_object = super().get_data_object(object_name)
 
@@ -66,15 +65,18 @@ class CsvLoader(FLoader):
             file_list = loader_obj_conf.get('file_list')
 
             for file_path in file_list:
-                logger.debug(f"File path: {file_path}")
-                file_name = os.path.basename(file_path)
-                # Rename file if destination_object_name is different from object_name
+                if '.csv' in self.f_handler.get_file_extensions(file_path):
+                    file_name = os.path.basename(file_path)
+                    # Rename file if destination_object_name is different from object_name
 
-                dest_file_name = file_name.replace(object_name, dest_object_name)
-                logger.debug(f"Load: Upload performed to destination directory, file path: {os.path.join(dest_file_dpath, dest_file_name)}")
-                self.f_handler.cp_file(file_path, dest_file_dpath, target_file_name=dest_file_name)
+                    dest_file_name = file_name.replace(object_name, dest_object_name)
+
+                    self.f_handler.cp_file(file_path, dest_file_dpath, target_file_name=dest_file_name)
+                    logger.debug(f"Load: File {file_path} from output directory is copied to: {os.path.join(dest_file_dpath, dest_file_name)}")
+                else:
+                    logger.warning(
+                        f"Load: The extension .csv is missing in the file: {file_path}")
 
         else:
             logger.error(f"Load object {object_name} failed. Check the source and pipeline.yaml configuration. "
                          f"Output directory doesn't exist or is empty: {output_data_object_dir}")
-

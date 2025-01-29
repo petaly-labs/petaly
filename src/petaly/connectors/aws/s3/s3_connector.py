@@ -57,6 +57,8 @@ class S3Connector():
         return self.aws_session.client(service_name='s3')
 
     def delete_object_in_bucket(self, bucket_name, blob_prefix):
+        """
+        """
         s3_resource = boto3.resource('s3')
         bucket = s3_resource.Bucket(bucket_name)
 
@@ -64,8 +66,9 @@ class S3Connector():
             object_summary.delete()
 
     def download_files_from_bucket(self, bucket_name, blob_prefix, file_names, destination_dpath):
-        logger.debug(
-            f"Download files from bucket-name: {bucket_name}; blob-prefix: {blob_prefix}; file-names: {file_names}; destination-directory: {destination_dpath}")
+        """
+        """
+        logger.debug(f"Download files from bucket-name: {bucket_name}; blob-prefix: {blob_prefix}; file-names: {file_names}; destination-directory: {destination_dpath}")
 
         object_list = []
         if file_names is None:
@@ -82,14 +85,13 @@ class S3Connector():
             object_fname = object_fpath.split(self.bucket_path_delimiter)[-1]
             target_fpath = os.path.join(destination_dpath, object_fname)
 
-            if not self.f_handler.check_file_extension(target_fpath, '.gz'):
-                if self.f_handler.is_file_gzip(target_fpath):
-                    target_fpath += '.gz'
-
             s3_client.download_file(bucket_name, object_fpath, target_fpath)
+            is_gzipped, target_fpath = self.f_handler.check_gzip_modify_path(target_fpath)
 
             downloaded_file_list.append(target_fpath)
-            logger.debug(f"Download file from {self.bucket_prefix + bucket_name + self.bucket_path_delimiter + object_fpath} to output directory: {target_fpath}")
+
+            message_gzipped = 'gzipped ' if is_gzipped else ' '
+            logger.debug(f"Download {message_gzipped}file from {self.bucket_prefix + bucket_name + self.bucket_path_delimiter + object_fpath} to output directory: {target_fpath}")
 
         return downloaded_file_list
 

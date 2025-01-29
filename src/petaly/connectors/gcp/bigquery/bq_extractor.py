@@ -51,19 +51,19 @@ class BQExtractor(DBExtractor):
         extract_to_dict = self.f_handler.string_to_dict(extract_to_stmt)
         table_ref = extract_to_dict.get('table_ref')
         destination_uri = extract_to_dict.get('destination_uri')
-
-        self.db_connector.extract_to(table_ref, destination_uri, self.cloud_region)
-
         output_data_object_dir = extractor_obj_conf.get('output_data_object_dir')
+        blob_prefix = extractor_obj_conf.get('blob_prefix')
 
-        blob_prefix = (self.pipeline.pipeline_name + '/' + object_name).strip('/')
+        # cleanup object from GCS bucket
         self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
 
-        # download export from bucket into local folder
+        # extract data into GCS bucket
+        self.db_connector.extract_to(table_ref, destination_uri, self.cloud_region)
+        # download files from bucket into local folder
         downloaded_file_list = self.gs_connector.download_files_from_bucket(
-                                                    self.cloud_bucket_name,
-                                                    blob_prefix,
-                                                    specific_file_list=None,
+                                                    bucket_name=self.cloud_bucket_name,
+                                                    blob_prefix=blob_prefix,
+                                                    file_names=None,
                                                     destination_dpath=output_data_object_dir)
 
         logging.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")

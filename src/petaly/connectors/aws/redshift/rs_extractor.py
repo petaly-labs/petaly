@@ -54,18 +54,18 @@ class RSExtractor(DBExtractor):
         extract_to_stmt = extractor_obj_conf.get('extract_to_stmt')
         logging.info(f"Statement to execute:{extract_to_stmt}")
 
-        blob_prefix = (self.pipeline.pipeline_name + '/' + object_name).strip('/')
+        blob_prefix = extractor_obj_conf.get('blob_prefix')
         # cleanup object from s3 bucket
         self.s3_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
 
-        # export data into s3 bucket
+        # extract data into s3 bucket
         self.db_connector.extract_to(extract_to_stmt)
 
-        # download export from s3 into local folder
+        # download files from bucket into local folder
         output_data_object_dir=extractor_obj_conf.get('output_data_object_dir')
 
-        self.s3_connector.download_files_from_bucket(self.cloud_bucket_name,
-                                                      blob_prefix,
+        self.s3_connector.download_files_from_bucket(bucket_name=self.cloud_bucket_name,
+                                                      blob_prefix=blob_prefix,
                                                       file_names=None,
                                                       destination_dpath=output_data_object_dir)
 

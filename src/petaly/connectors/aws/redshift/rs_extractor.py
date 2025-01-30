@@ -51,7 +51,7 @@ class RSExtractor(DBExtractor):
     def extract_to(self, extractor_obj_conf):
         object_name = extractor_obj_conf.get('object_name')
         extract_to_stmt = extractor_obj_conf.get('extract_to_stmt')
-        logging.info(f"Statement to execute:{extract_to_stmt}")
+        logger.debug(f"Statement to execute:{extract_to_stmt}")
 
         blob_prefix = extractor_obj_conf.get('blob_prefix')
         # cleanup object from s3 bucket

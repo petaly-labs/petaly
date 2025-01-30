@@ -59,9 +59,6 @@ class CsvLoader(FLoader):
             logger.debug(f"Output file dir: {output_data_object_dir}")
             logger.info(f"Load object: {object_name} destination directory: {dest_file_dpath}")
 
-            # lists file with .csv extension, also files ends with .csv.gz. The logic can be improved.
-            #file_list = self.f_handler.get_file_names_with_extensions(output_data_object_dir, self.file_format,  '.gz')
-
             file_list = loader_obj_conf.get('file_list')
 
             for file_path in file_list:

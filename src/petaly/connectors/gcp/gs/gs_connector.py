@@ -135,7 +135,7 @@ class GSConnector():
             return object_list
 
         except (Exception) as error:
-            logger.info(bucket_name, blob_prefix)
+            logger.debug(bucket_name, blob_prefix)
             logger.error(error)
 
     def upload_blob(self, full_fpath, bucket_name, destination_blob_name):

@@ -75,7 +75,7 @@ class CsvLoader(FLoader):
                     logger.debug(f"Load: File {file_path} from output directory is copied to: {os.path.join(dest_file_dpath, dest_file_name)}")
                 else:
                     logger.warning(
-                        f"Load: The extension .csv is missing in the file: {file_path}")
+                        f"Load: The extension .csv is missing. The file: {file_path}  was not moved to the destination directory {dest_file_dpath}")
 
         else:
             logger.error(f"Load object {object_name} failed. Check the source and pipeline.yaml configuration. "

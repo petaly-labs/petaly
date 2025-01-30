@@ -204,8 +204,8 @@ class RSConnectorTCP():
             conn.autocommit = True
 
         except (Exception, redshift_connector.DatabaseError) as error:
-            logging.info(connection_params)
-            logging.error(error)
+            logger.debug(connection_params)
+            logger.error(error)
             sys.exit()
 
         return conn
@@ -224,12 +224,12 @@ class RSConnectorTCP():
                 cur.execute(sql)
                 df = cur.fetch_dataframe()
                 rows = df.to_dict('records')
-                logging.info(f"Found {cur.rowcount} rows in query.")
+                logger.debug(f"Found {cur.rowcount} rows in query.")
                 return rows
 
         except (Exception, redshift_connector.DatabaseError) as error:
-            logging.info(sql)
-            logging.error(error)
+            logger.debug(sql)
+            logger.error(error)
             sys.exit()
 
     def extract_to(self, extract_to_stmt):
@@ -240,8 +240,8 @@ class RSConnectorTCP():
                 cur.execute(extract_to_stmt)
 
         except (Exception, redshift_connector.DatabaseError) as error:
-            logging.info(extract_to_stmt)
-            logging.error(error)
+            logger.debug(extract_to_stmt)
+            logger.error(error)
             sys.exit()
 
     def load_from(self, load_from_stmt):
@@ -251,8 +251,8 @@ class RSConnectorTCP():
             with self.conn.cursor() as cur:
                 cur.execute(load_from_stmt)
         except (Exception, redshift_connector.DatabaseError) as error:
-            logging.info('\n'+load_from_stmt)
-            logging.error(error)
+            logger.debug('\n'+load_from_stmt)
+            logger.error(error)
             sys.exit()
 
 
@@ -261,18 +261,18 @@ class RSConnectorTCP():
             sql = f"DROP TABLE IF EXISTS {schema_table_name}"
             with self.conn.cursor() as cur:
                 cur.execute(sql)  # Make an API request.
-            logging.info(f"Table {schema_table_name} was dropped.")
+            logger.debug(f"Table {schema_table_name} was dropped.")
         except (Exception, redshift_connector.DatabaseError) as error:
-            logging.info(sql)
-            logging.error(error)
+            logger.debug(sql)
+            logger.error(error)
 
     def execute_sql(self, sql):
         try:
             with self.conn.cursor() as cur:
                 cur.execute(sql)  # Make an API request.
-            logging.info(f"Query executed:\n{sql}")
+            logger.debug(f"Query executed:\n{sql}")
         except (Exception, redshift_connector.DatabaseError) as error:
-            logging.info(sql)
-            logging.error(error)
+            logger.debug(sql)
+            logger.error(error)
 
 

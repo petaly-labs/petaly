@@ -16,7 +16,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 import sys
-import os
 from petaly.core.db_extractor import DBExtractor
 from petaly.utils.utils import FormatDict
 

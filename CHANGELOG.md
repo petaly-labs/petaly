@@ -4,18 +4,18 @@
 ## [v0.0.10] - 2025-02-05
 
 ### Added
-AWS connectors added:
-- Redshift Connectors:
-  - Cluster IAM + TCP
-  - Serverless IAM + TCP
-- AWS S3-Bucket
+
+New connectors were added Redshift Connectors:
+  - Redshift Cluster over IAM using iam credentials as well as over TCP using host and port
+  - Redshift Serverless over IAM using iam credentials as well as over TCP using host and port
+  - AWS S3-Bucket connections
 
 ### Changed
 The attribute in pipeline.yaml file: `destination_file_dir` was renamed to `destination_dir`
 The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `destination_path_prefix`
 
-
 ### Fixed
+bug fixed
 
 ## [v0.0.9] - 2024-12-24
 

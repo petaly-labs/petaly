@@ -253,28 +253,31 @@ data_objects_spec:
 
 ```
 
-#### CSV to Redshift
+### AWS Redshift Cluster and Redshift Serverless
 
+#### CSV to Redshift Cluster over IAM
 ```
 pipeline:
   pipeline_attributes:
-    pipeline_name: csv2rs
+    pipeline_name: csv2rs_cluster_iam
     is_enabled: true
   source_attributes:
     connector_type: csv
   target_attributes:
     connector_type: redshift
-    database_user: redshift-user
-    database_password: 'db-password'
-    database_host: redshift-host
-    database_port: 5439
+    connection_method: iam
+    is_serverless: 'false'
+    cluster_identifier: rs-cluster
+    database_user: awsuser
     database_name: dev
-    database_schema: public
+    database_schema: schema-name
     platform_type: aws
-    aws_account: null
-    aws_region: 'eu-north-1'
     aws_bucket_name: 'bucket-name'
-    aws_iam_role: 'arn:aws:iam::xxxxxxxx:role/YourRedshiftRole'
+    aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
+    aws_profile_name: 'your-aws-profile'
+    aws_access_key_id:
+    aws_secret_access_key:
+    aws_region:
   data_attributes:
     data_objects_spec_mode: only
     object_default_settings:
@@ -285,31 +288,82 @@ pipeline:
 data_objects_spec:
 - object_spec:
     object_name: stocks
-    destination_object_name: stocks_part
-    recreate_destination_object: true
+    destination_object_name:
+    recreate_destination_object: false
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
     object_source_dir: /opt/petaly_labs/data/source_data/csv/test_data/stocks
     file_names:
-    - 2013-01-02stocks.csv
-    - 2013-01-04stocks.csv
-    - 2013-01-08stocks.csv
-- object_spec:
-    object_name: options
-    destination_object_name:
-    recreate_destination_object: true
-    cleanup_linebreak_in_fields: false
-    exclude_columns:
     -
-    object_source_dir: /opt/petaly_labs/data/source_data/csv/test_data/options
-    file_names:
-    - 2013-01-11options.csv
-    - 2013-01-14options.csv
+
+```
+#### CSV to Redshift Serverless over IAM
+Target-Attribute
+```
+  target_attributes:
+    connector_type: redshift
+    connection_method: 'iam'
+    is_serverless: true
+    cluster_identifier: 'default-workgroup'
+    database_user: awsuser
+    database_name: dev
+    database_schema: your-schema
+    workgroup_name: 'default-workgroup'
+    platform_type: aws
+    aws_region: 'eu-north-1'
+    aws_bucket_name: 'your-bucket'
+    aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
+    aws_profile_name: 'your-aws-profile'
+    aws_access_key_id:
+    aws_secret_access_key:
+
+```
+#### CSV to Redshift Cluster over tcp
+Target-Attribute
+```
+  target_attributes:
+    connector_type: redshift
+    connection_method: tcp
+    database_user: awsuser
+    database_password: 'db-password'
+    database_host: redshift-host
+    database_port: 5439
+    database_name: dev
+    database_schema: public
+    platform_type: aws
+    aws_bucket_name: 'bucket-name'
+    aws_iam_role: 'arn:aws:iam::xxxxxxxx:role/YourRedshiftRole'
+    aws_profile_name: 'your-aws-profile'
+    aws_access_key_id:
+    aws_secret_access_key:
+    aws_region: 'eu-north-1'
 
 ```
 
-#### Redshift to CSV
+#### CSV to Redshift Serverless over IAM 
+Target-Attribute
+
+``` 
+  target_attributes:
+    connector_type: redshift
+    connection_method: 'iam'
+    is_serverless: true
+    cluster_identifier: 'default-workgroup'
+    database_user: 'awsuser'
+    database_name: dev
+    database_schema: your-schema
+    workgroup_name: 'default-workgroup'
+    platform_type: aws
+    aws_region: 'eu-north-1'
+    aws_bucket_name: 'your-bucket'
+    aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
+    aws_profile_name: 'your-aws-profile'
+    aws_access_key_id:
+    aws_secret_access_key:
+
+```
+#### Redshift Serverless over iam to CSV
 
 ```
 pipeline:
@@ -318,17 +372,20 @@ pipeline:
     is_enabled: true
   source_attributes:
     connector_type: redshift
-    database_user: redshift-user
-    database_password: 'db-password'
-    database_host: redshift-host
-    database_port: 5437
+    connection_method: 'iam'
+    is_serverless: true
+    cluster_identifier: 'default-workgroup'
+    database_user: 'awsuser'
     database_name: dev
-    database_schema: public
+    database_schema: your-schema
+    workgroup_name: 'default-workgroup'
     platform_type: aws
-    aws_account: null
     aws_region: 'eu-north-1'
-    aws_bucket_name: 'sigmaql-bucket-01'
-    aws_iam_role: 'arn:aws:iam::xxxxxxxxx:role/YourRedshiftRole'
+    aws_bucket_name: 'your-bucket'
+    aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
+    aws_profile_name: 'your-aws-profile'
+    aws_access_key_id:
+    aws_secret_access_key:
   target_attributes:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data
@@ -342,13 +399,6 @@ pipeline:
 data_objects_spec:
 - object_spec:
     object_name: stocks
-    destination_object_name:
-    recreate_destination_object: false
-    cleanup_linebreak_in_fields: false
-    exclude_columns:
-    -
-- object_spec:
-    object_name: options
     destination_object_name:
     recreate_destination_object: false
     cleanup_linebreak_in_fields: false

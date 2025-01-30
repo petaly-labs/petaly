@@ -78,7 +78,7 @@ class RSConnectorIAM():
 
             if request_metadata is not None:
                 request_id = request_metadata.get('Id')
-                logger.info(f"Query with Id: {request_id} was executed:\n{sql}")
+                logger.debug(f"Query with Id: {request_id} was executed:\n{sql}")
             else:
                 logger.error(f"Unexpected Error during the execution:\n{sql}")
                 sys.exit()

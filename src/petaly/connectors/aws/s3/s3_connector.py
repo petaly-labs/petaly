@@ -107,7 +107,7 @@ class S3Connector():
             return object_list
 
         except (Exception) as error:
-            logger.info(bucket_name, blob_prefix)
+            logger.debug(bucket_name, blob_prefix)
             logger.error(error)
 
     def load_files_to_bucket(self, bucket_name, blob_prefix, object_file_list):
@@ -121,5 +121,5 @@ class S3Connector():
                 logger.debug(f"Upload file {object_fpath} to destination s3://{bucket_name}/{bucket_fpath}")
 
         except (Exception, s3_client.exceptions, S3UploadFailedError) as error:
-            logger.error("Upload failed for: ",bucket_name, blob_prefix, object_file_list)
+            logger.debug("Upload failed for: ",bucket_name, blob_prefix, object_file_list)
             logger.error(error)

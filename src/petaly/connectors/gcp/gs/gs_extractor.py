@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
 
 import logging
 logger = logging.getLogger(__name__)
-
-import os
-import logging
 
 from petaly.connectors.gcp.gs.gs_connector import GSConnector
 from petaly.core.f_extractor import FExtractor
@@ -45,6 +42,6 @@ class GSExtractor(FExtractor):
                                                     file_names=extractor_obj_conf.get('file_names'),
                                                     destination_dpath=extractor_obj_conf.get('output_data_object_dir'))
 
-        logging.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
+        logger.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
 
 

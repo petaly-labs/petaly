@@ -1,4 +1,4 @@
-# Copyright © 2024 - 2025 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,5 +39,5 @@ class GSLoader(FLoader):
         """ Load files to bucket
         """
         self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix') )
-        self.gs_connector.load_files_to_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'),loader_obj_conf.get('file_list') )
+        self.gs_connector.upload_files_to_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'),loader_obj_conf.get('file_list') )
 

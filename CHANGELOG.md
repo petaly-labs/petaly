@@ -12,7 +12,7 @@ New connectors were added Redshift Connectors:
 
 ### Changed
 The attribute in pipeline.yaml file: `destination_file_dir` was renamed to `destination_dir`
-The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `destination_path_prefix`
+The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `bucket_object_prefix`
 
 ### Fixed
 bug fixed

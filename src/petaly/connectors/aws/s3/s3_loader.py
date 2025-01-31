@@ -15,7 +15,6 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import os
 from petaly.utils.file_handler import FileHandler
 from petaly.core.f_loader import FLoader
 from petaly.connectors.aws.s3.s3_connector import S3Connector
@@ -37,4 +36,4 @@ class S3Loader(FLoader):
         """ Load files to bucket
         """
         self.s3_connector.delete_object_in_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'))
-        self.s3_connector.load_files_to_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'), loader_obj_conf.get('file_list'))
+        self.s3_connector.upload_files_to_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'), loader_obj_conf.get('file_list'))

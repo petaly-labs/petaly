@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -108,6 +108,11 @@ class DBLoader(ABC):
 
         load_from_stmt = self.compose_load_from_stmt(data_object, loader_obj_conf)
         loader_obj_conf.update({'load_from_stmt': load_from_stmt})
+
+        blob_prefix = self.composer.compose_bucket_object_prefix(self.pipeline.target_attr.get('bucket_object_prefix'),
+                                                                 self.pipeline.pipeline_name,
+                                                                 object_name)
+        loader_obj_conf.update({'blob_prefix': blob_prefix})
 
         return loader_obj_conf
 

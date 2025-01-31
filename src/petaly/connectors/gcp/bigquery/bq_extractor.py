@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
 
 import logging
 logger = logging.getLogger(__name__)
-
-import os
-import logging
 
 from petaly.connectors.gcp.bigquery.bq_connector import BQConnector
 from petaly.connectors.gcp.gs.gs_connector import GSConnector
@@ -66,7 +63,7 @@ class BQExtractor(DBExtractor):
                                                     file_names=None,
                                                     destination_dpath=output_data_object_dir)
 
-        logging.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
+        logger.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
 
     def compose_extract_to_stmt(self, extract_to_stmt, extractor_obj_conf) -> dict:
         """ Its save copy statement into file
@@ -76,8 +73,10 @@ class BQExtractor(DBExtractor):
         dataset_id = extractor_obj_conf.get('source_schema_name')
         table_name = extractor_obj_conf.get('source_object_name')
 
-        destination_blob_name = f"{self.pipeline.pipeline_name}/{object_name}/{object_name}_*.csv"
+        destination_blob_name = extractor_obj_conf.get('blob_prefix').strip('/') + '/' + object_name + '_*.csv'
+
         destination_uri = f"{self.gs_connector.bucket_prefix }{self.cloud_bucket_name}/{destination_blob_name}"
+
         table_ref = f"{project_id}.{dataset_id}.{table_name}"
 
         extract_to_stmt = extract_to_stmt.format_map(FormatDict(table_ref=table_ref, destination_uri=destination_uri))

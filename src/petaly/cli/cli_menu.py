@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -106,7 +106,7 @@ class CliMenu():
 
         exclude_key_list = [None]
         if connector_category in ('file','storage') and endpoint_attributes_name == 'source_attributes':
-            exclude_key_list = ['destination_dir', 'destination_path_prefix']
+            exclude_key_list = ['destination_dir','bucket_object_prefix']
 
         assigned_connector_attributes = self.assign_attributes(connector_attributes, exclude_key_list=exclude_key_list, predefined_values=None)
         self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)

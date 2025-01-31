@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import logging
-import sys
-
 logger = logging.getLogger(__name__)
 
 import os
@@ -43,50 +41,50 @@ class GSConnector():
         if new_blob_name is None:
             new_blob_name = blob_file_name + "." + file_suffix
 
-        logging.debug(f"Bucket renaming started: current name {blob_file_name} new name {new_blob_name}")
+        logger.debug(f"Bucket renaming started: current name {blob_file_name} new name {new_blob_name}")
 
         try:
             st_client = storage.Client()
             bucket = st_client.bucket(bucket_name)
             blob = bucket.blob(blob_file_name)
             new_target_file = bucket.rename_blob(blob, new_blob_name)
-            logging.debug(f"Blob {blob.name} has been renamed to {new_target_file.name}")
+            logger.debug(f"Blob {blob.name} has been renamed to {new_target_file.name}")
 
         except exceptions.GoogleCloudError as err:
-            logging.error(err)
+            logger.error(err)
 
     def delete_object_in_bucket(self, bucket_name, blob_prefix):
         """
         """
-        logging.debug(f"Delete folder in Google Storage: {bucket_name}/{blob_prefix}")
+        logger.debug(f"Delete folder in Google Storage: {bucket_name}/{blob_prefix}")
         try:
             st_client = storage.Client()
             bucket = st_client.get_bucket(bucket_name)
             """Delete object under folder"""
             blobs_list = list(bucket.list_blobs(prefix=blob_prefix))
             bucket.delete_blobs(blobs_list)
-            logging.debug(f"Folder deleted: {bucket_name}/{blob_prefix}")
+            logger.debug(f"Folder deleted: {bucket_name}/{blob_prefix}")
         except exceptions.GoogleCloudError as err:
-            logging.error(err)
+            logger.error(err)
             pass
 
     def delete_gs_blob(self, bucket_name, blob_name):
         """ Function drop a blob in specific bucket
         """
-        logging.debug(f"Blob {blob_name} in {bucket_name} will be deleted")
+        logger.debug(f"Blob {blob_name} in {bucket_name} will be deleted")
         try:
             st_client = storage.Client()
             bucket = st_client.bucket(bucket_name)
             bucket.delete_blob(blob_name)
-            logging.debug(f"Blob {blob_name} in {bucket_name} has been deleted")
+            logger.debug(f"Blob {blob_name} in {bucket_name} has been deleted")
         except exceptions.GoogleCloudError as err:
-            logging.error(err)
+            logger.error(err)
             pass
 
     def download_files_from_bucket(self, bucket_name, blob_prefix, file_names, destination_dpath):
         """
         """
-        logging.debug(f"Download files from bucket-name: {bucket_name}; blob_prefix: {blob_prefix}; destination_directory: {destination_dpath}")
+        logger.debug(f"Download files from bucket-name: {bucket_name}; blob-prefix: {blob_prefix}; destination-directory: {destination_dpath}")
         blob_prefix += self.bucket_path_delimiter
 
         try:
@@ -120,7 +118,7 @@ class GSConnector():
             return downloaded_file_list
 
         except exceptions.GoogleCloudError as err:
-            logging.error(err)
+            logger.error(err)
 
     def get_bucket_file_list(self, bucket_name, blob_prefix):
         try:
@@ -141,7 +139,7 @@ class GSConnector():
     def upload_blob(self, full_fpath, bucket_name, destination_blob_name):
         """Function uploads a file to the GS bucket.
         """
-        logging.debug(
+        logger.debug(
             f"Load data from the local path {full_fpath} to the backet: {bucket_name} with destination path {destination_blob_name}; ")
 
         try:
@@ -150,10 +148,10 @@ class GSConnector():
             blob = bucket.blob(destination_blob_name)
             blob.upload_from_filename(full_fpath)
         except exceptions.GoogleCloudError as err:
-            logging.error(err)
+            logger.error(err)
             pass
 
-    def load_files_to_bucket(self, bucket_name, blob_prefix, local_file_list):
+    def upload_files_to_bucket(self, bucket_name, blob_prefix, local_file_list):
         """ upload file to GS bucket
         """
         bucket_file_list = []
@@ -161,12 +159,11 @@ class GSConnector():
             file_name = os.path.basename(file_local_fpath)
 
             blob_path = blob_prefix  + self.bucket_path_delimiter + os.path.basename(file_name)
-
             self.upload_blob(file_local_fpath, bucket_name, blob_path)
 
             full_blob_path = self.bucket_prefix + bucket_name + self.bucket_path_delimiter + blob_path
             bucket_file_list.append(full_blob_path)
 
-            logging.debug(f"Upload file {file_local_fpath} to destination {full_blob_path}")
+            logger.debug(f"Upload file {file_local_fpath} to destination {full_blob_path}")
 
         return bucket_file_list

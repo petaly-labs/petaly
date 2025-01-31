@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,13 +68,9 @@ class FLoader(ABC):
             file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.*')
             loader_obj_conf.update({'file_list': file_list})
 
-            destination_path_prefix = self.pipeline.target_attr.get('destination_path_prefix')
-            if destination_path_prefix is not None and destination_path_prefix != '':
-                blob_prefix = destination_path_prefix + '/'
-            else:
-                blob_prefix = ''
-            blob_prefix += self.pipeline.pipeline_name + '/' + object_name
-
+            blob_prefix = self.composer.compose_bucket_object_prefix(self.pipeline.target_attr.get('bucket_object_prefix'),
+                                                                     self.pipeline.pipeline_name,
+                                                                     object_name)
             loader_obj_conf.update({'blob_prefix': blob_prefix})
 
             self.load_from(loader_obj_conf)

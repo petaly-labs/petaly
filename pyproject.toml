@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12"
 ]
 requires-python = ">= 3.10"
-keywords = ["petaly", "etl", "ingestion", "database"]
+keywords = ["petaly", "etl", "ingestion", "database", "postgres", "postgresql", "mysql", "bigquery", "redshift", "s3", "gcs", "google storage", "bucket"]
 dependencies =[
         "PyYAML",
         "PyMySQL",

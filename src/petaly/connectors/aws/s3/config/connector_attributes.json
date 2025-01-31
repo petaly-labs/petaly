@@ -1,5 +1,4 @@
 {
-  "destination_path_prefix": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": null, "key_comment": "Define the prefix path to your objects in the bucket without the bucket name. This directory will serve as the final destination for your extracted files. Use a forward slash ('/') as the folder separator."},
   "compress_format": {"in_use":false, "preassigned_values": [null], "default_value":"gz", "key_type": "String", "dependency": null, "key_comment": "Define the compress format for files"},
   "object_connector_settings": {}
 }

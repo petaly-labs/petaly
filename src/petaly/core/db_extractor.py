@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import os
 import sys
 import time
 from abc import ABC, abstractmethod
+from petaly.core.composer import Composer
 from petaly.utils.utils import measure_time
 from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
@@ -33,6 +34,7 @@ class DBExtractor(ABC):
 
 		self.pipeline = pipeline
 		self.f_handler = FileHandler()
+		self.composer = Composer()
 		self.m_conf = self.pipeline.m_conf
 		self.type_mapping = TypeMapping(pipeline)
 		self.object_metadata = ObjectMetadata(pipeline)
@@ -125,13 +127,16 @@ class DBExtractor(ABC):
 		logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
 		extractor_obj_conf.update({'object_settings': data_object.object_settings})
 
+		# blob-prefix, used for storage in cloud services (e.g. Redshift (s3), Bigquery (GCS))
+		blob_prefix = self.composer.compose_bucket_object_prefix(self.pipeline.source_attr.get('bucket_object_prefix'),
+																 self.pipeline.pipeline_name,
+																 object_name)
+		extractor_obj_conf.update({'blob_prefix': blob_prefix})
+
 		# 4. load stmt_extract_to.txt and transform it in later stage
 		extract_to_stmt = self.f_handler.load_file(self.connector_extract_to_stmt_fpath)
 		extract_to_stmt = self.compose_extract_to_stmt(extract_to_stmt, extractor_obj_conf)
 		extractor_obj_conf.update({'extract_to_stmt': extract_to_stmt})
-
-		# blob-prefix, used for storage in cloud services (e.g. Redshift (s3), Bigquery (GCS))
-		extractor_obj_conf.update({'blob_prefix': (self.pipeline.pipeline_name + '/' + object_name).strip('/')})
 
 		# 5.  save extract_to_stmt under output_extract_to_file_fpath
 		output_extract_to_stmt_fpath = self.pipeline.output_extract_to_stmt_fpath.format(object_name=object_name)

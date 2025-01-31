@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,10 @@ class Pipeline:
 
         pipeline_attr = pipeline_dict.get('pipeline').get('pipeline_attributes')
         self.source_attr = pipeline_dict.get('pipeline').get('source_attributes')
+        self.check_pipeline_outdated_arguments(self.source_attr)
+
         self.target_attr = pipeline_dict.get('pipeline').get('target_attributes')
+        self.check_pipeline_outdated_arguments(self.target_attr)
 
         if pipeline_attr.get('pipeline_name') != pipeline_name:
             logger.warning(f"The pass parameter for pipeline_name: {pipeline_name} does not match the pipeline_name {pipeline_attr.get('pipeline_name')} defined in the corresponding file:  {self.pipeline_fpath}")

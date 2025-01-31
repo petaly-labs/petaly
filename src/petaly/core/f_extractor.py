@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import sys
 import time
 from pyarrow import csv, parquet, lib as pyarrow_lib
 
+from petaly.core.composer import Composer
 from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
 from petaly.core.data_object import DataObject
@@ -31,6 +32,7 @@ class FExtractor(ABC):
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
+        self.composer = Composer()
         self.f_handler = FileHandler()
         self.object_metadata = ObjectMetadata(pipeline)
         self.object_default_settings = pipeline.data_attributes.get("object_default_settings")
@@ -84,15 +86,27 @@ class FExtractor(ABC):
         data_object = self.get_data_object(object_name)
 
         if data_object.object_source_dir is None:
-            logger.error(f"Incorrect object specification in file: {self.pipeline.pipeline_fpath} "
-                           f"\ndata_objects_spec: "
-                           f"\n- object_spec:"
-                           f"\n    object_name: {object_name}"
-                           f"\n    object_source_dir: IS EMPTY")
-            sys.exit()
+            if self.pipeline.source_attr.get('connector_type') in ('csv'):
+                logger.error(f"Incorrect object specification in file: {self.pipeline.pipeline_fpath} "
+                               f"\ndata_objects_spec: "
+                               f"\n- object_spec:"
+                               f"\n    object_name: {object_name}"
+                               f"\n    object_source_dir: IS EMPTY")
+                sys.exit()
+            elif self.pipeline.source_attr.get('connector_type') in ('s3', 'gcs'):
+                if self.pipeline.source_attr.get('bucket_object_prefix') is None:
+                    logger.error(f"Incorrect source or object specification in file: {self.pipeline.pipeline_fpath} "
+                             f"\nEither bucket_object_prefix in source_attributes or object_source_dir in object_spec, "
+                                 f"or both, must be specified and cannot be empty. "
+                                 f"\nThe object_source_dir is complementary to the bucket_object_prefix. "
+                                 f"E.g. for bucket path: bucket_name/bucket_object_prefix/object_source_dir")
+                    sys.exit()
 
         extractor_obj_conf.update({'object_source_dir': data_object.object_source_dir})
-        extractor_obj_conf.update({'blob_prefix': data_object.object_source_dir.strip('/')})
+
+        blob_prefix = str(self.pipeline.source_attr.get('bucket_object_prefix') or '')
+        blob_prefix = blob_prefix.strip('/') + '/' + str(data_object.object_source_dir or '').strip('/')
+        extractor_obj_conf.update({'blob_prefix': blob_prefix.strip('/')})
 
         file_names = data_object.file_names
         if len(file_names) == 0 or file_names[0] is None:

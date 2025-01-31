@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
 
 import logging
 logger = logging.getLogger(__name__)
-
-import os
-import sys
-import logging
 
 from petaly.utils.file_handler import FileHandler
 from petaly.core.db_loader import DBLoader
@@ -61,14 +57,14 @@ class BQLoader(DBLoader):
         self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
         file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv*')
         if self.load_from_bucket == True:
-            blob_prefix = self.pipeline.pipeline_name + '/' + object_name
+            blob_prefix = loader_obj_conf.get('blob_prefix')
             self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
-            bucket_file_list = self.gs_connector.load_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
+            bucket_file_list = self.gs_connector.upload_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
 
             if len(bucket_file_list) > 0:
                 file_list = bucket_file_list
             else:
-                logging.error(f"Files upload to bucket failed. Try upload from local path: ")
+                logger.error(f"Files upload to bucket failed. Try upload from local path: ")
 
         bq_job_config_dict = loader_obj_conf.get('load_from_stmt')
 

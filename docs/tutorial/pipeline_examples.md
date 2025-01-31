@@ -225,7 +225,7 @@ pipeline:
     connector_type: csv
   target_attributes:
     connector_type: gcs
-    destination_path_prefix: abcd/test
+    bucket_object_prefix: petaly
     compress_format: gz
     platform_type: gcp
     gcp_project_id: 'my-project
@@ -273,6 +273,7 @@ pipeline:
     database_schema: schema-name
     platform_type: aws
     aws_bucket_name: 'bucket-name'
+    bucket_object_prefix: petaly
     aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
@@ -313,6 +314,7 @@ Target-Attribute
     platform_type: aws
     aws_region: 'eu-north-1'
     aws_bucket_name: 'your-bucket'
+    bucket_object_prefix: petaly
     aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
@@ -333,6 +335,7 @@ Target-Attribute
     database_schema: public
     platform_type: aws
     aws_bucket_name: 'bucket-name'
+    bucket_object_prefix: petaly
     aws_iam_role: 'arn:aws:iam::xxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
@@ -357,6 +360,7 @@ Target-Attribute
     platform_type: aws
     aws_region: 'eu-north-1'
     aws_bucket_name: 'your-bucket'
+    bucket_object_prefix: petaly
     aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
@@ -382,6 +386,7 @@ pipeline:
     platform_type: aws
     aws_region: 'eu-north-1'
     aws_bucket_name: 'your-bucket'
+    bucket_object_prefix: petaly
     aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:

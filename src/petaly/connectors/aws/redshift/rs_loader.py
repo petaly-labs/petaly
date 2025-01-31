@@ -65,7 +65,7 @@ class RSLoader(DBLoader):
     def load_from(self, loader_obj_conf):
 
         object_name = loader_obj_conf.get('object_name')
-        blob_prefix = (self.pipeline.pipeline_name + '/' + object_name).strip('/')
+        blob_prefix = loader_obj_conf.get('blob_prefix')
         # 1. cleanup object from bucket
         self.s3_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
 
@@ -80,7 +80,7 @@ class RSLoader(DBLoader):
 
         file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv*')
 
-        self.s3_connector.load_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
+        self.s3_connector.upload_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
 
         s3_file_list = self.s3_connector.get_bucket_file_list(self.cloud_bucket_name, blob_prefix)
         load_from_stmt = loader_obj_conf.get('load_from_stmt')

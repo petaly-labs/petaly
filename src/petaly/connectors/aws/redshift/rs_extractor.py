@@ -74,7 +74,7 @@ class RSExtractor(DBExtractor):
         extract_data_options = self.compose_extract_options(extractor_obj_conf)
         object_name = extractor_obj_conf.get('object_name')
 
-        extract_to_fpath = (self.cloud_bucket_path + '/' + self.pipeline.pipeline_name + '/' + object_name  + '/' + object_name + '_').strip('/')
+        extract_to_fpath = self.cloud_bucket_path + '/' + extractor_obj_conf.get('blob_prefix').strip('/')  + '/' + object_name + '_'
 
         extract_to_stmt = extract_to_stmt.format_map(
         					FormatDict( column_list=extractor_obj_conf.get('column_list'),

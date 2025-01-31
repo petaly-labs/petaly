@@ -13,11 +13,8 @@
 # limitations under the License.
 
 import logging
-import sys
-
 logger = logging.getLogger(__name__)
 
-import os
 import logging
 
 from petaly.connectors.aws.s3.s3_connector import S3Connector
@@ -44,5 +41,5 @@ class S3Extractor(FExtractor):
                                                     file_names=extractor_obj_conf.get('file_names'),
                                                     destination_dpath=extractor_obj_conf.get('output_data_object_dir'))
 
-        logging.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
+        logger.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
 

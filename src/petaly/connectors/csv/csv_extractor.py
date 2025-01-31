@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 import os
-import sys
-import time
 from petaly.core.f_extractor import FExtractor
 
 class CsvExtractor(FExtractor):

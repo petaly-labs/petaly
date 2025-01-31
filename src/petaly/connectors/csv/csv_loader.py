@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ class CsvLoader(FLoader):
         if data_object.destination_object_name is not None:
             dest_object_name = data_object.destination_object_name
 
-        # get target file directory destination_dir/pipeline_name/object_name
+        # get target file directory destination_dir/object_name
         dest_file_dpath = os.path.join(dest_file_dir, self.pipeline.pipeline_name, dest_object_name)
 
         # get target file format

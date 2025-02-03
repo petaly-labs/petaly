@@ -1,1 +1,0 @@
-Petaly Design Principles

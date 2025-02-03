@@ -1,3 +1,16 @@
 {
-    "null": "character varying"
+
+    "INT64": "bigint",
+    "FLOAT64": "double",
+    "NUMERIC": "numeric",
+    "BYTES": "binary",
+    "BOOL": "boolean",
+    "STRING": "longtext",
+    "TIME": "time",
+    "DATETIME": "timestamp",
+    "INTERVAL": "interval",
+    "JSON": "json",
+    "GEOGRAPHY": "longtext",
+    "null": "STRING"
+
 }

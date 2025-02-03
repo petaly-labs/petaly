@@ -94,17 +94,17 @@ class FExtractor(ABC):
                                f"\n    object_source_dir: IS EMPTY")
                 sys.exit()
             elif self.pipeline.source_attr.get('connector_type') in ('s3', 'gcs'):
-                if self.pipeline.source_attr.get('bucket_object_prefix') is None:
+                if self.pipeline.source_attr.get('bucket_object_path') is None:
                     logger.error(f"Incorrect source or object specification in file: {self.pipeline.pipeline_fpath} "
-                             f"\nEither bucket_object_prefix in source_attributes or object_source_dir in object_spec, "
+                             f"\nEither bucket_object_path in source_attributes or object_source_dir in object_spec, "
                                  f"or both, must be specified and cannot be empty. "
-                                 f"\nThe object_source_dir is complementary to the bucket_object_prefix. "
-                                 f"E.g. for bucket path: bucket_name/bucket_object_prefix/object_source_dir")
+                                 f"\nThe object_source_dir is complementary to the bucket_object_path. "
+                                 f"E.g. for bucket path: bucket_name/bucket_object_path/object_source_dir")
                     sys.exit()
 
         extractor_obj_conf.update({'object_source_dir': data_object.object_source_dir})
 
-        blob_prefix = str(self.pipeline.source_attr.get('bucket_object_prefix') or '')
+        blob_prefix = str(self.pipeline.source_attr.get('bucket_object_path') or '')
         blob_prefix = blob_prefix.strip('/') + '/' + str(data_object.object_source_dir or '').strip('/')
         extractor_obj_conf.update({'blob_prefix': blob_prefix.strip('/')})
 

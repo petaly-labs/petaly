@@ -106,7 +106,7 @@ class CliMenu():
 
         exclude_key_list = [None]
         if connector_category in ('file','storage') and endpoint_attributes_name == 'source_attributes':
-            exclude_key_list = ['destination_dir','bucket_object_prefix']
+            exclude_key_list = ['destination_dir','bucket_object_path']
 
         assigned_connector_attributes = self.assign_attributes(connector_attributes, exclude_key_list=exclude_key_list, predefined_values=None)
         self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)

@@ -68,7 +68,7 @@ class FLoader(ABC):
             file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.*')
             loader_obj_conf.update({'file_list': file_list})
 
-            blob_prefix = self.composer.compose_bucket_object_prefix(self.pipeline.target_attr.get('bucket_object_prefix'),
+            blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.target_attr.get('bucket_object_path'),
                                                                      self.pipeline.pipeline_name,
                                                                      object_name)
             loader_obj_conf.update({'blob_prefix': blob_prefix})

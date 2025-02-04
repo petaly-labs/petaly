@@ -242,11 +242,20 @@ class MainConfig:
 
         return self.f_handler.load_json(connector_attributes_fpath)
 
-    def get_type_mapping_path(self, connector_id, source_connector_id):
+    def compose_type_mapping_path(self, connector_id, source_connector_id, source_file_format='csv'):
 
-        type_mapping_path = self.get_connector_class_config(connector_id).get("type_mapping")
+        type_mapping_fpath = self.get_type_mapping_path(connector_id)
+        connector_category = self.get_connector_category(source_connector_id)
+        if connector_category in ('storage','file'):
+            type_mapping_fpath = type_mapping_fpath.format(source_connector_id=source_file_format)
+        else:
+            type_mapping_fpath = type_mapping_fpath.format(source_connector_id=source_connector_id)
+
+        return type_mapping_fpath
+
+    def get_type_mapping_path(self, connector_id):
+        type_mapping_path = self.get_connector_class_config(connector_id).get('type_mapping')
         type_mapping_fpath = os.path.join(self.src_dpath, *type_mapping_path.split('.'), self.type_mapping_fname)
-        type_mapping_fpath = type_mapping_fpath.format(source_connector_id=source_connector_id)
 
         return type_mapping_fpath
 

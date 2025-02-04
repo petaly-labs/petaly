@@ -28,9 +28,11 @@ class TypeMapping():
         """ get target-source type mapping. Return the first founded.
 
         """
+
         type_mapping_fpath = self.pipeline.pipeline_type_mapping_fpath.format(source_connector_id=self.pipeline.source_connector_id)
+
         if not self.f_handler.is_file(type_mapping_fpath):
-            type_mapping_fpath = self.m_conf.get_type_mapping_path(self.pipeline.target_connector_id, self.pipeline.source_connector_id)
+            type_mapping_fpath = self.m_conf.compose_type_mapping_path(self.pipeline.target_connector_id, self.pipeline.source_connector_id)
 
         logger.debug(f"Load data type mapping from: {type_mapping_fpath}")
         type_mapping_dict = self.f_handler.load_json(type_mapping_fpath)

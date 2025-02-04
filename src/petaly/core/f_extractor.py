@@ -49,25 +49,53 @@ class FExtractor(ABC):
         logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
         start_total_time = time.time()
 
-        # 1. Start with cleanup
-        #self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
-
-        # 4. save metadata and export scripts
+        # 1. save metadata and export scripts
         object_list = self.pipeline.data_objects
 
-        # 5. run loop for each object
+        # 2. run loop for each object
         for object_name in object_list:
             logger.info(f"Extract object: {object_name} started...")
             start_time = time.time()
 
             extractor_obj_conf = self.get_extractor_obj_conf(object_name)
-            self.extract_to(extractor_obj_conf)
+
+            # 3. cleanup pipeline directory before run
+            self.f_handler.cleanup_dir(extractor_obj_conf.get('output_data_object_dir'))
+
+            file_list = self.extract_to(extractor_obj_conf)
+
+            connector_category = self.pipeline.m_conf.get_connector_category(self.pipeline.target_connector_id)
+
+            if connector_category in ('database'):
+                self.extract_metadata_from_file(file_list[0], object_name, self.file_format)
 
             end_time = time.time()
             logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
 
         end_total_time = time.time()
         logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
+
+    def extract_metadata_from_file(self, first_file_fpath, object_name, file_format):
+        """
+        """
+        logger.debug(f"Check if the file {first_file_fpath} is compressed.")
+
+        # check if file is gzipped. if gzipped try to unzip it
+        is_gzipped, first_file_fpath = self.f_handler.check_gzip_modify_path(first_file_fpath)
+
+        if is_gzipped:
+            first_file_fpath = self.f_handler.gunzip_file(first_file_fpath, cleanup_file=True)
+
+        # analyse file structure
+        parquet_fpath = self.analyse_file_structure(first_file_fpath, object_name,
+                                                    file_format_extension='.' + file_format)
+
+        meta_table = self.compose_metadata_file(parquet_fpath, object_name)
+        self.save_metadata_into_file(meta_table)
+        # self.describe_parquet_metadata(parquet_fpath)
+
+        # remove temp parquet file
+        self.f_handler.remove_file(parquet_fpath)
 
     def get_extractor_obj_conf(self, object_name) -> dict:
 

@@ -35,11 +35,13 @@ class S3Extractor(FExtractor):
     def extract_to(self, extractor_obj_conf):
         """ Download export from bucket into local folder
         """
-        downloaded_file_list = self.s3_connector.download_files_from_bucket(
+
+        file_list = self.s3_connector.download_files_from_bucket(
                                                     bucket_name=self.cloud_bucket_name,
                                                     blob_prefix=extractor_obj_conf.get('blob_prefix'),
                                                     file_names=extractor_obj_conf.get('file_names'),
                                                     destination_dpath=extractor_obj_conf.get('output_data_object_dir'))
 
-        logger.debug(f"Following file list were downloaded from bucket:\n{downloaded_file_list}")
+        logger.debug(f"The following file list were downloaded from bucket:\n{file_list}")
 
+        return file_list

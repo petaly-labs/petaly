@@ -27,6 +27,7 @@ class S3Extractor(FExtractor):
         self.s3_connector = S3Connector(pipeline.source_attr, aws_session=None)
         super().__init__(pipeline)
         self.cloud_bucket_name = self.pipeline.source_attr.get('aws_bucket_name')
+        self.file_format = 'csv'
         self.f_handler = FileHandler()
 
     def extract_data(self):

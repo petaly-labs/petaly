@@ -65,7 +65,6 @@ class FExtractor(ABC):
             file_list = self.extract_to(extractor_obj_conf)
 
             connector_category = self.pipeline.m_conf.get_connector_category(self.pipeline.target_connector_id)
-
             if connector_category in ('database'):
                 self.extract_metadata_from_file(file_list[0], object_name, self.file_format)
 

@@ -1,0 +1,20 @@
+{
+  "connection_method": {"in_use":true, "preassigned_values": ["iam", "tcp"], "default_value":"iam", "key_type": "String", "dependency": null, "key_comment": "Specify iam to use IAM credentials for Redshift connections. Put tcp in case you want to use a tcp tunnel."},
+  "is_serverless": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean", "dependency": {"connection_method": "iam"}, "key_comment": "Specify true if Redshift is serverless, or false if it is not (means, it is a Redshift-cluster)."},
+  "cluster_identifier": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": {"connection_method": "iam", "is_serverless": "false"}, "key_comment": "Specify the Redshift cluster identifier, which is the same as the cluster name. This is required only if is_serverless is set to false and connection_method is iam."},
+  "workgroup_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": {"connection_method": "iam", "is_serverless": "true"}, "key_comment": "Specify the workgroup name by Redshift-Serverless. This is used only if is_serverless is set to true and connection_method is iam."},
+  "database_user": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": null, "key_comment": "Specify the database user name."},
+  "database_password": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": {"connection_method": "tcp"}, "key_comment": "[Optional] Specify the database user password. This is used only if connection_method is tcp."},
+  "database_host": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": {"connection_method": "tcp"}, "key_comment": "[Optional] Specify the database hostname or IP address. This is used only if connection_method is tcp."},
+  "database_port": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": {"connection_method": "tcp"}, "key_comment": "[Optional] Specify the database port. This is used only if connection_method is tcp."},
+  "database_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": null, "key_comment": "Specify the database name."},
+  "database_schema": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": null, "key_comment": "Specify the database schema."},
+  "object_connector_settings":{
+       "maxerror": {"in_use":false, "preassigned_values": [null], "default_value":0, "key_type": "Integer", "dependency": null, "key_comment": ""},
+       "timeformat": {"in_use":false, "preassigned_values": [null], "default_value":"YYYY-MM-DD HH:MI:SS", "key_type": "String", "dependency": null, "key_comment": ""},
+       "gzip": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "dependency": null, "key_comment": ""},
+       "allowoverwrite": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "dependency": null, "key_comment": ""},
+       "parallel_on": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "dependency": null, "key_comment": ""},
+       "maxfilesize": {"in_use":false, "preassigned_values": [null], "default_value":100, "key_type": "Integer", "dependency": null, "key_comment": "In MB"}
+  }
+}

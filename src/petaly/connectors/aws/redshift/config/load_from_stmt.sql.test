@@ -1,0 +1,5 @@
+COPY {schema_table_name} {column_list}
+FROM 's3://'
+IAM_ROLE '{iam_role}'
+MANIFEST
+;

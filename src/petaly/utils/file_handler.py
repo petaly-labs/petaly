@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -213,35 +213,16 @@ class FileHandler:
         if not os.path.isdir(path_to_dir):
             os.makedirs(path_to_dir)
 
-    def deprecated_get_all_dir_files(self, dir_path, file_extension, file_names_only=False):
-        """
-        """
-
-        # iterating over all files with determine extension
-        result_arr = []
-
-        for files in os.listdir(dir_path):
-            if files.endswith(file_extension):
-                if file_names_only == False:
-                    result_arr.append(os.path.join(dir_path,files))
-                else:
-                    result_arr.append(files)
-            else:
-                continue
-
-        return result_arr
-
     def get_file_names_with_extensions(self, dir_path, *file_extensions):
         """
         """
 
         # iterating over all files with determine extension
         result_arr = []
-
         for files in os.listdir(dir_path):
             for file_extension in file_extensions:
                 if files.endswith(file_extension):
-                        result_arr.append(files)
+                    result_arr.append(files)
             else:
                 continue
 
@@ -345,7 +326,7 @@ class FileHandler:
         if files_are_not_exist:
             logger.debug('Directory has no files')
 
-    def copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
+    def deprecated_copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
         """ This function copy templates file without comments to the specified pipeline
         """
         target_file = open(path_to_target_file, 'w')
@@ -451,10 +432,27 @@ class FileHandler:
                     return False
 
         except  OSError as err:
-            logger.error(f"The attempt to open file: {file_path} throws exception: {err}")
+            logger.warning(f"The attempt to open file: {file_path} throws exception: {err}")
 
     def add_extension(self, file_path, extension):
         path_with_extension=file_path+extension
         os.rename(file_path, path_with_extension)
         return path_with_extension
 
+    def remove_file(self, file_path):
+        os.remove(file_path)
+        logger.debug(f"File : {file_path} was removed")
+
+    def check_gzip_modify_path(self, file_path):
+        """ Add .gz extension if file is gzipped compressed and missing .gz extension
+        """
+        is_gzipped = False
+        gz_fpath = file_path
+
+        if self.is_file_gzip(file_path):
+            is_gzipped = True
+            if not self.check_file_extension(file_path, '.gz'):
+                gz_fpath = file_path + '.gz'
+                os.rename(file_path, gz_fpath)
+
+        return is_gzipped, gz_fpath

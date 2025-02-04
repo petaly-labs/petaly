@@ -3,6 +3,9 @@
     "int32": "int32",
     "int64": "int64",
     "date32[day]": "date32[day]",
+    "timestamp": "timestamp",
+    "timestamp[ns]": "timestamp[ns]",
+    "timestamp[ns, tz=UTC]": "timestamp[ns, tz=UTC]",
     "double": "double",
     "null": "string"
   }

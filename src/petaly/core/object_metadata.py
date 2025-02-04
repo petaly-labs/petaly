@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
 
 import logging
 logger = logging.getLogger(__name__)
+
 import sys
+
 from petaly.core.data_object import DataObject
 from petaly.utils.file_handler import FileHandler
 
@@ -26,6 +28,7 @@ class ObjectMetadata():
         self.object_metadata_dict = {
                                 "source_schema_name": None,
                                 "source_object_name": None,
+                                "source_connector_type": None,
                                 "output_file_format": None,
                                 "object_settings": {},
                                 "columns":[]
@@ -98,7 +101,8 @@ class ObjectMetadata():
         """
 
         self.object_metadata_dict.update({'source_object_name': object_name})
-        self.object_metadata_dict.update({'output_file_format': self.pipeline.source_attr.get("connector_type")})
+        self.object_metadata_dict.update({'source_connector_type': self.pipeline.source_attr.get("connector_type")})
+        self.object_metadata_dict.update({'output_file_format': 'csv'})
 
         data_object = self.get_data_object(object_name)
         object_settings = data_object.object_settings

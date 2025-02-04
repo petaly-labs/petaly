@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
 
 import logging
 logger = logging.getLogger(__name__)
-
-import os
-import sys
-import logging
 
 from petaly.utils.file_handler import FileHandler
 from petaly.core.db_loader import DBLoader
@@ -51,10 +47,6 @@ class BQLoader(DBLoader):
 
         object_name = loader_obj_conf.get('object_name')
 
-        #bq_job_config = loader_obj_conf.get('load_from_stmt')
-
-        #bq_job_config_dict = self.f_handler.string_to_dict(bq_job_config)
-
         table_id = self.get_table_id(loader_obj_conf.get('table_ddl_dict'))
         output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
 
@@ -63,16 +55,16 @@ class BQLoader(DBLoader):
         self.create_table(loader_obj_conf)
 
         self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
-        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv.gz')
-
+        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv*')
         if self.load_from_bucket == True:
-            self.gs_connector.delete_gs_folder(self.cloud_bucket_name, self.pipeline.pipeline_name + '/' + object_name)
-            bucket_file_list = self.load_files_to_gs(file_list, self.cloud_bucket_name, self.pipeline.pipeline_name, object_name)
+            blob_prefix = loader_obj_conf.get('blob_prefix')
+            self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
+            bucket_file_list = self.gs_connector.upload_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
 
             if len(bucket_file_list) > 0:
                 file_list = bucket_file_list
             else:
-                logging.error(f"Files upload to bucket failed. Try upload from local path: ")
+                logger.error(f"Files upload to bucket failed. Try upload from local path: ")
 
         bq_job_config_dict = loader_obj_conf.get('load_from_stmt')
 
@@ -111,23 +103,23 @@ class BQLoader(DBLoader):
 
         self.db_connector.execute_sql(loader_obj_conf.get('table_ddl_dict').get('create_table_stmt'))
 
-    def compose_from_options(self):
+    def compose_from_options(self, loader_obj_conf):
         """
         """
         load_options = {}
 
-        object_default_settings = self.pipeline.data_attributes.get("object_default_settings")
-        columns_delimiter = object_default_settings.get("columns_delimiter")
+        object_settings = loader_obj_conf.get("object_settings")
+        columns_delimiter = object_settings.get("columns_delimiter")
 
         load_options.update({'delimiter': columns_delimiter})
         if columns_delimiter == "\t":
             load_options.update({'delimiter': '\\t'})
 
-        header = True if object_default_settings.get("header") is None or True else False
+        header = True if object_settings.get("header") is None or True else False
         load_options.update({'header': header})
 
         # 3. OPTIONALLY ENCLOSED BY
-        columns_quote = object_default_settings.get("columns_quote")
+        columns_quote = object_settings.get("columns_quote")
         quote_char = None
         if columns_quote == 'double':
             quote_char = '"'
@@ -139,7 +131,7 @@ class BQLoader(DBLoader):
 
     def compose_load_from_stmt(self, data_object, loader_obj_conf):
         """ Its compose a copy from statement """
-        load_data_options = self.compose_from_options()
+        load_data_options = self.compose_from_options(loader_obj_conf)
         bq_load_from_stmt_fpath = self.f_handler.replace_file_extension(self.connector_load_from_stmt_fpath,'.json')
         load_from_stmt = self.f_handler.load_json(bq_load_from_stmt_fpath)
 
@@ -161,21 +153,3 @@ class BQLoader(DBLoader):
         self.f_handler.save_dict_to_json(load_from_file_fpath, load_from_stmt)
 
         return load_from_stmt
-
-    def load_files_to_gs(self, local_file_list, cloud_bucket_name, pipeline_name, object_name):
-        """ upload file to GS bucket
-        """
-        bucket_file_list = []
-        for file_local_fpath in local_file_list:
-            file_name = os.path.basename(file_local_fpath)
-
-            blob_path = pipeline_name + '/' + object_name + '/' + file_name
-            self.gs_connector.upload_blob(file_local_fpath, cloud_bucket_name, blob_path)
-
-            full_blob_path = self.gs_connector.bucket_prefix + cloud_bucket_name + '/' + blob_path
-
-            bucket_file_list.append(full_blob_path)
-
-            logging.debug(f"File upload: {full_blob_path}")
-
-        return bucket_file_list

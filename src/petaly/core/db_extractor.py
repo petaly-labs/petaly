@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import os
 import sys
 import time
 from abc import ABC, abstractmethod
+from petaly.core.composer import Composer
 from petaly.utils.utils import measure_time
 from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
@@ -33,6 +34,7 @@ class DBExtractor(ABC):
 
 		self.pipeline = pipeline
 		self.f_handler = FileHandler()
+		self.composer = Composer()
 		self.m_conf = self.pipeline.m_conf
 		self.type_mapping = TypeMapping(pipeline)
 		self.object_metadata = ObjectMetadata(pipeline)
@@ -109,12 +111,12 @@ class DBExtractor(ABC):
 
 		extractor_obj_conf = {'object_name': object_name}
 
-		# 1. compose output data dir
+		# 1. compose metadata directory
 		output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
 		extractor_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
+		metadata_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
 
 		# 2. get and compose metadata query
-		metadata_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
 		table_metadata = self.f_handler.load_file_as_dict(metadata_fpath, 'json')
 		extract_queries_dict = self.compose_extract_queries(table_metadata)
 		extractor_obj_conf.update(extract_queries_dict)
@@ -124,6 +126,12 @@ class DBExtractor(ABC):
 		data_object = self.get_data_object(object_name)
 		logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
 		extractor_obj_conf.update({'object_settings': data_object.object_settings})
+
+		# blob-prefix, used for storage in cloud services (e.g. Redshift (s3), Bigquery (GCS))
+		blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.source_attr.get('bucket_pipeline_prefix'),
+																self.pipeline.pipeline_name,
+																object_name)
+		extractor_obj_conf.update({'blob_prefix': blob_prefix})
 
 		# 4. load stmt_extract_to.txt and transform it in later stage
 		extract_to_stmt = self.f_handler.load_file(self.connector_extract_to_stmt_fpath)
@@ -135,20 +143,17 @@ class DBExtractor(ABC):
 		extractor_obj_conf.update({'extract_to_stmt_fpath': output_extract_to_stmt_fpath})
 		self.f_handler.save_file(output_extract_to_stmt_fpath, extract_to_stmt)
 
-		# 6. create output_file_path
-		output_object_fpath = self.get_local_output_path(object_name)
+		# 6. compose output data dir
+		output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+		extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
+		self.f_handler.make_dirs(output_data_object_dir)
+
+		# compose output object file path
+		output_object_fpath = os.path.join(output_data_object_dir, object_name + '.csv')
 		extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
 
 		logger.debug(f"Config for data extract: {extractor_obj_conf}")
 		return extractor_obj_conf
-
-	def get_local_output_path(self, object_name):
-
-		object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-
-		self.f_handler.make_dirs(object_dpath)
-		output_object_fpath = os.path.join(object_dpath, object_name + '.csv')
-		return output_object_fpath
 
 	def compose_meta_query(self):
 		""" Its compose a meta query by using a meta query file and adding schema, tables and column definitions

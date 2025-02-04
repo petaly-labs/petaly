@@ -12,14 +12,13 @@ Petaly is designed for seamless data exchange, currently supporting the followin
 - PostgreSQL
 - MySQL
 - BigQuery
+- Redshift
 - Google Cloud Storage (GCS Bucket)
-- CSV files
+- S3 Bucket
+- local CSV files
 
 It makes connecting and transferring data across various systems effortless. Petaly is user-friendly and requires no programming knowledge. 
 Data pipelines can be easily configured using the YAML format, making the tool ready to use immediately after installation.
-
-## Important
-This is an Alpha version of the Petaly project!
 
 ## Getting Started
 
@@ -73,12 +72,35 @@ In case GCP BigQuery or Google Cloud Storage support is required, install it usi
 
 ```
 $  python3 -m pip install petaly[gcp]
-
 ```
 
 To use your GCP resources, the first step is to install the Google Cloud SDK (gcloud) from the official webpage: [Google Cloud SDK Installation](https://cloud.google.com/sdk/docs/install-sdk)
 Follow the instructions to configure access to your Google Project, BigQuery, and GCS (bucket).
 Petaly supports access via a service account authentication key in JSON format, saved locally and configured with gcloud.
+
+#### Install with AWS
+In case AWS Redshift or AWS S3 Storage support is required, install it using: `pip install petaly[aws]`
+```
+$  python3 -m pip install petaly[aws]
+```
+To access AWS resources, install the AWS CLI by following the official tutorial: [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html)
+
+After installation, configure access to your AWS Account, Redshift and S3 (bucket). [AWS Documentation](https://docs.aws.amazon.com/)
+
+Petaly supports two authentication methods:
+
+**IAM** - Authentication via AWS IAM using a profile saved in `.aws/config` locally (recommended). 
+Alternatively, direct authentication can be used by specifying `aws_access_key_id` and `aws_secret_access_key` in `pipeline.yaml`.
+
+**TCP** - Authentication using host, port, database user and password.
+
+Petaly provides authentication options for:
+- **Redshift Serverless** access via IAM or TCP
+- **Redshift Cluster** access via IAM or TCP
+- **S3 Bucket** access via IAM
+
+To use TCP, the Redshift Cluster or Serverless instance can be accessed through an SSH jump host configured in AWS VPC. The cluster or serverless instance does not need to be publicly available. 
+The following AWS tutorial provides guidance on setting this up. [Access private Redshift Cluster via TCP](https://repost.aws/knowledge-center/private-redshift-cluster-local-machine)
 
 ### Alternatively, download and install from GitHub
 
@@ -118,11 +140,11 @@ This tutorial explains the `petaly.ini` configuration file and how to create a w
 
 To create petaly.ini file run following step once:
 
-`$ python3 -m petaly init -c /absolute-path-to-your-config-dir/petaly.ini`
+`$ python3 -m petaly -c /absolute-path-to-your-config-dir/petaly.ini init`
 
 After the configuration file has been created, either use it always with the [-c] argument
 
-`$ python -m petaly init -c /absolute-path-to-your-config-dir/petaly.ini`
+`$ python -m petaly -c /absolute-path-to-your-config-dir/petaly.ini init`
 
 or to skip the [-c] argument, set the environment variable `PETALY_CONFIG_DIR`
 
@@ -141,7 +163,7 @@ output_dir_path=/absolute-path-to-output-dir
 ```
 And then initialize the workspace with following command. This command will simply create all these 3 paths defined above in the petaly.ini file.
 
-`$ python3 -m petaly init --workspace -c /path_to_config_dir/petaly.ini` 
+`$ python3 -m petaly -c /path_to_config_dir/petaly.ini init --workspace` 
 
 <a id="petaly-init-pipeline"></a>
 
@@ -151,7 +173,7 @@ And then initialize the workspace with following command. This command will simp
 Run the following command and follow the wizard steps to initialize a pipeline my_pipeline.
 No changes will be made to the target endpoint at this point.
 
-`$ python3 -m petaly init -p my_pipeline -c /path_to_config_dir/petaly.ini`
+`$ python3 -m petaly -c /path_to_config_dir/petaly.ini init -p my_pipeline `
 
 Run the following command to configure your pipeline. Once the pipeline is created, you can modify it manually.
 
@@ -164,7 +186,7 @@ For detailed instructions, check in the section: **[Pipeline explained](#petaly-
 Now you can run the pipeline my_pipeline and load data from the specified source. 
 Note that it will make changes, re/create tables in the target endpoint (database or folders)
 
-`$ python3 -m petaly run -p my_pipeline -c /path_to_config_dir/petaly.ini`
+`$ python3 -m petaly -c /path_to_config_dir/petaly.ini run -p my_pipeline`
 
 <a id="petaly-load-csv-postgres-examples"></a>
 
@@ -183,7 +205,7 @@ In this tutorial, we’ll show you how to run a new pipeline and load a test CSV
 
 - Run the following command to configure your pipeline. For detailed instructions, check the section below **[Pipeline explained](#petaly-pipeline-explained)**
 
-- `$ python3 -m petaly init -p csv_to_postgres -c /path_to_config_dir/petaly.ini`
+- `$ python3 -m petaly -c /path_to_config_dir/petaly.ini init -p csv_to_postgres`
 
 ### 5.3. Download the test files:
 
@@ -200,7 +222,7 @@ In this tutorial, we’ll show you how to run a new pipeline and load a test CSV
 
 - Execute the pipeline using the configured settings:
 
-- `$ python3 -m petaly run -p csv_to_postgres -c /path_to_config_dir/petaly.ini`
+- `$ python3 -m petaly -c /path_to_config_dir/petaly.ini run -p csv_to_psql`
 
 
 ### 5.6 CSV to Postgres Full Examples
@@ -269,7 +291,7 @@ To avoid mistakes during configuration, it is recommended to use the pipeline wi
 
 To use pipeline wizard run following command:
 
-`$ python3 -m petaly init -p my_pipeline -c /path_to_config_dir/petaly.ini`
+`$ python3 -m petaly -c /path_to_config_dir/petaly.ini init -p my_pipeline`
 
 ### Pipeline structure
 After creating the pipeline, let's review the structure and each parameter.
@@ -516,7 +538,7 @@ Alternatively, to load specific files from `object_source_dir` set:
 The target file format is specified through connector_type: csv.
 
 The initial data is loaded into the output folder defined in the petaly.ini file. 
-The destination_file_dir defines the final directory after download the data in the output folder first.
+The destination_dir defines the final directory after download the data in the output folder first.
 
 
 ```
@@ -524,14 +546,83 @@ pipeline:
   ....
   target_attributes:
     connector_type: csv
-    destination_file_dir: /your-path-to-destination-folder
+    destination_dir: /your-path-to-destination-folder
 ```
+
+### On GCP platform
+if you use Bigquery or Google Cloud Storage(Bucket) following parameters to configure.
+
+```
+    platform_type: gcp
+    
+    # use bigquery or gcs
+    connector_type: gcs
+    
+    # Specify the GCP project ID.
+    gcp_project_id: your-project-id
+    
+    # Specify the GCP region or location.
+    gcp_region: your-region
+    
+    # Specify the GCP bucket name without the gs:// prefix. Leave it empty if loading from a local folder is preferred.
+    gcp_bucket_name: your-bucket-name
+    
+    # [Optional] It defines the path prefix to your objects in the bucket. Don't use here the bucket name. Use a forward slash (/) to separate folders. 
+    # By default, the string petaly/{pipeline_name} will be added as the prefix. The pattern {pipeline_name} will be automatically replaced with the pipeline name during runtime.
+    # If not needed, you can remove it manually after the pipeline is created.
+    bucket_pipeline_prefix: petaly/{pipeline_name}
+
+```
+
+For BigQuery you can specify dataset name under:
+``` 
+    database_schema: petaly_tutorial
+```
+
+### On AWS platform
+
+For Redshift or S3-Bucket following parameters to configure.
+
+```
+    platform_type: aws
+    
+    # use s3 or redshift
+    connector_type: s3
+    
+    # Specify the AWS Bucket Name, without prefix s3://
+    aws_bucket_name: 'bucket-name'
+    
+    # [Optional] It defines the path prefix to your objects in the bucket. Don't use here the bucket name. Use a forward slash (/) to separate folders. 
+    # By default, the string petaly/{pipeline_name} will be added as the prefix. The pattern {pipeline_name} will be automatically replaced with the pipeline name during runtime.
+    # If not needed, you can remove it manually after the pipeline is created.
+    bucket_pipeline_prefix: petaly/{pipeline_name}
+    
+    # This role should have the ability to access the S3 bucket defined in aws_bucket_name from the Redshift site.
+    aws_iam_role: 'arn:aws:iam::xxxxxxxx:role/YourRedshiftRole'
+    
+    # Specify the AWS profile_name if it is defined in the .aws/config file after installing the AWS SDK. If you use this method, leave the following options aws_access_key_id, aws_secret_access_key and aws_region empty.
+    aws_profile_name: 'your-aws-profile'
+    
+    # [Optional] If aws_profile_name is empty specify the aws-access-key-id. You can ignore this if the aws-access-key-id is already defined in .aws/config and the aws_profile_name parameter is properly specified.
+    aws_access_key_id:
+    
+    # [Optional] If aws_profile_name is empty specify the aws-secret-access-key. You can ignore this if the aws-secret-access-key is already defined in .aws/config and the aws_profile_name parameter is properly specified.
+    aws_secret_access_key:
+    
+    # [Optional] If aws_profile_name is empty specify the AWS region here
+    aws_region: 'eu-north-1'
+
+```
+For Redshift, additional parameters must be configured. The required parameter list will dynamically adjust based on the Redshift type (Cluster or Serverless) and the connection method (TCP or IAM). 
+<br>Follow the pipeline wizard instructions `init -p pipeline-name` for detailed guidance on Redshift.
+
 
 [More Pipeline Examples](./docs/tutorial/pipeline_examples.md)
 
 ## Let's Build Together  🌱
 
-Join us in building something meaningful together. 
+Join us in building something meaningful together.
+
 The foundation of any open-source project is its community, a group of individuals collaborating, sharing knowledge and contributing to a shared vision. At Petaly, every contribution, no matter the size, plays an important role in shaping the project.
 We’re continuously improving Petaly, and your feedback and contributions are invaluable. 
 Check out our [Contributing Guide](./CONTRIBUTING.md) to see how you can get involved. Connect with fellow contributors, share your experiences and get support in our community channels. 

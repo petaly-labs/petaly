@@ -1,7 +1,20 @@
-{"quote_char":
+{
+  "quote_char":
     {
       "log_status": "error",
       "action": "exit",
       "message": "The params quote_char was renamed to columns_quote with following options [double, single, none]."
+    },
+  "destination_file_dir":
+    {
+      "log_status": "error",
+      "action": "exit",
+      "message": "The params destination_file_dir from pipeline.yaml was renamed to destination_dir."
+    },
+  "destination_blob_dir":
+    {
+      "log_status": "error",
+      "action": "exit",
+      "message": "The params destination_blob_dir from pipeline.yaml was renamed to bucket_pipeline_prefix."
     }
 }

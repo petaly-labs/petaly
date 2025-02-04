@@ -1,5 +1,25 @@
 # ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
 
+
+## [v0.0.10] - 2025-02-05
+
+### Added
+
+New connectors were added Redshift Connectors:
+  - Redshift Cluster over IAM using iam credentials as well as over TCP using host and port
+  - Redshift Serverless over IAM using iam credentials as well as over TCP using host and port
+  - AWS S3-Bucket connections
+
+### Changed
+The attribute in pipeline.yaml file: `destination_file_dir` was renamed to `destination_dir`
+
+The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `bucket_pipeline_prefix`
+[Optional] Define the path prefix to your objects in the bucket without the bucket name. Use a forward slash (/) to separate folders. 
+By default, the pattern {pipeline_name} will be added to the prefix and automatically replaced with the pipeline name during runtime. If not needed, you can remove it manually after the pipeline is created.
+
+### Fixed
+bug fixed
+
 ## [v0.0.9] - 2024-12-24
 
 ### Added

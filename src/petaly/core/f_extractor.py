@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import sys
 import time
 from pyarrow import csv, parquet, lib as pyarrow_lib
 
+from petaly.core.composer import Composer
 from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
 from petaly.core.data_object import DataObject
@@ -31,6 +32,7 @@ class FExtractor(ABC):
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
+        self.composer = Composer()
         self.f_handler = FileHandler()
         self.object_metadata = ObjectMetadata(pipeline)
         self.object_default_settings = pipeline.data_attributes.get("object_default_settings")
@@ -47,75 +49,113 @@ class FExtractor(ABC):
         logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
         start_total_time = time.time()
 
-        # 1. Start with cleanup
-        #self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
-
-        # 4. save metadata and export scripts
+        # 1. save metadata and export scripts
         object_list = self.pipeline.data_objects
 
-        # 5. run loop for each object
+        # 2. run loop for each object
         for object_name in object_list:
             logger.info(f"Extract object: {object_name} started...")
             start_time = time.time()
 
             extractor_obj_conf = self.get_extractor_obj_conf(object_name)
-            self.extract_to(extractor_obj_conf)
+
+            # 3. cleanup pipeline directory before run
+            self.f_handler.cleanup_dir(extractor_obj_conf.get('output_data_object_dir'))
+
+            file_list = self.extract_to(extractor_obj_conf)
+
+            connector_category = self.pipeline.m_conf.get_connector_category(self.pipeline.target_connector_id)
+            if connector_category in ('database'):
+                self.extract_metadata_from_file(file_list[0], object_name, self.file_format)
+
             end_time = time.time()
             logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
 
         end_total_time = time.time()
         logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
 
+    def extract_metadata_from_file(self, first_file_fpath, object_name, file_format):
+        """
+        """
+        logger.debug(f"Check if the file {first_file_fpath} is compressed.")
+
+        # check if file is gzipped. if gzipped try to unzip it
+        is_gzipped, first_file_fpath = self.f_handler.check_gzip_modify_path(first_file_fpath)
+
+        if is_gzipped:
+            first_file_fpath = self.f_handler.gunzip_file(first_file_fpath, cleanup_file=True)
+
+        # analyse file structure
+        parquet_fpath = self.analyse_file_structure(first_file_fpath, object_name,
+                                                    file_format_extension='.' + file_format)
+
+        meta_table = self.compose_metadata_file(parquet_fpath, object_name)
+        self.save_metadata_into_file(meta_table)
+        # self.describe_parquet_metadata(parquet_fpath)
+
+        # remove temp parquet file
+        self.f_handler.remove_file(parquet_fpath)
+
     def get_extractor_obj_conf(self, object_name) -> dict:
 
         extractor_obj_conf = {'object_name': object_name}
 
         # 1. compose output data dir
+        output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
+
+        # 2. compose metadata directory
         output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
         extractor_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
-
-        # 2. get and compose metadata query
-        #metadata_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
-        #table_metadata = self.f_handler.load_file_as_dict(metadata_fpath, 'json')
-        #extract_queries_dict = self.compose_extract_queries(table_metadata)
-        #extractor_obj_conf.update(extract_queries_dict)
 
         # 3. add object_default_settings
         # extractor_obj_conf.update({'object_settings': table_metadata.get('object_settings')})
         data_object = self.get_data_object(object_name)
 
         if data_object.object_source_dir is None:
-            logger.error(f"Incorrect object specification in file: {self.pipeline.pipeline_fpath} "
-                           f"\ndata_objects_spec: "
-                           f"\n- object_spec:"
-                           f"\n    object_name: {object_name}"
-                           f"\n    object_source_dir: IS EMPTY")
-            sys.exit()
+            if self.pipeline.source_attr.get('connector_type') in ('csv'):
+                logger.error(f"Incorrect object specification in file: {self.pipeline.pipeline_fpath} "
+                               f"\ndata_objects_spec: "
+                               f"\n- object_spec:"
+                               f"\n    object_name: {object_name}"
+                               f"\n    object_source_dir: IS EMPTY")
+                sys.exit()
+            elif self.pipeline.source_attr.get('connector_type') in ('s3', 'gcs'):
+                if self.pipeline.source_attr.get('bucket_pipeline_prefix') is None:
+                    logger.error(f"Incorrect source or object specification in file: {self.pipeline.pipeline_fpath} "
+                             f"\nEither bucket_pipeline_prefix in source_attributes or object_source_dir in object_spec, "
+                                 f"or both, must be specified and cannot be empty. "
+                                 f"\nThe object_source_dir is complementary to the bucket_pipeline_prefix. "
+                                 f"E.g. for bucket path: bucket_name/bucket_pipeline_prefix/object_source_dir")
+                    sys.exit()
 
         extractor_obj_conf.update({'object_source_dir': data_object.object_source_dir})
-        extractor_obj_conf.update({'file_names': data_object.file_names})
+
+        blob_prefix = str(self.pipeline.source_attr.get('bucket_pipeline_prefix') or '').strip('/')
+        blob_prefix = blob_prefix + '/' + str(data_object.object_source_dir or '').strip('/')
+        extractor_obj_conf.update({'blob_prefix': blob_prefix.strip('/')})
+
+        file_names = data_object.file_names
+        if len(file_names) == 0 or file_names[0] is None:
+            file_names = None
+
+        extractor_obj_conf.update({'file_names': file_names})
 
         logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
         extractor_obj_conf.update({'object_settings': data_object.object_settings})
 
-        # 6. create output object dir and output_file_path
-        output_object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-        extractor_obj_conf.update({'output_object_dpath': output_object_dpath})
+        # 6. create output object data dir and output_file_path
+        output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
 
-        self.f_handler.make_dirs(output_object_dpath)
+        self.f_handler.cleanup_dir(output_data_object_dir)
+        self.f_handler.make_dirs(output_data_object_dir)
 
-        output_object_fpath = os.path.join(output_object_dpath, object_name + '.csv')
+        output_object_fpath = os.path.join(output_data_object_dir, object_name + '.csv')
         extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
 
         logger.debug(f"Config for data extract: {extractor_obj_conf}")
         return extractor_obj_conf
-
-    def deprecated_get_local_output_path(self, object_name):
-
-        object_dpath = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-        self.f_handler.make_dirs(object_dpath)
-        output_object_fpath = os.path.join(object_dpath, object_name + '.csv')
-        return output_object_fpath
 
     def save_metadata_into_file(self,meta_table):
         """ Its save a table result as a metadata into file
@@ -248,3 +288,4 @@ class FExtractor(ABC):
 
     def get_data_object(self, object_name):
         return DataObject(self.pipeline, object_name)
+

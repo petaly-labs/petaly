@@ -1,0 +1,5 @@
+{
+  "compress_format": {"in_use":false, "preassigned_values": [null], "default_value":"gz", "key_type": "String", "dependency": null, "key_comment": "Define the compress format for files"},
+  "object_connector_settings": {}
+}
+

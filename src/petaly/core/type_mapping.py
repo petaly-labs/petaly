@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
-import os
 from petaly.utils.file_handler import FileHandler
+
 
 class TypeMapping():
     def __init__(self, pipeline):
@@ -28,9 +28,11 @@ class TypeMapping():
         """ get target-source type mapping. Return the first founded.
 
         """
+
         type_mapping_fpath = self.pipeline.pipeline_type_mapping_fpath.format(source_connector_id=self.pipeline.source_connector_id)
+
         if not self.f_handler.is_file(type_mapping_fpath):
-            type_mapping_fpath = self.m_conf.get_type_mapping_path(self.pipeline.target_connector_id, self.pipeline.source_connector_id)
+            type_mapping_fpath = self.m_conf.compose_type_mapping_path(self.pipeline.target_connector_id, self.pipeline.source_connector_id)
 
         logger.debug(f"Load data type mapping from: {type_mapping_fpath}")
         type_mapping_dict = self.f_handler.load_json(type_mapping_fpath)

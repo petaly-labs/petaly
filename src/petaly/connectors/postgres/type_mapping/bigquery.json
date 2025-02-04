@@ -3,7 +3,7 @@
     "FLOAT64": "double precision",
     "NUMERIC": "numeric",
     "BOOL": "boolean",
-    "STRING": "character varying",
+    "STRING": "text",
     "TIME": "time",
     "DATETIME": "timestamp",
     "TIMESTAMP": "timestamp",
@@ -13,5 +13,4 @@
     "BYTES": "bytea",
     "ARRAY": "array",
     "null": "character varying"
-
-  }
+}

@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class FLoader(ABC):
     def load_from(self, loader_obj_conf):
         pass
 
-    def load_data(self):
+    def load_data(self, file_to_gzip=False):
 
         logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
         start_total_time = time.time()
@@ -53,7 +53,6 @@ class FLoader(ABC):
 
             loader_obj_conf = {}
             loader_obj_conf.update({'object_name': object_name})
-
             output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
             loader_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
 
@@ -62,6 +61,17 @@ class FLoader(ABC):
 
             output_load_from_stmt_fpath = self.pipeline.output_load_from_stmt_fpath.format(object_name=object_name)
             loader_obj_conf.update({'load_from_stmt_fpath': output_load_from_stmt_fpath})
+
+            if file_to_gzip:
+                self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
+
+            file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.*')
+            loader_obj_conf.update({'file_list': file_list})
+
+            blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.target_attr.get('bucket_pipeline_prefix'),
+                                                                    self.pipeline.pipeline_name,
+                                                                    object_name)
+            loader_obj_conf.update({'blob_prefix': blob_prefix})
 
             self.load_from(loader_obj_conf)
 

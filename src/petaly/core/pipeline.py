@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,14 +57,17 @@ class Pipeline:
 
         pipeline_attr = pipeline_dict.get('pipeline').get('pipeline_attributes')
         self.source_attr = pipeline_dict.get('pipeline').get('source_attributes')
+        self.check_pipeline_outdated_arguments(self.source_attr)
+
         self.target_attr = pipeline_dict.get('pipeline').get('target_attributes')
+        self.check_pipeline_outdated_arguments(self.target_attr)
 
         if pipeline_attr.get('pipeline_name') != pipeline_name:
             logger.warning(f"The pass parameter for pipeline_name: {pipeline_name} does not match the pipeline_name {pipeline_attr.get('pipeline_name')} defined in the corresponding file:  {self.pipeline_fpath}")
             sys.exit()
 
         # PIPELINE ATTRIBUTE
-        self.is_enabled = pipeline_attr.get('is_enabled')
+        self.is_enabled = True if str(pipeline_attr.get('is_enabled')).lower() == 'true' else False
 
         if self.is_enabled != True:
             logger.warning(f"The pipeline: {pipeline_name} is disabled. To enable pipeline {self.pipeline_dpath} set the parameter is_enabled: true ")
@@ -97,14 +100,6 @@ class Pipeline:
     def get_pipeline_entire_config(self):
         pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)
         return pipeline_all_obj
-
-    def deprecated_get_data_objects(self):
-        data_objects = []
-        if self.data_objects is not None:
-            if self.data_objects[0] is not None:
-                data_objects = self.data_objects
-
-        return data_objects
 
     def get_object_default_settings(self):
         """

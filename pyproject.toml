@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "petaly"
-version = "0.0.9"
+version = "0.0.10"
 license = {file = "LICENSE.md"}
 description = "Python ETL tool"
 readme = {file = "README.md", content-type = "text/markdown"}
@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12"
 ]
 requires-python = ">= 3.10"
-keywords = ["petaly", "etl", "ingestion", "database"]
+keywords = ["petaly", "etl", "ingestion", "database", "postgres", "postgresql", "mysql", "bigquery", "redshift", "s3", "gcs", "google storage", "bucket"]
 dependencies =[
         "PyYAML",
         "PyMySQL",
@@ -38,6 +38,9 @@ gcp = [
         "google-cloud-storage",
         "google-api-python-client",
         "oauth2client"
+        ]
+aws = [
+        "redshift_connector[full]"
         ]
 [tool.setuptools.packages.find]
 where = ["src"]

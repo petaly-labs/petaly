@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import logging
 logger = logging.getLogger(__name__)
 
-from pprint import pprint
-
-import time
-from functools import wraps
 
 def measure_time(func):
     """This decorator return the execution time for the decorated function."""
+    import time
+    from functools import wraps
 
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -40,5 +39,3 @@ class FormatDict(dict):
     def __missing__(self, key):
         return '{' + str(key) + '}'
 
-def ptprint(msg):
-    pprint(msg)

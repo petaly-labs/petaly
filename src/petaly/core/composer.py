@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -93,3 +93,13 @@ class Composer():
 				return idx, obj_spec
 
 
+	def compose_bucket_object_path(self, bucket_pipeline_prefix, pipeline_name, object_name):
+		"""
+		"""
+		blob_prefix = object_name
+
+		if bucket_pipeline_prefix is not None:
+			if bucket_pipeline_prefix.strip() != '':
+				blob_prefix = bucket_pipeline_prefix.format(pipeline_name=pipeline_name).strip('/') + '/' + object_name
+
+		return blob_prefix

@@ -1,4 +1,4 @@
-# Copyright © 2024 Pavel Rabaev
+# Copyright © 2024-2025 Pavel Rabaev
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 import logging
 logger = logging.getLogger(__name__)
+
 from petaly.sysconfig.logger import setup_logging
 
 
@@ -67,6 +68,7 @@ class MainCtl():
         """
         logger.debug("Load target config")
         class_obj = self.m_conf.get_loader_class(pipe.target_connector_id)
+        logger.debug(f"Load class: {class_obj}")
         # run loader
         if class_obj is not None:
             loader = class_obj(pipe)

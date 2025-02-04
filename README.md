@@ -581,7 +581,7 @@ For BigQuery you can specify dataset name under:
 
 ### On AWS platform
 
-In case the endpoint is S3 or Redshift, the following AWS parameters must be configured.<br>
+For Redshift or S3-Bucket following parameters to configure.
 
 ```
     platform_type: aws

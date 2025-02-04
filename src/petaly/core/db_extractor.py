@@ -128,9 +128,9 @@ class DBExtractor(ABC):
 		extractor_obj_conf.update({'object_settings': data_object.object_settings})
 
 		# blob-prefix, used for storage in cloud services (e.g. Redshift (s3), Bigquery (GCS))
-		blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.source_attr.get('bucket_object_path'),
-																 self.pipeline.pipeline_name,
-																 object_name)
+		blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.source_attr.get('bucket_pipeline_prefix'),
+																self.pipeline.pipeline_name,
+																object_name)
 		extractor_obj_conf.update({'blob_prefix': blob_prefix})
 
 		# 4. load stmt_extract_to.txt and transform it in later stage

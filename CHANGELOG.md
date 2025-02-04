@@ -12,7 +12,10 @@ New connectors were added Redshift Connectors:
 
 ### Changed
 The attribute in pipeline.yaml file: `destination_file_dir` was renamed to `destination_dir`
-The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `bucket_object_path`
+
+The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `bucket_pipeline_prefix`
+[Optional] Define the path prefix to your objects in the bucket without the bucket name. Use a forward slash (/) to separate folders. 
+By default, the pattern {pipeline_name} will be added to the prefix and automatically replaced with the pipeline name during runtime. If not needed, you can remove it manually after the pipeline is created.
 
 ### Fixed
 bug fixed

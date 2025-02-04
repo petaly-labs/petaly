@@ -109,9 +109,9 @@ class DBLoader(ABC):
         load_from_stmt = self.compose_load_from_stmt(data_object, loader_obj_conf)
         loader_obj_conf.update({'load_from_stmt': load_from_stmt})
 
-        blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.target_attr.get('bucket_object_path'),
-                                                                 self.pipeline.pipeline_name,
-                                                                 object_name)
+        blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.target_attr.get('bucket_pipeline_prefix'),
+                                                                self.pipeline.pipeline_name,
+                                                                object_name)
         loader_obj_conf.update({'blob_prefix': blob_prefix})
 
         return loader_obj_conf

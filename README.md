@@ -549,6 +549,74 @@ pipeline:
     destination_dir: /your-path-to-destination-folder
 ```
 
+### On GCP platform
+if you use Bigquery or Google Cloud Storage(Bucket) following parameters to configure.
+
+```
+    platform_type: gcp
+    
+    # use bigquery or gcs
+    connector_type: gcs
+    
+    # Specify the GCP project ID.
+    gcp_project_id: your-project-id
+    
+    # Specify the GCP region or location.
+    gcp_region: your-region
+    
+    # Specify the GCP bucket name without the gs:// prefix. Leave it empty if loading from a local folder is preferred.
+    gcp_bucket_name: your-bucket-name
+    
+    # [Optional] It defines the path prefix to your objects in the bucket. Don't use here the bucket name. Use a forward slash (/) to separate folders. 
+    # By default, the string petaly/{pipeline_name} will be added as the prefix. The pattern {pipeline_name} will be automatically replaced with the pipeline name during runtime.
+    # If not needed, you can remove it manually after the pipeline is created.
+    bucket_pipeline_prefix: petaly/{pipeline_name}
+
+```
+
+For BigQuery you can specify dataset name under:
+``` 
+    database_schema: petaly_tutorial
+```
+
+### On AWS platform
+
+In case the endpoint is S3 or Redshift, the following AWS parameters must be configured.<br>
+
+```
+    platform_type: aws
+    
+    # use s3 or redshift
+    connector_type: s3
+    
+    # Specify the AWS Bucket Name, without prefix s3://
+    aws_bucket_name: 'bucket-name'
+    
+    # [Optional] It defines the path prefix to your objects in the bucket. Don't use here the bucket name. Use a forward slash (/) to separate folders. 
+    # By default, the string petaly/{pipeline_name} will be added as the prefix. The pattern {pipeline_name} will be automatically replaced with the pipeline name during runtime.
+    # If not needed, you can remove it manually after the pipeline is created.
+    bucket_pipeline_prefix: petaly/{pipeline_name}
+    
+    # This role should have the ability to access the S3 bucket defined in aws_bucket_name from the Redshift site.
+    aws_iam_role: 'arn:aws:iam::xxxxxxxx:role/YourRedshiftRole'
+    
+    # Specify the AWS profile_name if it is defined in the .aws/config file after installing the AWS SDK. If you use this method, leave the following options aws_access_key_id, aws_secret_access_key and aws_region empty.
+    aws_profile_name: 'your-aws-profile'
+    
+    # [Optional] If aws_profile_name is empty specify the aws-access-key-id. You can ignore this if the aws-access-key-id is already defined in .aws/config and the aws_profile_name parameter is properly specified.
+    aws_access_key_id:
+    
+    # [Optional] If aws_profile_name is empty specify the aws-secret-access-key. You can ignore this if the aws-secret-access-key is already defined in .aws/config and the aws_profile_name parameter is properly specified.
+    aws_secret_access_key:
+    
+    # [Optional] If aws_profile_name is empty specify the AWS region here
+    aws_region: 'eu-north-1'
+
+```
+For Redshift, additional parameters must be configured. The required parameter list will dynamically adjust based on the Redshift type (Cluster or Serverless) and the connection method (TCP or IAM). 
+<br>Follow the pipeline wizard instructions `init -p pipeline-name` for detailed guidance on Redshift.
+
+
 [More Pipeline Examples](./docs/tutorial/pipeline_examples.md)
 
 ## Let's Build Together  🌱

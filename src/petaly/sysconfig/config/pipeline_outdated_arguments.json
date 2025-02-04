@@ -15,6 +15,6 @@
     {
       "log_status": "error",
       "action": "exit",
-      "message": "The params destination_blob_dir from pipeline.yaml was renamed to bucket_object_path."
+      "message": "The params destination_blob_dir from pipeline.yaml was renamed to bucket_pipeline_prefix."
     }
 }

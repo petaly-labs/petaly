@@ -156,6 +156,7 @@ pipeline:
     gcp_project_id: 'my-project'
     gcp_region: EU
     gcp_bucket_name: 'bucket-name'
+    bucket_pipeline_prefix: petaly/{pipeline_name}
   target_attributes:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data/
@@ -193,6 +194,7 @@ pipeline:
     gcp_project_id: 'my-project'
     gcp_region: EU
     gcp_bucket_name: 'bucket-name'
+    bucket_pipeline_prefix: petaly/{pipeline_name}
   data_attributes:
     data_objects_spec_mode: only
     object_default_settings:
@@ -225,12 +227,11 @@ pipeline:
     connector_type: csv
   target_attributes:
     connector_type: gcs
-    bucket_object_path: petaly
-    compress_format: gz
     platform_type: gcp
     gcp_project_id: 'my-project
     gcp_region: EU
     gcp_bucket_name: 'bucket-name'
+    bucket_pipeline_prefix: petaly/{pipeline_name}
   data_attributes:
     data_objects_spec_mode: only
     object_default_settings:
@@ -273,7 +274,7 @@ pipeline:
     database_schema: schema-name
     platform_type: aws
     aws_bucket_name: 'bucket-name'
-    bucket_object_path: petaly
+    bucket_pipeline_prefix: petaly/{pipeline_name}
     aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
@@ -314,7 +315,7 @@ Target-Attribute
     platform_type: aws
     aws_region: 'eu-north-1'
     aws_bucket_name: 'your-bucket'
-    bucket_object_path: petaly
+    bucket_pipeline_prefix: petaly/{pipeline_name}
     aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
@@ -335,7 +336,7 @@ Target-Attribute
     database_schema: public
     platform_type: aws
     aws_bucket_name: 'bucket-name'
-    bucket_object_path: petaly
+    bucket_pipeline_prefix: petaly/{pipeline_name}
     aws_iam_role: 'arn:aws:iam::xxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
@@ -360,7 +361,7 @@ Target-Attribute
     platform_type: aws
     aws_region: 'eu-north-1'
     aws_bucket_name: 'your-bucket'
-    bucket_object_path: petaly
+    bucket_pipeline_prefix: petaly/{pipeline_name}
     aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
@@ -386,7 +387,7 @@ pipeline:
     platform_type: aws
     aws_region: 'eu-north-1'
     aws_bucket_name: 'your-bucket'
-    bucket_object_path: petaly
+    bucket_pipeline_prefix: petaly/{pipeline_name}
     aws_iam_role: 'arn:aws:iam::xxxxxxxxxxxx:role/YourRedshiftRole'
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:

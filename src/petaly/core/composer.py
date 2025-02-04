@@ -93,13 +93,13 @@ class Composer():
 				return idx, obj_spec
 
 
-	def compose_bucket_object_path(self, bucket_object_path, pipeline_name, object_name):
+	def compose_bucket_object_path(self, bucket_pipeline_prefix, pipeline_name, object_name):
 		"""
 		"""
-		if bucket_object_path is None or bucket_object_path.strip() == '':
-			blob_prefix = pipeline_name + '/' + object_name
-		else:
-			#blob_prefix = bucket_object_path.strip('/') + '/' + pipeline_name + '/' + object_name
-			blob_prefix = bucket_object_path.strip('/') + '/' + object_name
+		blob_prefix = object_name
+
+		if bucket_pipeline_prefix is not None:
+			if bucket_pipeline_prefix.strip() != '':
+				blob_prefix = bucket_pipeline_prefix.format(pipeline_name=pipeline_name).strip('/') + '/' + object_name
 
 		return blob_prefix

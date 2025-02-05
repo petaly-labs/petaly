@@ -42,6 +42,8 @@ gcp = [
 aws = [
         "redshift_connector[full]"
         ]
+all = ["petaly[gcp,aws]"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

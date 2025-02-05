@@ -58,7 +58,7 @@ It's possible that the tool will work with other operating systems and other dat
 Petaly can be installed using `pip` or downloaded directly from this repository.
 
 ### Install with pip
-To install the default libraries with support for all open-source endpoints, including PostgreSQL, MySQL, and CSV, use: `pip install petaly`
+To install petaly with support for open-source endpoints: such as PostgreSQL, MySQL, and CSV, use: `pip install petaly`
 ```
 $ mkdir petaly
 $ cd petaly
@@ -67,12 +67,19 @@ $ source .venv/bin/activate
 $ python3 -m pip install petaly
 ```
 
+To install all packages including GCP and AWS libraries use:
+
+```
+$ python3 -m pip install petaly[all]
+```
+
 #### Install with GCP
 In case GCP BigQuery or Google Cloud Storage support is required, install it using: `pip install petaly[gcp]`
 
 ```
 $  python3 -m pip install petaly[gcp]
 ```
+or use `pip install petaly[all]`
 
 To use your GCP resources, the first step is to install the Google Cloud SDK (gcloud) from the official webpage: [Google Cloud SDK Installation](https://cloud.google.com/sdk/docs/install-sdk)
 Follow the instructions to configure access to your Google Project, BigQuery, and GCS (bucket).
@@ -83,6 +90,8 @@ In case AWS Redshift or AWS S3 Storage support is required, install it using: `p
 ```
 $  python3 -m pip install petaly[aws]
 ```
+or use `pip install petaly[all]`
+
 To access AWS resources, install the AWS CLI by following the official tutorial: [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html)
 
 After installation, configure access to your AWS Account, Redshift and S3 (bucket). [AWS Documentation](https://docs.aws.amazon.com/)

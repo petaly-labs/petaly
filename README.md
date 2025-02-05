@@ -32,14 +32,6 @@ Explore the documentation below:
 <br>**[6. Pipeline better explained](#petaly-pipeline-explained)**
 
 
-
-## Tool Features
-In the current version Petaly provides extract and load data between following endpoints:
-
-- CSV
-- MySQL (tested version 8.0+)
-- PostgreSQL (tested version 16+)
-
 ## Requirements:
 - Python 3.10 - 3.12
 

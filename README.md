@@ -35,14 +35,11 @@ Explore the documentation below:
 ## Requirements:
 - Python 3.10 - 3.12
 
-## Tested on
-Petaly was tested on: 
+OS:
+- Linux
+- MacOS
 
-OS: 
-- MacOS 14.6
-- Ubuntu 22.04.3 LTS
-
-It's possible that the tool will work with other operating systems and other databases and python versions. It just hasn't been tested yet.
+It's possible that Petaly will work with other operating systems and python versions. It just hasn't been tested yet.
 
 <a id="petaly-install"></a>
 

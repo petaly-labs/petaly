@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "petaly"
-version = "0.0.10"
+version = "0.0.10-post01"
 license = {file = "LICENSE.md"}
 description = "Python ETL tool"
 readme = {file = "README.md", content-type = "text/markdown"}

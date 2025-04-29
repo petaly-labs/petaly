@@ -26,15 +26,15 @@
             },
           "bigquery": {
             "connector_category": "database",
-            "connector_dpath": "petaly.connectors.gcp.bigquery",
+            "connector_dpath": "petaly.connectors.bigquery",
             "extractor": {"module_path": "bq_extractor", "class_name": "BQExtractor"},
             "loader": {"module_path": "bq_loader", "class_name": "BQLoader"},
-            "type_mapping": "petaly.connectors.gcp.bigquery.type_mapping",
+            "type_mapping": "petaly.connectors.bigquery.type_mapping",
             "supported_platforms": ["gcp"]
           },
           "gcs": {
             "connector_category": "storage",
-            "connector_dpath": "petaly.connectors.gcp.gs",
+            "connector_dpath": "petaly.connectors.gs",
             "extractor": {"module_path": "gs_extractor", "class_name": "GSExtractor"},
             "loader": {"module_path": "gs_loader", "class_name": "GSLoader"},
             "type_mapping": "petaly.connectors.csv.type_mapping",
@@ -42,15 +42,15 @@
           },
           "redshift": {
             "connector_category": "database",
-            "connector_dpath": "petaly.connectors.aws.redshift",
+            "connector_dpath": "petaly.connectors.redshift",
             "extractor": {"module_path": "rs_extractor", "class_name": "RSExtractor"},
             "loader": {"module_path": "rs_loader", "class_name": "RSLoader"},
-            "type_mapping": "petaly.connectors.aws.redshift.type_mapping",
+            "type_mapping": "petaly.connectors.redshift.type_mapping",
             "supported_platforms": ["aws"]
           },
           "s3": {
             "connector_category": "storage",
-            "connector_dpath": "petaly.connectors.aws.s3",
+            "connector_dpath": "petaly.connectors.s3",
             "extractor": {"module_path": "s3_extractor", "class_name": "S3Extractor"},
             "loader": {"module_path": "s3_loader", "class_name": "S3Loader"},
             "type_mapping": "petaly.connectors.csv.type_mapping",

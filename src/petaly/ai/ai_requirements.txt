@@ -1,0 +1,2 @@
+# AI Agent components dependencies
+requests>=2.28.1

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 import os
 import re
 import pathlib
+import glob
 import sys
 
 import yaml
@@ -228,9 +229,17 @@ class FileHandler:
 
         return result_arr
 
+    def get_all_files_from_dir(self, dir_path):
+        """ iterating over all files with determine extension
+        Example: if dir_path is something like this pipeline_name/**/data/*.*,
+                it will return all files with all extensions from pipeline_name/all_table_names/data/*.*
+        """
+
+        result_arr = glob.glob(dir_path, recursive=True)
+        return result_arr
+
     def get_all_dir_names(self, path_to_dir):
-        """ """
-        # iterating over all files with determine extension
+        """  iterating over all files with determine extension """
         result_arr = []
 
         for dir in os.listdir(path_to_dir):
@@ -325,18 +334,6 @@ class FileHandler:
 
         if files_are_not_exist:
             logger.debug('Directory has no files')
-
-    def deprecated_copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
-        """ This function copy templates file without comments to the specified pipeline
-        """
-        target_file = open(path_to_target_file, 'w')
-        with open(path_to_file, "r") as file:
-            for line in file:
-                if line.find(comment_sign) < 0:
-                    target_file.write(line)
-
-
-        target_file.close()
 
     def load_combined_json(self, first_json_fpath, second_json_fpath) -> {}:
         """ combine two json files and return a dict

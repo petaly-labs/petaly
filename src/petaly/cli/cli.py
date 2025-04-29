@@ -34,19 +34,22 @@ class Cli():
     def __init__(self, main_config=None):
         """
         """
-        self.m_conf = MainConfig() if main_config == None else main_config
+        self.main_config=main_config
         self.console = Console()
-        self.top_level_argument_message = (
+        self.mode_message = (
                                 f"Type one of the following top level positional arguments: show, init, run, cleanup; followed by options below."
                                 f"\nUse -h for help"
         )
 
+        main_config_file_message = (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/petaly.ini\n"
+                                    f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
+
         self.parser = argparse.ArgumentParser()
-        self.parser.add_argument('top_level_argument', choices=['show', 'init', 'run', 'cleanup'], help=self.top_level_argument_message)
+        self.parser.add_argument('mode', choices=['show', 'init', 'run', 'cleanup'], help=self.mode_message)
         self.parser.add_argument('-w', '--workspace', action="store_true", help='Provide attribute --workspace for init. This is required once after installation to create the workspace.')
         self.parser.add_argument('-p', '--pipeline_name', help='Provide pipeline name. Check exiting pipelines by show pipelines')
         self.parser.add_argument('-o', '--object_name', help='Provide object name or a comma-separated list without empty space. The pipeline name should be specified with -p paramater too.')
-        self.parser.add_argument('-c', '--config_file_path', nargs='?', type=str, help=self.m_conf.missing_main_config_file_message())
+        self.parser.add_argument('-c', '--config_file_path', nargs='?', type=str, help=main_config_file_message)
         self.parser.add_argument('-s', '--source_only', action='store_true', help='Use this optional argument only if you plan to extract data from the source without loading it to the target. This allows you to verify the data before loading.')
         self.parser.add_argument('-t', '--target_only', action='store_true', help='Use this optional argument only if you plan to load data from the output directory that was previously extracted using the -s argument. This allows you to load data into the target without extracting it again.')
         self.parser.set_defaults(func=self.process_p)
@@ -55,25 +58,30 @@ class Cli():
     def process_p(self, args):
         """
         """
-        if args.top_level_argument == 'show':
+
+        if args.mode == 'show':
             self.show_p(args)
-        elif args.top_level_argument == 'init':
+        elif args.mode == 'init':
             self.init_p(args)
-        elif args.top_level_argument == 'run':
+        elif args.mode == 'run':
             self.run_p(args)
-        elif args.top_level_argument == 'cleanup':
+        elif args.mode == 'cleanup':
             self.cleanup_p(args)
         else:
-            #self.exit_with_help(args.config_file_path, self.top_level_argument_message)
+            #self.exit_with_help(args.config_file_path, self.mode_message)
+            self.parser.print_help()
+            sys.exit(1)
+
             pass
 
     def init_p(self, args):
         """
         """
-        self.m_conf.set_main_config_fpath(args.config_file_path, init_main_config = True)
-        self.m_conf.set_workspace_dpaths()
+        m_conf = MainConfig() if self.main_config == None else self.main_config
+        m_conf.set_main_config_fpath(args.config_file_path, init_main_config = True)
+        m_conf.set_workspace_dpaths()
 
-        initialize = CliInitializer(self.m_conf)
+        initialize = CliInitializer(m_conf)
 
         if args.workspace:
             initialize.init_workspace()
@@ -88,10 +96,11 @@ class Cli():
     def show_p(self, args):
         """
         """
-        self.m_conf.set_main_config_fpath(args.config_file_path)
-        self.m_conf.set_workspace_dpaths()
+        m_conf = MainConfig() if self.main_config == None else self.main_config
+        m_conf.set_main_config_fpath(args.config_file_path)
+        m_conf.set_workspace_dpaths()
 
-        visualize = CliVisualizer(self.m_conf)
+        visualize = CliVisualizer(m_conf)
 
         if args.workspace:
             visualize.show_workspace()
@@ -107,17 +116,19 @@ class Cli():
     def run_p(self, args):
         """
         """
-        self.m_conf.set_main_config_fpath(args.config_file_path)
-        self.m_conf.set_workspace_dpaths()
-        self.m_conf.set_global_settings()
+        m_conf = MainConfig() if self.main_config == None else self.main_config
 
-        initialize = CliInitializer(self.m_conf)
+        m_conf.set_main_config_fpath(args.config_file_path)
+        m_conf.set_workspace_dpaths()
+        m_conf.set_global_settings()
+
+        initialize = CliInitializer(m_conf)
         initialize.init_workspace(skip_message_if_exist=True)
 
         if args.pipeline_name:
 
-            main_ctl = MainCtl(self.m_conf)
-            pipeline = Pipeline(args.pipeline_name, self.m_conf)
+            main_ctl = MainCtl(m_conf)
+            pipeline = Pipeline(args.pipeline_name, m_conf)
 
             if self.are_endpoints_identical(pipeline):
                 self.console.print(f"In the pipeline {args.pipeline_name} source_attributes and target_attributes are exactly the same. To avoid accidentally recreating the same tables, specify at least a different schema or database name.")
@@ -142,9 +153,10 @@ class Cli():
         """
         """
         identical_attributes = False
+        m_conf = MainConfig() if self.main_config == None else self.main_config
 
-        source_category = self.m_conf.get_connector_class_config(pipeline.source_attr.get('connector_type')).get('connector_category')
-        target_category = self.m_conf.get_connector_class_config(pipeline.target_attr.get('connector_type')).get('connector_category')
+        source_category = m_conf.get_connector_class_config(pipeline.source_attr.get('connector_type')).get('connector_category')
+        target_category = m_conf.get_connector_class_config(pipeline.target_attr.get('connector_type')).get('connector_category')
 
         if source_category == 'database':
             if source_category == target_category:
@@ -160,10 +172,12 @@ class Cli():
     def cleanup_p(self, args):
         """
         """
-        self.m_conf.set_main_config_fpath(args.config_file_path)
-        self.m_conf.set_workspace_dpaths()
+        m_conf = MainConfig() if self.main_config == None else self.main_config
 
-        cleanup = CliCleanup(self.m_conf)
+        m_conf.set_main_config_fpath(args.config_file_path)
+        m_conf.set_workspace_dpaths()
+
+        cleanup = CliCleanup(m_conf)
 
         if args.pipeline_name:
             if args.object_name:
@@ -177,7 +191,8 @@ class Cli():
         """
         self.parser.print_help()
         self.console.print('\n'+message+'\n')
-        visualize = CliVisualizer(self.m_conf)
+        m_conf = MainConfig() if self.main_config == None else self.main_config
+        visualize = CliVisualizer(m_conf)
         visualize.show_pipelines()
         sys.exit()
 
@@ -192,7 +207,7 @@ class Cli():
             if 'args' not in locals():
                 self.console.print(
                     "----------------------------------------------------------------------------------------")
-                self.console.print(self.top_level_argument_message)
+                self.console.print(self.mode_message)
                 self.console.print(
                     "----------------------------------------------------------------------------------------")
                 sys.exit(0)

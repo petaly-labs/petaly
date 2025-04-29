@@ -46,7 +46,6 @@ class MainConfig:
         self.pipeline_outdated_arguments_fname = 'pipeline_outdated_arguments.json'
 
         self.base_dpath = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
         self.src_dpath = os.path.dirname(self.base_dpath)
         self.root_dpath = os.path.dirname(self.src_dpath)
         self.main_config_fpath = None
@@ -54,31 +53,39 @@ class MainConfig:
         self.sysconfig = os.path.join(self.base_dpath, 'sysconfig')
         self.sysconfig_config = os.path.join(self.sysconfig, 'config')
 
-        self.templates_main_config_fpath = os.path.join(self.sysconfig_config, 'template_' + self.main_config_fname)
+        self.templates_main_config_fpath = os.path.join(self.root_dpath, 'template_' + self.main_config_fname)
         self.logging_config_fpath = os.path.join(self.sysconfig_config, self.logging_config_fname)
         self.pipeline_meta_config_fpath = os.path.join(self.sysconfig_config, self.pipeline_meta_config_fname)
         self.class_sysconfig_fpath = os.path.join(self.sysconfig_config, self.class_config_fname)
         self.pipeline_outdated_arguments_fpath = os.path.join(self.sysconfig_config, self.pipeline_outdated_arguments_fname)
-
+        
         self.workspace_config = {
                                             "pipeline_dir_path": None,
                                             "logs_dir_path": None,
                                             "output_dir_path": None
                                          }
         self.global_settings = {
-                                        "logging_mode": "INFO"
+                                        "logging_mode": "INFO",
+                                        "app_mode": "CLI"
                                         }
 
+        self.ai_settings = {
+            "ai_agent_api_key": None,
+            "llm_provider": "openai",
+            "llm_model": "gpt-4o",
+            "agent_memory_file": None
+        }
 
     def set_main_config_fpath(self, config_file_path, init_main_config=False):
         """
         """
         # 1. if config file wasn't pass, set to default one
         if config_file_path is None:
-            config_file_path = self.main_config_fname
+            config_file_path = os.path.join(self.root_dpath, self.main_config_fname)
 
         # 2. exit, if config file is not absolute or env variable wasn't set
         if os.path.isabs(config_file_path) is False:
+
             if self.env_config_dpath:
                 config_file_path = os.path.join(self.env_config_dpath, config_file_path)
             else:
@@ -111,7 +118,6 @@ class MainConfig:
 
         conf_parser = ConfigParser(interpolation=ExtendedInterpolation())
         conf_parser.read(self.main_config_fpath)
-
         return conf_parser
 
     def check_main_config_section(self, conf_parser, section_name):
@@ -172,9 +178,44 @@ class MainConfig:
                             self.global_settings['logging_mode'] = value
                         else:
                             self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section global_settings in petaly.ini.")
+                    elif key == 'app_mode':
+                        if value in ('CLI', 'AGENT', 'MCP'):
+                            self.global_settings['app_mode'] = value
+                        else:
+                            self.console.print(f"The option app_mode supports CLI, AGENT, MCP mode only. Check app_mode under section global_settings in petaly.ini.")
+
                 else:
                     self.console.print(f"The option {key} is not specified under section global_settings in petaly.ini.")
+        else:
+            self.console.print(f"The section {section_name} is not specified in petaly.ini.")
 
+    def set_ai_settings(self):
+        section_name = 'ai_settings'
+        conf_parser = self.load_main_config_file()
+        if self.check_main_config_section(conf_parser, section_name):
+            for key in self.ai_settings.keys():
+                if key in conf_parser.options(section_name):
+                    value = conf_parser.get(section_name, key)
+                    if key == 'ai_agent_api_key':
+                        if value is not None:
+                            self.ai_settings['ai_agent_api_key'] = value
+                        else:
+                            if os.getenv('AI_AGENT_API_KEY') is not None:
+                                self.ai_settings['ai_agent_api_key'] = os.getenv('AI_AGENT_API_KEY')
+                            else:
+                                self.console.print(
+                                    f"Neither the option ai_agent_api_key nor the env AI_AGENT_API_KEY was set. Check ai_agent_api_key under section ai_settings in petaly.ini.")
+                    elif key == 'llm_provider':
+                        if value in ('openai', 'anthropic'):
+                            self.ai_settings['llm_provider'] = value
+                        else:
+                            self.console.print(f"The option llm_provider supports openai or anthropic only. Check llm_provider under section ai_settings in petaly.ini.")
+                    else:
+                        self.ai_settings[key] = value
+                else:
+                    self.console.print(f"The option {key} is not specified under section ai_settings in petaly.ini.")
+        else:
+            self.console.print(f"The section {section_name} is not specified in petaly.ini.")
     def missing_main_config_file_message(self):
         return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"
                    f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")

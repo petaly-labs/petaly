@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 # exclude project realted folders or files
-petaly.ini
+petaly*.ini
 !template_petaly.ini
 logs/
 output/
@@ -130,7 +130,8 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv*
+.aivenv*
 env/
 venv/
 ENV/

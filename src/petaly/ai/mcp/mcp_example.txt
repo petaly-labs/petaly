@@ -1,0 +1,23 @@
+petaly-mcp call-function -f create_pipeline -p '{
+  "pipeline_name": "postgres_to_bigquery",
+  "source_type": "postgres",
+  "source_config": {
+    "database_host": "localhost",
+    "database_port": "5432",
+    "database_name": "source_db",
+    "database_user": "postgres",
+    "database_password": "your_password",
+    "database_schema": "public"
+  },
+  "target_type": "bigquery",
+  "target_config": {
+    "gcp_project_id": "your-project-id",
+    "gcp_region": "us-central1",
+    "database_schema": "your_dataset"
+  },
+  "objects": [
+    "customers",
+    "orders",
+    "products"
+  ]
+}'

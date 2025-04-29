@@ -18,4 +18,10 @@ pip install --upgrade google-api-python-client oauth2client
 # AWS
 pip install --upgrade "redshift_connector[full]"
 
+# AI
+#pip install prompt_toolkit
+
+# PytTest
+# pip install pytest pytest-asyncio pytest-cov
+
 pip3 freeze > requirements.txt

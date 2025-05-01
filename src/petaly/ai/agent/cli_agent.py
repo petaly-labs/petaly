@@ -42,37 +42,67 @@ class CliAgent:
         
         # Set up argument parser
         self.parser = argparse.ArgumentParser(
-            description="Petaly AI Agent - Use natural language to create, modify, and run data pipelines"
+            description="Petaly AI Agent - Use natural language to create, modify, and run data pipelines",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Available commands:
+  interactive    Run in interactive mode for natural language conversations
+  command        Execute a single natural language command
+
+Examples:
+  # Start interactive mode
+  python -m petaly agent interactive
+
+  # Execute a single command
+  python -m petaly agent command --instruction "Create pipeline: pipeline-name mypipe; source-systems endpoint-type mysql (database_host=localhost); target-systems endpoint-type postgres (database_host=localhost)"
+
+  # List available pipelines
+  python -m petaly agent command --instruction "Show me all available pipelines"
+
+  # Run a specific pipeline
+  python -m petaly agent command --instruction "Run pipeline: pipeline-name mypipe"
+
+Natural Language Commands:
+  The AI Agent understands various natural language commands for:
+  - Creating pipelines
+  - Modifying existing pipelines
+  - Running pipelines
+  - Listing available pipelines
+  - Getting pipeline details
+  - Managing data objects
+            """
         )
-        self.parser.add_argument(
-            'agent_mode',
-            choices=['interactive', 'command'], 
-            help='Run in mode agent as an interactive or command to execute a single command'
+        
+        # Add subparsers for different actions
+        subparsers = self.parser.add_subparsers(dest='action', help='Action to perform')
+        
+        # interactive command
+        interactive_parser = subparsers.add_parser(
+            'interactive',
+            help='Run in interactive mode for natural language conversations'
         )
+        interactive_parser.set_defaults(func=self.process)
+        
+        # command command
+        command_parser = subparsers.add_parser(
+            'command',
+            help='Execute a single natural language command'
+        )
+        command_parser.add_argument(
+            '--instruction',
+            required=True,
+            help='Natural language instruction to process'
+        )
+        command_parser.set_defaults(func=self.process)
+        
+        # Common arguments
         self.parser.add_argument(
-            '-c', '--config_file_path', 
+            '-c', '--config_file_path',
             help=self.m_conf.missing_main_config_file_message()
         )
-
-        #self.parser.add_argument(
-        #    '--llm-provider',
-        #    choices=['anthropic','openai'],
-        #    default='openai',
-        #    help='Select the LLM provider to use (default: openai)'
-        #)
-
-        #self.parser.add_argument(
-        #    '--memory-file',
-        #    type=str,
-        #    help='Path to store agent memory (default: ~/.petaly/agent_memory.json)'
-        #)
-
-        self.parser.add_argument(
-            '--instruction', 
-            help='Natural language instruction to process in mode: agent command'
-        )
-
-        self.parser.set_defaults(func=self.process)
+        
+        # Set default function to show help if no command is provided
+        self.parser.set_defaults(func=lambda args: self.parser.print_help())
         
         # Initialize prompt session with file-based history
         history_file = os.path.expanduser('~/.petaly/command_history')
@@ -92,9 +122,9 @@ class CliAgent:
         )
         
         # Determine mode
-        if args.agent_mode == 'interactive':
+        if args.action == 'interactive':
             self.run_interactive_mode(agent)
-        elif args.agent_mode == 'command':
+        elif args.action == 'command':
             if not args.instruction:
                 self.console.print("[red]Error: the parameter --instruction is required in mode: agent command[/red]")
                 sys.exit(1)
@@ -140,6 +170,11 @@ class CliAgent:
     
     def start(self):
         """Start the CLI agent."""
-        args = self.parser.parse_args()
-        args.func(args)
+        try:
+            args = self.parser.parse_args()
+            logger.debug(f"Executing agent command with args: {args}")
+            args.func(args)
+        except Exception as e:
+            logger.error(f"Error executing agent command: {e}", exc_info=True)
+            raise
 

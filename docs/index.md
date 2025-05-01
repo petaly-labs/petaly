@@ -27,8 +27,7 @@ Welcome to the Petaly documentation. Petaly is an ETL (Extract, Transform, Load)
 
 4. **Usage**
    - CLI Mode: Use command-line interface for traditional ETL
-   - Agent Mode: Use natural language for AI-powered ETL
-   - MCP Mode: Use the Management Control Panel (coming soon)
+   - Agent Mode: Use natural language for AI-powered ETL [EXPERIMENTAL]
 
 ## Features
 
@@ -40,10 +39,9 @@ Welcome to the Petaly documentation. Petaly is an ETL (Extract, Transform, Load)
 
 ## Support
 
-- [Documentation](https://petaly.readthedocs.io/)
-- [Community Forum](https://github.com/petaly/pr/discussions)
-- [GitHub Issues](https://github.com/petaly/pr/issues)
+- [Community Forum](https://github.com/petaly-labs/petaly/discussions)
+- [GitHub Issues](https://github.com/petaly-labs/petaly/issues)
 
 ## License
 
-Petaly is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/petaly/pr/blob/main/LICENSE) file for details. 
+Petaly is licensed under the Apache License 2.0. See the [LICENSE](https://github.com/petaly-labs/petaly/blob/main/LICENSE.md) file for details. 

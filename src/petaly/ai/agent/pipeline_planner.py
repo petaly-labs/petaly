@@ -159,31 +159,24 @@ class PipelinePlanner:
                 "user_message": "I'm having trouble understanding your request. Could you provide more specific details about the source and target systems for your pipeline?"
             }
     
-    def generate_pipeline_config(self, plan: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        Generate a Petaly pipeline configuration from a plan.
-        
-        Args:
-            plan: Pipeline plan dictionary
-            
-        Returns:
-            List containing pipeline configuration documents
-        """
+    def generate_pipeline_config(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
+                               objects: List[str] = None) -> Dict[str, Any]:
+        """Generate a pipeline configuration from source and target configs."""
         # First, validate the plan
-        if plan.get("needs_more_info", False):
+        if source_config.get("needs_more_info", False) or target_config.get("needs_more_info", False):
             raise ValueError("Cannot generate configuration: more information needed")
         
         # Get pipeline metadata structure template
         pipeline_meta = self.file_handler.load_json(self.m_conf.pipeline_meta_config_fpath)
         
         # Extract source and target details
-        source_details = plan.get("source", {}).get("details", {})
-        target_details = plan.get("target", {}).get("details", {})
+        source_details = source_config.get("details", {})
+        target_details = target_config.get("details", {})
         
         # Build source attributes with platform-specific details
         source_attributes = self._build_connector_attributes(
             source_details,
-            plan.get("source", {}).get("connector_type", ""),
+            source_config.get("connector_type", ""),
             "source"
         )
         
@@ -194,7 +187,7 @@ class PipelinePlanner:
         # Build target attributes with platform-specific details
         target_attributes = self._build_connector_attributes(
             target_details,
-            plan.get("target", {}).get("connector_type", ""),
+            target_config.get("connector_type", ""),
             "target"
         )
         
@@ -243,7 +236,7 @@ class PipelinePlanner:
         
         # Build data objects specification
         data_objects_spec = []
-        for obj in plan.get("data_objects", []):
+        for obj in objects or []:
             if isinstance(obj, str):
                 # Simple object name
                 spec = {
@@ -281,14 +274,14 @@ class PipelinePlanner:
             {
                 "pipeline": {
                     "pipeline_attributes": {
-                        "pipeline_name": plan.get("pipeline_name", "new_pipeline"),
+                        "pipeline_name": source_config.get("pipeline_name", "new_pipeline"),
                         "is_enabled": True
                     },
                     "source_attributes": source_attributes,
                     "target_attributes": target_attributes,
                     "data_attributes": {
                         "data_objects_spec_mode": "only",
-                        "object_default_settings": self._build_default_settings(plan)
+                        "object_default_settings": self._build_default_settings(source_config)
                     }
                 }
             },
@@ -619,7 +612,7 @@ class PipelinePlanner:
     def _build_pipeline_config_from_plan(self, plan: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Build a complete pipeline configuration directly from a plan without requiring LLM.
-        This is a more direct version of generate_pipeline_config for use with MCP.
+        This is a more direct version of generate_pipeline_config.
 
         Args:
             plan: Pipeline plan dictionary with source, target, and object details

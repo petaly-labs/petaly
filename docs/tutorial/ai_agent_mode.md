@@ -31,13 +31,6 @@ output_dir_path=your-path-to-output-dir
 # If an issue occurs, switch to DEBUG for more detailed output that can assist in troubleshooting.
 logging_mode=INFO
 
-# Run Petaly in one of the following APP modes: [CLI, AGENT, MCP]
-# CLI [default] command-line in your local or server environment
-
-# AGENT - via AI agent (EXPERIMENTAL)
-# MCP - through the MCP interface (EXPERIMENTAL)
-app_mode=AGENT
-
 # This is main AI settings section
 [ai_settings]
 # In case app_mode=AGENT

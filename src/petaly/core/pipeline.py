@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 import os
 import sys
+from typing import Dict, List, Any, Optional
 
 from petaly.utils.file_handler import FileHandler
 
@@ -48,54 +49,84 @@ class Pipeline:
         logger.debug("Load Pipeline config")
         self.f_handler = FileHandler()
 
-        pipeline_all_obj = self.get_pipeline_entire_config()
-        pipeline_dict = pipeline_all_obj[0]
-
-        if pipeline_dict == None:
-            logger.warning(f"The pipeline: {pipeline_name} does not exists under: {self.pipeline_fpath}")
-            sys.exit()
-
-        pipeline_attr = pipeline_dict.get('pipeline').get('pipeline_attributes')
-        self.source_attr = pipeline_dict.get('pipeline').get('source_attributes')
-        self.check_pipeline_outdated_arguments(self.source_attr)
-
-        self.target_attr = pipeline_dict.get('pipeline').get('target_attributes')
-        self.check_pipeline_outdated_arguments(self.target_attr)
-
-        if pipeline_attr.get('pipeline_name') != pipeline_name:
-            logger.warning(f"The pass parameter for pipeline_name: {pipeline_name} does not match the pipeline_name {pipeline_attr.get('pipeline_name')} defined in the corresponding file:  {self.pipeline_fpath}")
-            sys.exit()
-
-        # PIPELINE ATTRIBUTE
-        self.is_enabled = True if str(pipeline_attr.get('is_enabled')).lower() == 'true' else False
-
-        if self.is_enabled != True:
-            logger.warning(f"The pipeline: {pipeline_name} is disabled. To enable pipeline {self.pipeline_dpath} set the parameter is_enabled: true ")
-            #sys.exit()
-
-        self.source_connector_id = self.source_attr.get('connector_type')
-        self.target_connector_id = self.target_attr.get('connector_type')
-
-        self.data_attributes = pipeline_dict.get('pipeline').get('data_attributes')
-        self.data_objects_spec_mode = self.data_attributes.get('data_objects_spec_mode')
-        self.object_default_settings = self.get_object_default_settings()
-
-        # load second yaml document
-        self.data_objects_spec = pipeline_all_obj[1]
-        if self.data_objects_spec is None:
-            logger.warning(
-                f"The pipeline: {pipeline_name} wasn't specify properly. It is missing following definition\n\n"
-                f"---\n"
-                f"data_objects_spec: []\n\n"
-                f"It is recommended to reconfigure the pipeline using\n"
-                f"python -m petaly init pipeline -p {pipeline_name}")
-            sys.exit()
-
+        # Initialize attributes with default values
+        self.source_attr = {}
+        self.target_attr = {}
+        self.data_attributes = {}
+        self.data_objects_spec = None
         self.data_objects = []
-        if len(self.data_objects_spec) > 0:
-            for obj in self.data_objects_spec.get('data_objects_spec'):
-                if obj is not None:
-                    self.data_objects.append(obj.get('object_spec').get('object_name'))
+        self.is_enabled = False
+        self.source_connector_id = None
+        self.target_connector_id = None
+        self.data_objects_spec_mode = None
+        self.object_default_settings = {}
+
+        try:
+            pipeline_all_obj = self.get_pipeline_entire_config()
+            pipeline_dict = pipeline_all_obj[0]
+
+            if pipeline_dict is None:
+                logger.warning(f"The pipeline: {pipeline_name} does not exist under: {self.pipeline_fpath}")
+                return
+
+            pipeline_attr = pipeline_dict.get('pipeline', {}).get('pipeline_attributes', {})
+            self.source_attr = pipeline_dict.get('pipeline', {}).get('source_attributes', {})
+            self.target_attr = pipeline_dict.get('pipeline', {}).get('target_attributes', {})
+
+            # Only check outdated arguments if attributes exist
+            if self.source_attr:
+                self.check_pipeline_outdated_arguments(self.source_attr)
+            if self.target_attr:
+                self.check_pipeline_outdated_arguments(self.target_attr)
+
+            if pipeline_attr.get('pipeline_name') != pipeline_name:
+                logger.warning(f"The pass parameter for pipeline_name: {pipeline_name} does not match the pipeline_name {pipeline_attr.get('pipeline_name')} defined in the corresponding file: {self.pipeline_fpath}")
+                return
+
+            # PIPELINE ATTRIBUTE
+            self.is_enabled = True if str(pipeline_attr.get('is_enabled', 'false')).lower() == 'true' else False
+
+            if not self.is_enabled:
+                logger.warning(f"The pipeline: {pipeline_name} is disabled. To enable pipeline {self.pipeline_dpath} set the parameter is_enabled: true")
+
+            self.source_connector_id = self.source_attr.get('connector_type')
+            self.target_connector_id = self.target_attr.get('connector_type')
+
+            self.data_attributes = pipeline_dict.get('pipeline', {}).get('data_attributes', {})
+            self.data_objects_spec_mode = self.data_attributes.get('data_objects_spec_mode')
+            self.object_default_settings = self.get_object_default_settings()
+
+            # load second yaml document
+            self.data_objects_spec = pipeline_all_obj[1]
+            if self.data_objects_spec is None:
+                logger.warning(
+                    f"The pipeline: {pipeline_name} wasn't specified properly. It is missing following definition\n\n"
+                    f"---\n"
+                    f"data_objects_spec: []\n\n"
+                    f"It is recommended to reconfigure the pipeline using\n"
+                    f"python -m petaly init pipeline -p {pipeline_name}")
+                return
+
+            if len(self.data_objects_spec) > 0:
+                for obj in self.data_objects_spec.get('data_objects_spec', []):
+                    if obj is not None:
+                        self.data_objects.append(obj.get('object_spec', {}).get('object_name'))
+
+        except Exception as e:
+            logger.error(f"Error initializing pipeline: {e}", exc_info=True)
+            return
+
+    def _check_outdated_arguments(self, attributes: Dict[str, Any]) -> List[str]:
+        """Check for outdated arguments in the given attributes dictionary."""
+        issues = []
+        pipeline_outdated_arguments = self.m_conf.get_pipeline_outdated_arguments()
+
+        for item_name in attributes:
+            item_value = pipeline_outdated_arguments.get(item_name)
+            if item_value is not None:
+                issues.append(f"Outdated parameter '{item_name}': {item_value.get('message')}")
+
+        return issues
 
     def get_pipeline_entire_config(self):
         pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)
@@ -156,3 +187,18 @@ class Pipeline:
 
                 if item_value.get('action').lower() == 'exit':
                     sys.exit()
+
+    def get_config(self) -> Dict[str, Any]:
+        """Get the pipeline configuration as a dictionary."""
+        try:
+            pipeline_all_obj = self.get_pipeline_entire_config()
+            if not pipeline_all_obj or len(pipeline_all_obj) < 2:
+                return None
+                
+            return {
+                "pipeline": pipeline_all_obj[0],
+                "data_objects_spec": pipeline_all_obj[1]
+            }
+        except Exception as e:
+            logger.error(f"Error getting pipeline config: {e}", exc_info=True)
+            return None

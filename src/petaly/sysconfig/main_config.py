@@ -65,8 +65,7 @@ class MainConfig:
                                             "output_dir_path": None
                                          }
         self.global_settings = {
-                                        "logging_mode": "INFO",
-                                        "app_mode": "CLI"
+                                        "logging_mode": "INFO"
                                         }
 
         self.ai_settings = {
@@ -178,12 +177,7 @@ class MainConfig:
                             self.global_settings['logging_mode'] = value
                         else:
                             self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section global_settings in petaly.ini.")
-                    elif key == 'app_mode':
-                        if value in ('CLI', 'AGENT', 'MCP'):
-                            self.global_settings['app_mode'] = value
-                        else:
-                            self.console.print(f"The option app_mode supports CLI, AGENT, MCP mode only. Check app_mode under section global_settings in petaly.ini.")
-
+                    
                 else:
                     self.console.print(f"The option {key} is not specified under section global_settings in petaly.ini.")
         else:

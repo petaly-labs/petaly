@@ -16,6 +16,7 @@ import argparse
 import logging
 import sys
 import os
+from typing import Optional
 
 #from petaly.core.logger import setup_logging
 
@@ -28,51 +29,108 @@ from petaly.core.main_ctl import MainCtl
 from petaly.core.pipeline import Pipeline
 from petaly.sysconfig.main_config import MainConfig
 
+logger = logging.getLogger(__name__)
 
 class Cli():
 
-    def __init__(self, main_config=None):
+    def __init__(self, main_config: Optional[MainConfig] = None) -> None:
         """
+        Initialize the CLI interface.
+        
+        Args:
+            main_config: Optional main configuration instance
         """
-        self.main_config=main_config
+        self.main_config = main_config
         self.console = Console()
         self.mode_message = (
-                                f"Type one of the following top level positional arguments: show, init, run, cleanup; followed by options below."
-                                f"\nUse -h for help"
+            f"Type one of the following top level positional arguments: show, init, run, cleanup; followed by options below."
+            f"\nUse -h for help"
         )
 
-        main_config_file_message = (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/petaly.ini\n"
-                                    f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
+        self.main_config_file_message = (
+            f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/petaly.ini\n"
+            f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n"
+        )
 
-        self.parser = argparse.ArgumentParser()
-        self.parser.add_argument('mode', choices=['show', 'init', 'run', 'cleanup'], help=self.mode_message)
-        self.parser.add_argument('-w', '--workspace', action="store_true", help='Provide attribute --workspace for init. This is required once after installation to create the workspace.')
-        self.parser.add_argument('-p', '--pipeline_name', help='Provide pipeline name. Check exiting pipelines by show pipelines')
-        self.parser.add_argument('-o', '--object_name', help='Provide object name or a comma-separated list without empty space. The pipeline name should be specified with -p paramater too.')
-        self.parser.add_argument('-c', '--config_file_path', nargs='?', type=str, help=main_config_file_message)
-        self.parser.add_argument('-s', '--source_only', action='store_true', help='Use this optional argument only if you plan to extract data from the source without loading it to the target. This allows you to verify the data before loading.')
-        self.parser.add_argument('-t', '--target_only', action='store_true', help='Use this optional argument only if you plan to load data from the output directory that was previously extracted using the -s argument. This allows you to load data into the target without extracting it again.')
+        self._setup_parser()
+
+    def _setup_parser(self) -> None:
+        """Setup the argument parser with all commands and options."""
+        self.parser = argparse.ArgumentParser(
+            description="Petaly CLI - Data Pipeline Management System",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Available commands:
+  show        Show pipelines and workspace
+  init        Initialize workspace or pipeline
+  run         Run pipeline operations
+  cleanup     Cleanup pipeline objects
+            """
+        )
+
+        # Required arguments
+        self.parser.add_argument(
+            'command',
+            choices=['show', 'init', 'run', 'cleanup'],
+            help='Command to execute'
+        )
+
+        # Optional arguments
+        self.parser.add_argument(
+            '-w', '--workspace',
+            action="store_true",
+            help='Initialize workspace (required once after installation)'
+        )
+        self.parser.add_argument(
+            '-p', '--pipeline_name',
+            help='Pipeline name to operate on'
+        )
+        self.parser.add_argument(
+            '-o', '--object_name',
+            help='Object name or comma-separated list (requires -p)'
+        )
+        self.parser.add_argument(
+            '-c', '--config_file_path',
+            nargs='?',
+            type=str,
+            help=self.main_config_file_message
+        )
+        self.parser.add_argument(
+            '-s', '--source_only',
+            action='store_true',
+            help='Extract data from source only'
+        )
+        self.parser.add_argument(
+            '-t', '--target_only',
+            action='store_true',
+            help='Load data to target only'
+        )
+
         self.parser.set_defaults(func=self.process_p)
 
-
-    def process_p(self, args):
+    def process_p(self, args: argparse.Namespace) -> None:
         """
+        Process pipeline commands.
+        
+        Args:
+            args: Parsed command line arguments
+            
+        Raises:
+            SystemExit: If command execution fails
         """
 
-        if args.mode == 'show':
+        if args.command == 'show':
             self.show_p(args)
-        elif args.mode == 'init':
+        elif args.command == 'init':
             self.init_p(args)
-        elif args.mode == 'run':
+        elif args.command == 'run':
             self.run_p(args)
-        elif args.mode == 'cleanup':
+        elif args.command == 'cleanup':
             self.cleanup_p(args)
         else:
             #self.exit_with_help(args.config_file_path, self.mode_message)
             self.parser.print_help()
             sys.exit(1)
-
-            pass
 
     def init_p(self, args):
         """
@@ -196,19 +254,25 @@ class Cli():
         visualize.show_pipelines()
         sys.exit()
 
-    def start(self):
-        """
-        """
+    def start(self) -> None:
+        """Start the CLI interface."""
         try:
             args = self.parser.parse_args()
+            logger.debug(f"Executing command with args: {args}")
+            self._validate_args(args)
             args.func(args)
-        except:
+        except Exception as e:
+            logger.error(f"Error executing command: {e}", exc_info=True)
+            raise
 
-            if 'args' not in locals():
-                self.console.print(
-                    "----------------------------------------------------------------------------------------")
-                self.console.print(self.mode_message)
-                self.console.print(
-                    "----------------------------------------------------------------------------------------")
-                sys.exit(0)
+    def _validate_args(self, args: argparse.Namespace) -> None:
+        """Validate command line arguments."""
+        if args.command == 'init' and not args.workspace and not args.pipeline_name:
+            self.parser.error("init requires either --workspace or --pipeline_name")
+        
+        if args.object_name and not args.pipeline_name:
+            self.parser.error("--object_name requires --pipeline_name")
+        
+        if args.source_only and args.target_only:
+            self.parser.error("Cannot specify both --source_only and --target_only")
 

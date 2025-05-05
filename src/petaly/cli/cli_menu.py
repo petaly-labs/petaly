@@ -14,10 +14,12 @@
 
 import rich.prompt as prompt
 from rich.console import Console
+import logging
 
 from petaly.utils.file_handler import FileHandler
 from collections import Counter, OrderedDict
 
+logger = logging.getLogger(__name__)
 
 class OrderedCounter(Counter, OrderedDict):
     'Counter that remembers the order elements are first seen'
@@ -145,14 +147,23 @@ class CliMenu():
         self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(assigned_data_attributes)
 
     def compose_object_spec(self, pipeline, object_name, use_pipeline_wizard):
-
         self.use_pipeline_wizard = use_pipeline_wizard
         data_objects_spec = self.pipeline_meta_config.get('data_objects_spec')
         exclude_key_list = []
-        connector_category = self.m_conf.get_connector_category(pipeline.source_attr.get('connector_type'))
+        
+        # Get source connector type and category
+        source_connector_type = pipeline.source_attr.get('connector_type')
+        if not source_connector_type:
+            logger.warning("Source connector type is not specified in the pipeline")
+            return None
+            
+        connector_category = self.m_conf.get_connector_category(source_connector_type)
+        if not connector_category:
+            logger.warning(f"Could not determine connector category for source connector type: {source_connector_type}")
+            return None
 
         # exclude params for file load (csv, etc..)
-        if connector_category in ('database'):
+        if connector_category == 'database':
             exclude_key_list.append('object_source_dir')
             exclude_key_list.append('file_names')
 

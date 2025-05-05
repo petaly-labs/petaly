@@ -29,7 +29,6 @@ class MainConfig:
     def __init__(self):
         self.f_handler = FileHandler()
         self.console = Console()
-        self.pipeline_fname = 'pipeline.yaml'
         self.env_config_dpath = os.getenv('PETALY_CONFIG_DIR')
         self.main_config_fname = 'petaly.ini'
         self.logging_config_fname = 'logging_config.json'
@@ -44,6 +43,9 @@ class MainConfig:
         self.create_table_stmt_fname = 'create_table_stmt.sql'
         self.connector_attributes_fname = 'connector_attributes.json'
         self.pipeline_outdated_arguments_fname = 'pipeline_outdated_arguments.json'
+
+        # Initialize pipeline_fname with default value
+        self.pipeline_fname = 'pipeline.yaml'
 
         self.base_dpath = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         self.src_dpath = os.path.dirname(self.base_dpath)
@@ -65,7 +67,8 @@ class MainConfig:
                                             "output_dir_path": None
                                          }
         self.global_settings = {
-                                        "logging_mode": "INFO"
+                                        "logging_mode": "INFO",
+                                        "pipeline_format": "yaml"
                                         }
 
         self.ai_settings = {
@@ -162,13 +165,10 @@ class MainConfig:
             sys.exit()
 
     def set_global_settings(self):
-
         section_name = 'global_settings'
-
         conf_parser = self.load_main_config_file()
 
         if self.check_main_config_section(conf_parser, section_name):
-
             for key in self.global_settings.keys():
                 if key in conf_parser.options(section_name):
                     value = conf_parser.get(section_name, key)
@@ -177,7 +177,14 @@ class MainConfig:
                             self.global_settings['logging_mode'] = value
                         else:
                             self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section global_settings in petaly.ini.")
-                    
+                    elif key == 'pipeline_format':
+                        if value in ('yaml', 'json'):
+                            self.global_settings['pipeline_format'] = value
+                            # Update pipeline_fname based on the configured format
+                            self.pipeline_fname = f"{self.pipeline_fname.split('.')[0]}.{value}"
+                            print(self.pipeline_fname)
+                        else:
+                            self.console.print(f"The option pipeline_format supports yaml or json only. Check pipeline_format under section global_settings in petaly.ini.")
                 else:
                     self.console.print(f"The option {key} is not specified under section global_settings in petaly.ini.")
         else:
@@ -260,13 +267,20 @@ class MainConfig:
         return connector_dpath
 
     def get_connector_class_config(self, connector_id):
+        if not connector_id:
+            logger.warning("Connector ID is not specified")
+            return None
+            
         connectors_cl_config = self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors")
+        if not connectors_cl_config:
+            logger.warning("No connectors configuration found in class_config.json")
+            return None
+            
         connector_class_config = connectors_cl_config.get(connector_id)
-
         if not connector_class_config:
             logger.warning(f"The connector_id {connector_id} in class_config.json is not specified")
-            sys.exit()
-
+            return None
+            
         return connector_class_config
 
     def get_connector_attributes(self, connector_id):
@@ -316,8 +330,18 @@ class MainConfig:
         return class_object
 
     def get_connector_category(self, connector_id):
-        connector_category = self.get_connector_class_config(connector_id).get('connector_category')
-        return connector_category
+        """Get the category of a connector.
+        
+        Args:
+            connector_id (str): The ID of the connector
+            
+        Returns:
+            str: The connector category, or None if the connector is not found
+        """
+        connector_config = self.get_connector_class_config(connector_id)
+        if not connector_config:
+            return None
+        return connector_config.get('connector_category')
 
     def get_pipeline_outdated_arguments(self):
         return self.f_handler.load_json(self.pipeline_outdated_arguments_fpath)

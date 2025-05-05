@@ -57,33 +57,28 @@ class Composer():
 		return return_list
 
 	def save_data_objects(self, pipeline_all_obj, data_objects_spec, pipeline_fpath):
+		""" Save data objects specification to pipeline file
+		"""
+		if pipeline_all_obj is None:
+			return
 
-		data_object_list = []
-		# make a list of new added objects with the same index order
-		for idx, obj in enumerate(data_objects_spec):
-			data_object_list.insert(idx, obj.get('object_spec').get('object_name'))
+		# Get the file format from the file extension
+		file_extension = self.f_handler.get_file_extensions(pipeline_fpath)[-1].lower()
+		file_format = 'yaml' if file_extension == '.yaml' else 'json'
 
-		# if object_name is in new in the list replace it in the pipeline, else do nothing
-		if pipeline_all_obj[1].get('data_objects_spec') is not None:
-			if len(pipeline_all_obj[1].get('data_objects_spec')) > 0:
-				if pipeline_all_obj[1].get('data_objects_spec')[0] is not None:
+		# Update the data objects specification
+		pipeline_all_obj[1]['data_objects_spec'] = data_objects_spec
 
-					for idx, object_spec in enumerate(pipeline_all_obj[1].get('data_objects_spec')):
-						if object_spec.get('object_spec').get('object_name') in data_object_list:
-							ind, obj = self.get_object_spec_from_array(data_objects_spec,
-																	   object_spec.get('object_spec').get(
-																		   'object_name'))
-							pipeline_all_obj[1].get('data_objects_spec')[idx] = obj
-							data_objects_spec.pop(ind)
-							data_object_list.pop(ind)
-
-		# add the entire new objects at the end of the pipeline
-		if len(data_object_list) > 0:
-			for i, obj in enumerate(data_objects_spec):
-				pipeline_all_obj[1].get('data_objects_spec').append(obj)
-
-		self.f_handler.backup_file(pipeline_fpath)
-		self.f_handler.save_dict_to_yaml(pipeline_fpath, pipeline_all_obj, dump_all=True)
+		# Save in the appropriate format
+		if file_format == 'yaml':
+			self.f_handler.save_dict_to_yaml(pipeline_fpath, pipeline_all_obj, dump_all=True)
+		else:
+			# For JSON, we need to combine both documents into one
+			combined_config = {
+				'pipeline': pipeline_all_obj[0]['pipeline'],
+				'data_objects_spec': pipeline_all_obj[1]['data_objects_spec']
+			}
+			self.f_handler.save_dict_to_json(pipeline_fpath, combined_config)
 
 	def get_object_spec_from_array(self, data_objects_spec, object_name):
 

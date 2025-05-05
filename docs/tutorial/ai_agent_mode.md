@@ -10,34 +10,15 @@ Petaly's AI Agent mode allows you to interact with the ETL tool using natural la
 The main configuration file (`petaly.ini`) needs to be properly configured to use the AI Agent mode. Here's a complete example:
 
 ```ini
-# This is the main configuration file for the Petaly tool.
-# It includes the workspace_config and global_settings sections.
-[workspace_config]
-
-# The following parameter specifies the absolute path to the pipeline directory.
-# All pipelines created by init are persisted in this directory.
-pipeline_dir_path=your-path-to-pipeline-dir
-
-# The following parameter specifies the absolute path to the log directory.
-logs_dir_path=your-path-to-log-dir
-
-# The following parameter specifies the absolute path to the output directory.
-# Data output directory is temporary directory used as transition space between source and destination.
-output_dir_path=your-path-to-output-dir
-
-[global_settings]
-# The logging mode has two settings: INFO and DEBUG.
-# By default, it is set to INFO, which generates minimal log output.
-# If an issue occurs, switch to DEBUG for more detailed output that can assist in troubleshooting.
-logging_mode=INFO
-
 # This is main AI settings section
+# In case petaly is used in agent mode
 [ai_settings]
-# In case app_mode=AGENT
+
 # Select the LLM provider to use openai or anthropic. (default: openai)
 llm_provider=openai
 
-# Select the LLM model to use. Tested with openai (gpt-4o), anthropic (claude-3-opus-20240229
+# Select the LLM model to use. 
+# Tested with openai (gpt-4o), anthropic (claude-3-opus-20240229)
 llm_model=gpt-4
 
 # Path to the memory file. Default is ~/.petaly/agent_memory.json
@@ -45,8 +26,7 @@ agent_memory_file=~/.petaly/agent_memory.json
 
 # Provide AI_AGENT_API_KEY as an environment variable: export AI_AGENT_API_KEY="YOUR-AI-AGENT-API-KEY-OR-TOKEN"
 # Alternative and for the test purpose you can set it directly here
-ai_agent_api_key=you-api-key
-
+ai_agent_api_key=
 ```
 
 ### 2. Environment Variables

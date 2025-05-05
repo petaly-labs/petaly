@@ -27,7 +27,23 @@ class Pipeline:
 
         self.m_conf = main_config
         self.pipeline_dpath = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name)
-        self.pipeline_fpath = os.path.join(self.pipeline_dpath, main_config.pipeline_fname)
+        
+        # Set pipeline file extension based on configured format
+        pipeline_format = self.m_conf.global_settings.get('pipeline_format', 'yaml')
+        self.pipeline_fname = f'pipeline.{pipeline_format}'
+        self.pipeline_fpath = os.path.join(self.pipeline_dpath, self.pipeline_fname)
+
+        # Check if pipeline file exists, if not try the other format
+        if not os.path.exists(self.pipeline_fpath):
+            alt_format = 'json' if pipeline_format == 'yaml' else 'yaml'
+            alt_fname = f'pipeline.{alt_format}'
+            alt_fpath = os.path.join(self.pipeline_dpath, alt_fname)
+            if os.path.exists(alt_fpath):
+                logger.warning(f"Pipeline file not found at {self.pipeline_fpath}, but found at {alt_fpath}. Using {alt_fpath} instead.")
+                self.pipeline_fname = alt_fname
+                self.pipeline_fpath = alt_fpath
+            else:
+                logger.warning(f"Pipeline file not found at {self.pipeline_fpath} or {alt_fpath}")
 
         self.data_dname = 'data'
         self.metadata_dname = 'metadata'
@@ -63,7 +79,19 @@ class Pipeline:
 
         try:
             pipeline_all_obj = self.get_pipeline_entire_config()
-            pipeline_dict = pipeline_all_obj[0]
+            if not pipeline_all_obj:
+                logger.warning(f"Could not load pipeline configuration from {self.pipeline_fpath}")
+                return
+
+            # Handle both YAML and JSON formats
+            if isinstance(pipeline_all_obj, list):
+                pipeline_dict = pipeline_all_obj[0]
+                data_objects_spec = pipeline_all_obj[1] if len(pipeline_all_obj) > 1 else {'data_objects_spec': []}
+            else:
+                pipeline_dict = {'pipeline': pipeline_all_obj.get('pipeline', {})}
+                data_objects_spec = {'data_objects_spec': pipeline_all_obj.get('data_objects_spec', [])}
+
+            print(f"pipe-data_objects_spec: {data_objects_spec}")
 
             if pipeline_dict is None:
                 logger.warning(f"The pipeline: {pipeline_name} does not exist under: {self.pipeline_fpath}")
@@ -96,19 +124,12 @@ class Pipeline:
             self.data_objects_spec_mode = self.data_attributes.get('data_objects_spec_mode')
             self.object_default_settings = self.get_object_default_settings()
 
-            # load second yaml document
-            self.data_objects_spec = pipeline_all_obj[1]
-            if self.data_objects_spec is None:
-                logger.warning(
-                    f"The pipeline: {pipeline_name} wasn't specified properly. It is missing following definition\n\n"
-                    f"---\n"
-                    f"data_objects_spec: []\n\n"
-                    f"It is recommended to reconfigure the pipeline using\n"
-                    f"python -m petaly init pipeline -p {pipeline_name}")
-                return
-
-            if len(self.data_objects_spec) > 0:
-                for obj in self.data_objects_spec.get('data_objects_spec', []):
+            # Set data objects spec
+            self.data_objects_spec = data_objects_spec.get('data_objects_spec', [])
+            print(f"pipe-data_objects_spec2: {self.data_objects_spec}")
+                  
+            if self.data_objects_spec:
+                for obj in self.data_objects_spec:
                     if obj is not None:
                         self.data_objects.append(obj.get('object_spec', {}).get('object_name'))
 
@@ -129,8 +150,36 @@ class Pipeline:
         return issues
 
     def get_pipeline_entire_config(self):
-        pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)
-        return pipeline_all_obj
+        """Get the entire pipeline configuration, handling both YAML and JSON formats.
+        
+        Returns:
+            list: A list containing the pipeline configuration. For YAML, it may contain multiple documents.
+                 For JSON, it will contain a single document.
+        """
+        try:
+            file_extension = os.path.splitext(self.pipeline_fpath)[1].lower()
+            
+            if file_extension == '.yaml':
+                pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)
+            elif file_extension == '.json':
+                # For JSON, we need to split the single document into two parts to match YAML structure
+                json_data = self.f_handler.load_json(self.pipeline_fpath)
+                pipeline_all_obj = [
+                    {'pipeline': json_data.get('pipeline', {})},
+                    {'data_objects_spec': json_data.get('data_objects_spec', [])}
+                ]
+            else:
+                logger.error(f"Unsupported pipeline file format: {file_extension}")
+                return None
+                
+            if not pipeline_all_obj or len(pipeline_all_obj) < 1:
+                logger.warning(f"Pipeline configuration is empty in {self.pipeline_fpath}")
+                return None
+                
+            return pipeline_all_obj
+        except Exception as e:
+            logger.error(f"Error loading pipeline configuration from {self.pipeline_fpath}: {e}")
+            return None
 
     def get_object_default_settings(self):
         """

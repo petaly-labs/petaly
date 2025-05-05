@@ -1,6 +1,35 @@
 # ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
 
 
+## [v0.1.0] - 2025-02-05 BETA
+- Petaly is officially in Beta!
+- Added AI agent logic
+- Implemented support for JSON format
+- Added unit test functionality for all connectors
+- Extended petaly.ini config with the following parameters:
+
+```ini
+....
+# change pipeline format: yaml or json. default is yaml
+pipeline_format=yaml
+
+# Main AI settings for petaly-agent mode
+[ai_settings]
+# Select the LLM provider to use openai or anthropic. (default: openai)
+llm_provider=openai
+
+# Select the LLM model to use. Tested with openai (gpt-4o), anthropic (claude-3-opus-20240229)
+llm_model=gpt-4
+
+# Path to the memory file. Default is ~/.petaly/agent_memory.json
+agent_memory_file=~/.petaly/agent_memory.json
+
+# Provide AI_AGENT_API_KEY as an environment variable: export AI_AGENT_API_KEY="YOUR-AI-AGENT-API-KEY-OR-TOKEN"
+# Alternative and for the test purpose you can set it directly here
+ai_agent_api_key=
+```
+
+
 ## [v0.0.10] - 2025-02-05
 
 ### Added

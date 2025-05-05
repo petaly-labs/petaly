@@ -60,7 +60,8 @@ class DataObject:
     def get_object_spec(self, data_objects, object_name):
 
         return_object_spec = {}
-        for object_spec in data_objects.get('data_objects_spec'):
+        #for object_spec in data_objects.get('data_objects_spec'):
+        for object_spec in data_objects:
             if object_spec != None:
                 if object_spec.get('object_spec').get('object_name') == object_name:
                     return_object_spec = object_spec.copy()

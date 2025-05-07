@@ -89,95 +89,78 @@ source .venv/bin/activate
 
 # Install dependencies
 pip3 install -r requirements.txt
-cd src/
 ```
+
+### 3. Choose Your Approach
+
+#### Option 1: Run Directly from Source (Quick Start)
+```bash
+# Navigate to src directory
+cd src
+
+# Run Petaly
+python3 -m petaly init
+```
+
+#### Option 2: Install as a Package (Recommended)
+```bash
+# Install Petaly in development mode
+pip3 install -e .
+
+# Now you can run Petaly from any directory
+python3 -m petaly init
+```
+
+*Note: Option 2 (installing as a package) is recommended because:*
+- *You can run Petaly from any directory*
+- *The package is properly integrated with Python's module system*
+- *It's easier to manage dependencies*
+- *It follows Python packaging best practices*
 
 ## Post-Installation Setup
 
 ### 1. Initialize Configuration
+
+Petaly looks for the configuration file in the following order:
+1. User's home directory (`~/.petaly/petaly.ini`) - **Recommended**
+2. Path specified in `PETALY_CONFIG_DIR` environment variable
+3. Path provided with `-c` option (e.g., `-c /path/to/petaly.ini`)
+
+#### Recommended: Use Default Location
+The recommended approach is to use the default location in your home directory:
 ```bash
-# Create petaly.ini
-python3 -m petaly -c /absolute-path-to-your-config-dir/petaly.ini init
+# This will create ~/.petaly/petaly.ini
+python3 -m petaly init
 ```
 
-### 2. Set Environment Variable (Optional)
+#### Alternative 1: Set Environment Variable
 ```bash
-export PETALY_CONFIG_DIR=/absolute-path-to-your-config-dir
+# Add to your shell profile (~/.bashrc, ~/.zshrc, etc.)
+export PETALY_CONFIG_DIR=/path/to/your/config/directory
 ```
 
-### 3. Initialize Workspace
-1. Configure `petaly.ini`:
+#### Alternative 2: Specify Custom Path
+```bash
+# Use a custom location for petaly.ini
+python3 -m petaly init -c /path/to/your/petaly.ini
+```
+
+The default `petaly.ini` will contain:
 ```ini
 [workspace_config]
-pipeline_dir_path=/absolute-path-to-pipelines-dir
-logs_dir_path=/absolute-path-to-logs-dir
-output_dir_path=/absolute-path-to-output-dir
+pipeline_dir_path=/home/username/petaly/pipelines
+logs_dir_path=/home/username/petaly/logs
+output_dir_path=/home/username/petaly/output
+
+[global_settings]
+logging_mode=INFO
+pipeline_format=yaml
+
+[ai_settings]
+llm_provider=openai
+llm_model=gpt-4
+agent_memory_file=~/.petaly/agent_memory.json
 ```
 
-2. Create workspace:
-```bash
-python3 -m petaly -c /path_to_config_dir/petaly.ini init --workspace
+### 2. Initialize Workspace
 ```
-
-## Verification
-
-### 1. Check Installation
-```bash
-# Verify Petaly is installed
-python3 -m petaly --version
-```
-
-### 2. Test Basic Functionality
-```bash
-# Create a test pipeline
-python3 -m petaly -c /path_to_config_dir/petaly.ini init -p test_pipeline
-```
-
-## Common Issues
-
-### Python Version Issues
-**Issue**: Installation fails with Python version error
-**Solution**: Ensure you're using Python 3.10 - 3.12
-```bash
-python3 --version
-```
-
-### Virtual Environment Issues
-**Issue**: Package not found after installation
-**Solution**: Ensure virtual environment is activated
-```bash
-source .venv/bin/activate
-```
-
-### Permission Issues
-**Issue**: Permission denied during installation
-**Solution**: Use appropriate permissions or virtual environment
-```bash
-# Create virtual environment in user space
-python3 -m venv ~/.venv/petaly
-source ~/.venv/petaly/bin/activate
-```
-
-## Best Practices
-
-1. **Virtual Environment**
-   - Always use a virtual environment
-   - Keep dependencies isolated
-   - Easy to manage different versions
-
-2. **Configuration**
-   - Use absolute paths
-   - Store sensitive data in environment variables
-   - Keep configuration files in version control
-
-3. **Workspace Organization**
-   - Separate directories for different environments
-   - Clear naming conventions
-   - Regular cleanup of temporary files
-
-## Related Topics
-
-- [Configuration Guide](petaly_ini.md)
-- [Pipeline Configuration](pipeline_examples.md)
-- [Source and Target Attributes](source_target_attributes.md)
-- [Troubleshooting Guide](troubleshooting.md) 

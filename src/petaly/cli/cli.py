@@ -49,6 +49,7 @@ class Cli():
 
         self.main_config_file_message = (
             f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/petaly.ini\n"
+            f"Or simply run 'init' to create it in ~/.petaly/petaly.ini\n"
             f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n"
         )
 

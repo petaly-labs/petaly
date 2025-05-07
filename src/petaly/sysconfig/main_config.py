@@ -78,7 +78,10 @@ class MainConfig:
             "agent_memory_file": None
         }
 
-    def set_main_config_fpath(self, config_file_path, init_main_config=False):
+    def deprecated_set_main_config_fpath(self, config_file_path, init_main_config=False):
+        """
+        [DEPRECATED] Old implementation of set_main_config_fpath
+        """
         """
         """
         # 1. if config file wasn't pass, set to default one
@@ -115,6 +118,63 @@ class MainConfig:
                 self.console.print(self.missing_main_config_file_message())
 
         self.main_config_fpath = config_file_path
+
+
+    def set_main_config_fpath(self, config_file_path, init_main_config=False):
+        """
+        Set the main configuration file path following this priority:
+        1. Path provided with -c option
+        2. Path specified in PETALY_CONFIG_DIR environment variable
+        3. User's home directory (~/.petaly/petaly.ini)
+        """
+        def create_config_file(path):
+            """Helper function to create config file if it doesn't exist"""
+            # If file exists, just return True
+            if self.f_handler.is_file(path):
+                return True
+                
+            # Only create new file if init_main_config is True
+            if init_main_config:
+                # Create directory if it doesn't exist
+                if not self.f_handler.is_dir(os.path.dirname(path)):
+                    self.f_handler.make_dirs(os.path.dirname(path))
+                    self.console.print(f"Created directory: {os.path.dirname(path)}")
+                
+                # Copy template to target location
+                self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(path), os.path.basename(path))
+                self.console.print(f"The main config file was created: {path}\n"
+                      f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
+                return True
+            
+            return False
+
+        # 1. Use provided config_file_path if it exists
+        if config_file_path is not None:
+            if os.path.isabs(config_file_path):
+                if create_config_file(config_file_path):
+                    self.main_config_fpath = config_file_path
+                    return
+            else:
+                self.console.print(self.missing_main_config_file_message())
+                sys.exit(1)
+
+        # 2. Check environment variable PETALY_CONFIG_DIR
+        if self.env_config_dpath:
+            config_file_path = os.path.join(self.env_config_dpath, self.main_config_fname)
+            if create_config_file(config_file_path):
+                self.main_config_fpath = config_file_path
+                return
+
+        # 3. Use user home directory
+        home_dir = os.path.expanduser("~")
+        home_config_path = os.path.join(home_dir, ".petaly", self.main_config_fname)
+        if create_config_file(home_config_path):
+            self.main_config_fpath = home_config_path
+            return
+
+        # No valid config found and init_main_config is False
+        self.console.print(self.missing_main_config_file_message())
+        sys.exit(1)
 
     def load_main_config_file(self):
 
@@ -182,7 +242,6 @@ class MainConfig:
                             self.global_settings['pipeline_format'] = value
                             # Update pipeline_fname based on the configured format
                             self.pipeline_fname = f"{self.pipeline_fname.split('.')[0]}.{value}"
-                            print(self.pipeline_fname)
                         else:
                             self.console.print(f"The option pipeline_format supports yaml or json only. Check pipeline_format under section global_settings in petaly.ini.")
                 else:
@@ -218,8 +277,9 @@ class MainConfig:
         else:
             self.console.print(f"The section {section_name} is not specified in petaly.ini.")
     def missing_main_config_file_message(self):
-        return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"
-                   f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
+        return (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"
+                f"Or simply run 'init' to create it in ~/.petaly/{self.main_config_fname}\n"
+                f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
 
 
     def get_platform_attributes(self, platform_id):

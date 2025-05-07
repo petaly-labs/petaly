@@ -91,8 +91,7 @@ class Pipeline:
                 pipeline_dict = {'pipeline': pipeline_all_obj.get('pipeline', {})}
                 data_objects_spec = {'data_objects_spec': pipeline_all_obj.get('data_objects_spec', [])}
 
-            print(f"pipe-data_objects_spec: {data_objects_spec}")
-
+            
             if pipeline_dict is None:
                 logger.warning(f"The pipeline: {pipeline_name} does not exist under: {self.pipeline_fpath}")
                 return
@@ -126,7 +125,6 @@ class Pipeline:
 
             # Set data objects spec
             self.data_objects_spec = data_objects_spec.get('data_objects_spec', [])
-            print(f"pipe-data_objects_spec2: {self.data_objects_spec}")
                   
             if self.data_objects_spec:
                 for obj in self.data_objects_spec:

@@ -1,170 +1,153 @@
-# Petaly AI Agent Mode Configuration Guide
+# AI Agent Mode Guide
 
-## Overview
-Petaly's AI Agent mode allows you to interact with the ETL tool using natural language instructions. This guide explains how to configure and use the AGENT mode effectively.
+This guide explains how to use Petaly's AI Agent mode, which allows you to control Petaly using natural language commands.
+
+## Installation
+
+### Basic Installation
+```bash
+# Install with AI support
+python3 -m pip install petaly[ai]
+```
+
+### Full Installation (includes AI)
+```bash
+# Install all features including AI
+python3 -m pip install petaly[all]
+```
 
 ## Configuration
 
-### 1. Setting up petaly.ini
+### 1. Set up API Key
+You can set your API key in two ways:
 
-The main configuration file (`petaly.ini`) needs to be properly configured to use the AI Agent mode. Here's a complete example:
+1. **Environment Variable**:
+```bash
+export AI_AGENT_API_KEY=your-api-key
+```
 
+2. **Configuration File**:
+Edit `petaly.ini`:
 ```ini
-# This is main AI settings section
-# In case petaly is used in agent mode
 [ai_settings]
-
-# Select the LLM provider to use openai or anthropic. (default: openai)
-llm_provider=openai
-
-# Select the LLM model to use. 
-# Tested with openai (gpt-4o), anthropic (claude-3-opus-20240229)
-llm_model=gpt-4
-
-# Path to the memory file. Default is ~/.petaly/agent_memory.json
-agent_memory_file=~/.petaly/agent_memory.json
-
-# Provide AI_AGENT_API_KEY as an environment variable: export AI_AGENT_API_KEY="YOUR-AI-AGENT-API-KEY-OR-TOKEN"
-# Alternative and for the test purpose you can set it directly here
-ai_agent_api_key=
+llm_provider = openai  # or anthropic
+llm_model = gpt-4     # or claude-3-opus-20240229
+ai_agent_api_key = your-api-key
 ```
 
-### 2. Environment Variables
+### 2. Configure Memory (Optional)
+```ini
+[ai_settings]
+agent_memory_file = /path/to/memory.json
+```
 
-For security best practices, you can set the API key as an environment variable instead of in the config file:
+## Usage
 
+### Basic Commands
+
+1. **Initialize Pipeline**:
 ```bash
-export AI_AGENT_API_KEY="your-api-key-here"
+python3 -m petaly -c /path/to/petaly.ini init -p my_pipeline --ai
 ```
 
-## Using the AI Agent Mode
-
-### 1. Use Petaly Agent interactive
+2. **Run Pipeline**:
 ```bash
-(.aivenv) petaly $ petaly interactive                                                                  
-2025-04-29 12:05:57,489 - petaly.ai.agent.petaly_agent - INFO - Initialized PetalyAgent with memory file: ~/.petaly/agent_memory.json
-
-Petaly AI Agent
-Type 'exit' or 'quit' to end the session.
-
-PROMPT > Create pipeline: pipeline-name ai2pipe; source-systems endpoint-type mysql (database_host='127.0.0.1', database_port=3306, database_user=root, database_name=xour-database, database_password=); target-systems endpoint-type postgres (database_host=lo
-calhost, database_port=5432, database_user=postgres, database_name=your-databse, database_schema=your-schema, database_password=); data_objects_spec object_name=stocks
-
-Agent
-I've created a new pipeline named 'ai2pipe'. The configuration has been saved to /Users/pavel/Home/PycharmProjects/petaly-pipes/end2end/ai2pipe/pipeline.yaml. Would you like to review it or make any changes?                                                 
-
-PROMPT > Run pipeline: pipeline-name ai2pipe;
-Agent
-I've successfully executed the pipeline 'ai2pipe'. 
+python3 -m petaly -c /path/to/petaly.ini run -p my_pipeline --ai
 ```
 
-### 2. Basic Commands
+### Example Interactions
 
-The AI Agent understands natural language commands for various ETL operations:
-
-```bash
-# List existing pipelines
-python -m petaly command --instruction "Show me all available pipelines"
-python -m petaly  command --instruction "Show me all available pipelines where source postgres"
-
+1. **Create Pipeline**:
+```
+User: Create a pipeline to load data from CSV to PostgreSQL
+AI: I'll help you create a pipeline. First, let's set up the source...
 ```
 
-### 3. Pipeline Creation Examples
-
-The AI Agent can help you create complex pipelines with detailed specifications:
-
-```bash
-# Create a pipeline with specific source and target
-
-# Example: MySQL -> BigQuery
-python -m petaly command --instruction "Create pipeline: pipeline-name ai1pipe; source-systems endpoint-type mysql (database_host=127.0.0.1, database_port=3306, database_user=root, database_name=your-mysql-database, database_password=); target-systems endpoint-type bigquery (platform_type=gcp, database_schema=your-bigquery-dataset, gcp_project_id='your-gcp-project', gcp_region=EU, gcp_bucket_name='your-gcp-bucket', bucket_pipeline_prefix=petaly/{pipeline_name}); data_objects_spec object_name=your-table-name"
-
-# run pipeline
-python -m petaly command --instruction "Run pipeline: pipeline-name ai1pipe;"
-
-# Example: MySQL -> Postgres
-python -m petaly command --instruction "Create pipeline: pipeline-name ai2pipe; source-systems endpoint-type mysql (database_host='127.0.0.1', database_port=3306, database_user=root, database_name=petaly_tutorial, database_password=); target-systems endpoint-type postgres (database_host=localhost, database_port=5432, database_user=postgres, database_name=petaly_db, database_schema=petaly_tutorial, database_password=); data_objects_spec object_name=stocks"
-
-
-python -m petaly command --instruction "Run pipeline: pipeline-name ai2pipe;"
-
-# Example: Postgres -> Redshift
-python -m petaly command --instruction "Create pipeline: pipeline-name ai3pipe; source-systems endpoint-type postgres (database_host=localhost, database_port=5432, database_user=postgres, database_name=petaly_db, database_schema=petaly_tutorial, database_password=); target-systems  endpoint-type: redshift (connection_method=iam, is_serverless=true, cluster_identifier='default-workgroup', database_user='your-redshift-database-user', database_name=dev database_schema=your-schema-name, workgroup_name='default-workgroup', platform_type=aws, aws_region: 'eu-north-1', aws_bucket_name='s3-bucket-name', bucket_pipeline_prefix=petaly/{pipeline_name}, aws_iam_role='arn:aws:iam::your-account:role/RedshiftS3Access-Role', aws_profile_name='your-aws-profile', aws_access_key_id=, aws_secret_access_key=); data_objects_spec object_name=your-table-name"
-
-python -m petaly command --instruction "Run pipeline: pipeline-name ai3pipe;"
-
+2. **Modify Pipeline**:
+```
+User: Add a new table to the pipeline
+AI: I'll help you add the table. What's the table name and structure?
 ```
 
-## Supported Features
+3. **Troubleshoot Issues**:
+```
+User: The pipeline failed with error X
+AI: Let me help you diagnose the issue. First, let's check...
+```
 
-### 1. Data Sources
-- Relational databases (MySQL, PostgreSQL, SQL Server, etc.)
-- File-based sources (CSV, JSON, etc.)
-- Cloud storage (AWS S3, GCP Cloud Storage)
-- Data warehouses (Snowflake, BigQuery, Redshift)
+## Features
 
+### Natural Language Processing
+- Create and modify pipelines using natural language
+- Get explanations of pipeline configurations
+- Receive suggestions for optimization
 
-### 3. Platform Support
-- Local execution
-- Cloud platforms (AWS, GCP)
-- Hybrid configurations
+### Context Awareness
+- Remembers previous interactions
+- Maintains conversation context
+- Learns from your preferences
+
+### Intelligent Assistance
+- Suggests best practices
+- Helps with troubleshooting
+- Provides optimization recommendations
 
 ## Best Practices
 
-1. **Be Specific**: Provide as much detail as possible in your instructions
-2. **Use Clear Names**: Use descriptive names for pipelines and objects
-3. **Verify Configurations**: Always review the generated pipeline configuration
-4. **Test**: Start with small pipelines and expand gradually
-5. **Monitor Logs**: Check logs for any issues or warnings
+1. **Clear Communication**:
+   - Be specific in your requests
+   - Provide necessary context
+   - Ask for clarification when needed
+
+2. **Security**:
+   - Never share API keys in conversations
+   - Use environment variables for sensitive data
+   - Regularly rotate API keys
+
+3. **Performance**:
+   - Use specific commands for better results
+   - Provide relevant context
+   - Break complex tasks into steps
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **API Key Errors**
-   - Verify the API key is correctly set in environment or config
-   - Check if the key has sufficient permissions
+1. **API Key Problems**:
+   - Verify API key is set correctly
+   - Check provider-specific requirements
+   - Ensure sufficient quota
 
-2. **Directory Access**
-   - Ensure all configured directories exist and are writable
-   - Check directory permissions
+2. **Memory Issues**:
+   - Check memory file permissions
+   - Verify file path is correct
+   - Ensure sufficient disk space
 
-3. **Pipeline Generation**
-   - If the agent needs more information, it will ask for clarification
-   - Review the generated configuration carefully
+3. **Response Quality**:
+   - Provide more context
+   - Be more specific in requests
+   - Use appropriate technical terms
 
-### Getting Help
+## Advanced Usage
 
-For additional support:
-- Check the application logs in the configured logs directory
-- Review the generated pipeline configurations
-- Consult the Petaly documentation for specific connector requirements
+### Custom Prompts
+You can customize the AI's behavior by modifying the prompt templates in your configuration.
 
-## Security Considerations
+### Memory Management
+The AI agent can maintain context across sessions using the memory file.
 
-1. **API Keys**
-   - Never commit API keys to version control
-   - Use environment variables for sensitive information
-   - Rotate keys regularly
+### Integration
+The AI agent can be integrated with other tools and workflows through the API.
 
-2. **Database Credentials**
-   - Use secure methods to store database credentials
-   - Consider using connection strings or credential managers
+## Getting Help
 
-3. **Output Data**
-   - Ensure output directories have appropriate access controls
-   - Regularly clean up temporary files
+If you encounter issues:
 
-## Limitations
-
-1. The AI Agent may need clarification for complex transformations
-2. Some advanced features may require manual configuration
-3. Performance depends on the chosen LLM provider and model
-4. Large datasets may require specific optimization instructions
-
-## Future Enhancements
-
-1. Support for more data sources and targets
-2. Enhanced transformation capabilities
-3. Improved error handling and recovery
-4. Additional cloud platform integrations 
+1. Check the [Troubleshooting Guide](troubleshooting.md)
+2. Review the [Documentation](https://github.com/petaly-labs/petaly/docs/index.md)
+3. Join our [Community](https://github.com/petaly-labs/petaly/discussions)
+4. Submit a new issue with:
+   - Error message
+   - Configuration details
+   - Steps to reproduce
+   - System information 

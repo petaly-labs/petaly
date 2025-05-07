@@ -62,7 +62,7 @@ python3 -m pip install petaly[ai]
 python3 -m pip install petaly[all]
 ```
 
-For detailed AI Agent setup and usage, see our [AI Agent Guide](docs/tutorial/ai_agent_mode.md).
+For detailed AI Agent setup and usage, see our [AI Agent Guide](docs/ai_agent_mode.md).
 
 ### Cloud Provider Support
 
@@ -136,7 +136,7 @@ Initialize a new pipeline:
 python3 -m petaly -c /path_to_config_dir/petaly.ini init -p my_pipeline
 ```
 
-Follow the wizard to configure your pipeline. For detailed configuration options, see [Pipeline Configuration Guide](docs/tutorial/pipeline_examples.md).
+Follow the wizard to configure your pipeline. For detailed configuration options, see [Pipeline Configuration Guide](docs/pipeline_examples.md).
 
 ## Run Pipeline
 
@@ -201,11 +201,11 @@ pipeline:
 
 ## Documentation
 
-- [Pipeline Configuration Guide](docs/tutorial/pipeline_examples.md)
-- [AI Agent Mode Guide](docs/tutorial/ai_agent_mode.md)
-- [Cloud Platform Guide](docs/tutorial/cloud_platforms.md)
-- [Troubleshooting Guide](docs/tutorial/troubleshooting.md)
-- [Video Tutorials](docs/tutorial/recording/)
+- [Pipeline Configuration Guide](docs/pipeline_examples.md)
+- [AI Agent Mode Guide](docs/ai_agent_mode.md)
+- [Cloud Platform Guide](docs/cloud_platforms.md)
+- [Troubleshooting Guide](docs/troubleshooting.md)
+- [Video Tutorials](docs/recording/)
 
 ## Contributing
 

@@ -238,4 +238,10 @@ target_attributes:
    - Verify service account
    - Check API enablement
 
-For more detailed troubleshooting, see our [Troubleshooting Guide](troubleshooting.md). 
+For more detailed troubleshooting, see our [Troubleshooting Guide](troubleshooting.md).
+
+## Related Topics
+
+- [Pipeline Configuration](pipeline_examples.md)
+- [Configuration Guide](petaly_ini.md)
+- [Error Messages](error_messages.md) 

@@ -150,4 +150,10 @@ If you encounter issues:
    - Error message
    - Configuration details
    - Steps to reproduce
-   - System information 
+   - System information
+
+## Related Topics
+
+- [Pipeline Configuration](pipeline_examples.md)
+- [Configuration Guide](petaly_ini.md)
+- [Troubleshooting Guide](troubleshooting.md) 

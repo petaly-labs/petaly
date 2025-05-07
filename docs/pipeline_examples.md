@@ -672,3 +672,9 @@ data_objects_spec:
     -
 
 ```
+
+## Related Topics
+
+- [Data Objects Specification](data_objects_spec.md)
+- [Configuration Guide](petaly_ini.md)
+- [Error Messages](error_messages.md)

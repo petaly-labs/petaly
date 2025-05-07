@@ -156,6 +156,7 @@ Petaly supports the following environment variables:
 - [Data Objects Specification](data_objects_spec.md)
 - [Error Messages](error_messages.md)
 - [Source and Target Attributes](source_target_attributes.md)
+- [Installation Guide](installation.md)
 
 ## Additional Resources
 

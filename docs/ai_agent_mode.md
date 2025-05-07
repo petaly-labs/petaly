@@ -156,4 +156,5 @@ If you encounter issues:
 
 - [Pipeline Configuration](pipeline_examples.md)
 - [Configuration Guide](petaly_ini.md)
-- [Troubleshooting Guide](troubleshooting.md) 
+- [Troubleshooting Guide](troubleshooting.md)
+- [Source and Target Attributes](source_target_attributes.md) 

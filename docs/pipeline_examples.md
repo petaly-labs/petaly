@@ -678,3 +678,4 @@ data_objects_spec:
 - [Data Objects Specification](data_objects_spec.md)
 - [Configuration Guide](petaly_ini.md)
 - [Error Messages](error_messages.md)
+- [Source and Target Attributes](source_target_attributes.md)

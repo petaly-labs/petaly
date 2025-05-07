@@ -184,3 +184,4 @@ data_objects_spec:
 - [Pipeline Configuration](pipeline_examples.md)
 - [Error Messages](error_messages.md)
 - [Performance](performance.md)
+- [Source and Target Attributes](source_target_attributes.md)

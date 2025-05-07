@@ -244,4 +244,5 @@ For more detailed troubleshooting, see our [Troubleshooting Guide](troubleshooti
 
 - [Pipeline Configuration](pipeline_examples.md)
 - [Configuration Guide](petaly_ini.md)
-- [Error Messages](error_messages.md) 
+- [Error Messages](error_messages.md)
+- [Source and Target Attributes](source_target_attributes.md) 

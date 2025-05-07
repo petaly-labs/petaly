@@ -174,4 +174,5 @@ If you're still experiencing issues:
 
 - [Error Messages](error_messages.md)
 - [Pipeline Configuration](pipeline_examples.md)
-- [Configuration Guide](petaly_ini.md) 
+- [Configuration Guide](petaly_ini.md)
+- [Source and Target Attributes](source_target_attributes.md) 

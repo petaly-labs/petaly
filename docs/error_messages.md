@@ -168,4 +168,5 @@ I encountered an error while trying to run the pipeline: {error}
 
 - [Pipeline Configuration](pipeline_examples.md)
 - [Data Objects Specification](data_objects_spec.md)
-- [Troubleshooting Guide](troubleshooting.md) 
+- [Troubleshooting Guide](troubleshooting.md)
+- [Source and Target Attributes](source_target_attributes.md) 

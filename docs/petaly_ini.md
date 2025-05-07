@@ -155,6 +155,7 @@ Petaly supports the following environment variables:
 - [Pipeline Configuration](pipeline_examples.md)
 - [Data Objects Specification](data_objects_spec.md)
 - [Error Messages](error_messages.md)
+- [Source and Target Attributes](source_target_attributes.md)
 
 ## Additional Resources
 

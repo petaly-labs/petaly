@@ -15,11 +15,22 @@
 from typing import Dict, Any
 
 class PipelinePrompts:
-    """Collection of prompts used for pipeline-related operations."""
+    """
+    Collection of prompts used for pipeline-related operations.
+    Provides structured prompts for various pipeline tasks.
+    Ensures consistent formatting and response structure.
+    """
     
     @staticmethod
     def get_classification_prompt() -> str:
-        """Get the prompt for classifying user instructions."""
+        """
+        Get the prompt for classifying user instructions.
+        
+        Logic:
+        1. Define instruction categories
+        2. Specify response format
+        3. Include required fields
+        """
         return """
         You are an AI assistant for Petaly, a command-line ETL tool. Analyze the user's instruction and identify what they want to do.
 
@@ -45,7 +56,14 @@ class PipelinePrompts:
 
     @staticmethod
     def get_pipeline_list_prompt() -> str:
-        """Get the prompt for listing pipelines."""
+        """
+        Get the prompt for listing pipelines.
+        
+        Logic:
+        1. Define list types
+        2. Specify response format
+        3. Include filtering options
+        """
         return """
         You are helping list Petaly pipelines. Format your response as a JSON with these fields:
         - list_type: "all" or "filtered"
@@ -55,7 +73,15 @@ class PipelinePrompts:
 
     @staticmethod
     def get_pipeline_creation_prompt() -> str:
-        """Get the prompt for creating a new pipeline."""
+        """
+        Get the prompt for creating a new pipeline.
+        
+        Logic:
+        1. Define pipeline structure
+        2. Specify JSON/YAML format
+        3. Include required fields
+        4. Add data objects spec
+        """
         return """
         You are helping create a new data pipeline in Petaly. Based on the user's requirements, generate a detailed pipeline file in YAML format.
         
@@ -146,7 +172,14 @@ class PipelinePrompts:
 
     @staticmethod
     def get_pipeline_modification_prompt() -> str:
-        """Get the prompt for modifying an existing pipeline."""
+        """
+        Get the prompt for modifying an existing pipeline.
+        
+        Logic:
+        1. Define modification structure
+        2. Include impact analysis
+        3. Add validation fields
+        """
         return """
         You are helping modify an existing Petaly pipeline. Format your response as a JSON with these fields:
         - pipeline_name: Name of the pipeline to modify
@@ -158,7 +191,14 @@ class PipelinePrompts:
 
     @staticmethod
     def get_pipeline_execution_prompt() -> str:
-        """Get the prompt for executing a pipeline."""
+        """
+        Get the prompt for executing a pipeline.
+        
+        Logic:
+        1. Define execution parameters
+        2. Specify endpoint options
+        3. Include object selection
+        """
         return """
         You are helping execute a Petaly pipeline. Format your response as a JSON with these fields:
         - pipeline_name: Name of the pipeline to run
@@ -169,7 +209,14 @@ class PipelinePrompts:
 
     @staticmethod
     def get_pipeline_output_prompt() -> str:
-        """Get the prompt for showing pipeline output."""
+        """
+        Get the prompt for showing pipeline output.
+        
+        Logic:
+        1. Define output types
+        2. Include file patterns
+        3. Specify response format
+        """
         return """
         You are helping show Petaly pipeline output files. Format your response as a JSON with these fields:
         - pipeline_name: Name of the pipeline
@@ -179,7 +226,14 @@ class PipelinePrompts:
 
     @staticmethod
     def get_pipeline_summary_prompt(pipeline_config: Dict[str, Any]) -> str:
-        """Get the prompt for generating a human-friendly pipeline summary."""
+        """
+        Get the prompt for generating a human-friendly pipeline summary.
+        
+        Logic:
+        1. Include pipeline config
+        2. Request concise summary
+        3. Specify output format
+        """
         return f"""
         Generate a concise summary of this Petaly pipeline configuration. Make it human-friendly and easy to understand.
         Focus on the key aspects of the pipeline and its purpose.
@@ -192,7 +246,14 @@ class PipelinePrompts:
 
     @staticmethod
     def get_pipeline_name_extraction_prompt() -> str:
-        """Get the prompt for extracting pipeline names from user instructions."""
+        """
+        Get the prompt for extracting pipeline names from user instructions.
+        
+        Logic:
+        1. Request name extraction
+        2. Specify output format
+        3. Remove extra text
+        """
         return """
         Extract the name of the pipeline that the user wants to work with from their instruction.
         Return just the pipeline name, without any additional text or explanation.

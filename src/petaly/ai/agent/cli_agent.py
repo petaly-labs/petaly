@@ -32,10 +32,22 @@ logger = logging.getLogger(__name__)
 
 
 class CliAgent:
-    """Command line interface for the Petaly AI Agent."""
+    """
+    Command line interface for the Petaly AI Agent.
+    Handles interactive and command-line modes for natural language interactions.
+    Manages command history and provides rich text output.
+    """
     
     def __init__(self, main_config=None):
-        """Initialize the CLI agent interface."""
+        """
+        Initialize the CLI agent interface.
+        
+        Logic:
+        1. Set up main configuration
+        2. Initialize console for rich output
+        3. Configure argument parser
+        4. Set up command history
+        """
         self.m_conf = MainConfig() if main_config is None else main_config
         self.m_conf.set_workspace_dpaths()
         self.console = Console()
@@ -110,7 +122,14 @@ Natural Language Commands:
         self.prompt_session = PromptSession(history=FileHistory(history_file))
         
     def process(self, args):
-        """Process the command line arguments."""
+        """
+        Process the command line arguments.
+        
+        Logic:
+        1. Set up configuration paths
+        2. Initialize PetalyAgent
+        3. Route to appropriate mode
+        """
         # Set up main config
         self.m_conf.set_main_config_fpath(args.config_file_path)
         self.m_conf.set_workspace_dpaths()
@@ -132,7 +151,15 @@ Natural Language Commands:
             self.run_command_mode(agent, args.instruction)
         
     def run_interactive_mode(self, agent):
-        """Run the agent in interactive mode with a chat interface."""
+        """
+        Run the agent in interactive mode with a chat interface.
+        
+        Logic:
+        1. Display welcome message
+        2. Start interaction loop
+        3. Process user input
+        4. Display formatted response
+        """
         self.console.print("\n[bold blue]Petaly AI Agent[/bold blue]")
         self.console.print("Type 'exit' or 'quit' to end the session.\n")
         
@@ -140,7 +167,7 @@ Natural Language Commands:
         while True:
             try:
                 # Get user input with history support
-                instruction = self.prompt_session.prompt("PROMPT > ")
+                instruction = self.prompt_session.prompt("petaly > ")
                 if instruction.lower() in ('exit', 'quit'):
                     break
                 
@@ -159,7 +186,14 @@ Natural Language Commands:
                 self.console.print(f"[red]Error: {str(e)}[/red]")
     
     def run_command_mode(self, agent, instruction):
-        """Run the agent in command mode to process a single instruction."""
+        """
+        Run the agent in command mode to process a single instruction.
+        
+        Logic:
+        1. Process single instruction
+        2. Display formatted response
+        3. Handle errors
+        """
         try:
             response = asyncio.run(agent.process_instruction(instruction))
             self.console.print(Markdown(response))
@@ -169,7 +203,14 @@ Natural Language Commands:
             sys.exit(1)
     
     def start(self):
-        """Start the CLI agent."""
+        """
+        Start the CLI agent.
+        
+        Logic:
+        1. Parse command line arguments
+        2. Execute appropriate function
+        3. Handle errors
+        """
         try:
             args = self.parser.parse_args()
             logger.debug(f"Executing agent command with args: {args}")

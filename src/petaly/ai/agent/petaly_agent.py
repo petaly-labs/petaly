@@ -86,19 +86,26 @@ class InstructionType(Enum):
     OTHER = auto()
 
 class PetalyAgent:
-    """AI Agent for Petaly ETL operations."""
+    """
+    AI Agent for Petaly ETL operations.
+    Handles natural language instructions for pipeline management,
+    including creation, modification, execution, and querying.
+    Manages conversation history and context for improved interactions.
+    """
     
     def __init__(
         self, 
         main_config
     ):
         """
-        Initialize the Petaly Agent.
+        Initializes the Petaly Agent.
         
-        Args:
-            main_config: Petaly's main configuration
-            llm_config: Configuration options for the LLM
-            agent_memory_file: Path to store agent's memory/history
+        Logic:
+        1. Store main configuration
+        2. Initialize LLM connector with API settings
+        3. Initialize pipeline planner
+        4. Set up conversation store for history
+        5. Initialize pipeline prompts
         """
         self.m_conf = main_config
         self.file_handler = FileHandler()
@@ -143,7 +150,16 @@ class PetalyAgent:
         logger.info(f"Initialized PetalyAgent with memory file: {agent_memory_file}")
 
     async def process_instruction(self, instruction: str) -> str:
-        """Process a user instruction and return a response."""
+        """
+        Process a user instruction and return a response.
+        
+        Logic:
+        1. Validate instruction format
+        2. Add instruction to conversation history
+        3. Get recent conversation context
+        4. Process instruction with context
+        5. Store response in history
+        """
         try:
             if not isinstance(instruction, str) or not instruction.strip():
                 return "Please provide a valid instruction. The instruction cannot be empty."
@@ -183,7 +199,14 @@ class PetalyAgent:
         instruction: str,
         recent_history: List[Dict[str, Any]]
     ) -> str:
-        """Process an instruction with conversation context."""
+        """
+        Process an instruction with conversation context.
+        
+        Logic:
+        1. Classify instruction type
+        2. Route to appropriate handler based on type
+        3. Handle errors with decorator
+        """
         try:
             # Classify the instruction
             classification = await self._classify_instruction(instruction)
@@ -211,7 +234,15 @@ class PetalyAgent:
             )
     
     async def _classify_instruction(self, instruction: str) -> Dict[str, Any]:
-        """Classify the user's instruction using the LLM."""
+        """
+        Classify the user's instruction using the LLM.
+        
+        Logic:
+        1. Get classification prompt
+        2. Send instruction to LLM
+        3. Parse and validate response
+        4. Return classification details
+        """
         prompt = PipelinePrompts.get_classification_prompt()
         
         # Add instruction to the prompt
@@ -240,7 +271,14 @@ class PetalyAgent:
             }
     
     def _parse_classification(self, classification_result: str) -> Dict[str, Any]:
-        """Parse the classification result from the LLM."""
+        """
+        Parse the classification result from the LLM.
+        
+        Logic:
+        1. Extract JSON from response
+        2. Validate required fields
+        3. Return structured classification
+        """
         try:
             # Log the raw result for debugging
             logger.debug(f"Raw classification result: {classification_result}")
@@ -285,7 +323,13 @@ class PetalyAgent:
             }
     
     def _get_instruction_type(self, instruction_type_str: str) -> InstructionType:
-        """Convert instruction type string to enum."""
+        """
+        Convert instruction type string to enum.
+        
+        Logic:
+        1. Map string to InstructionType enum
+        2. Default to OTHER if unknown
+        """
         try:
             # Normalize the instruction type string
             normalized_type = instruction_type_str.upper()
@@ -301,7 +345,14 @@ class PetalyAgent:
 
     @handle_errors
     async def _handle_create_pipeline(self, instruction: str, classification: Dict[str, Any]) -> str:
-        """Handle pipeline creation requests."""
+        """
+        Handle pipeline creation requests.
+        
+        Logic:
+        1. Extract pipeline details from classification
+        2. Use planner to create pipeline
+        3. Return creation status
+        """
         # Get details from the planner
         pipeline_plan = self.planner.create_pipeline_plan(instruction)
         
@@ -331,7 +382,15 @@ class PetalyAgent:
 
     @handle_errors
     async def _handle_modify_pipeline(self, instruction: str, classification: Dict[str, Any]) -> str:
-        """Handle pipeline modification requests."""
+        """
+        Handle pipeline modification requests.
+        
+        Logic:
+        1. Extract modification details
+        2. Load existing pipeline
+        3. Apply modifications
+        4. Save updated pipeline
+        """
         details = classification.get("details", {})
         pipeline_name = details.get("pipeline_name")
         
@@ -380,7 +439,15 @@ class PetalyAgent:
 
     @handle_errors
     async def _handle_run_pipeline(self, instruction: str, classification: Dict[str, Any]) -> str:
-        """Handle pipeline execution requests."""
+        """
+        Handle pipeline execution requests.
+        
+        Logic:
+        1. Extract pipeline details
+        2. Load pipeline configuration
+        3. Execute pipeline
+        4. Return execution status
+        """
         details = classification.get("details", {})
         pipeline_name = details.get("pipeline_name")
         run_endpoint = details.get("run_endpoint")  # "source", "target", or None for both
@@ -423,7 +490,14 @@ class PetalyAgent:
 
     @handle_errors
     async def _handle_query_data(self, instruction: str, classification: Dict[str, Any]) -> str:
-        """Handle data and pipeline queries."""
+        """
+        Handle data querying requests.
+        
+        Logic:
+        1. Extract query parameters
+        2. Execute query on pipeline
+        3. Format and return results
+        """
         # Analyze the query
         query_analysis = await self.llm.generate_completion(
             prompt=instruction,
@@ -475,7 +549,14 @@ class PetalyAgent:
 
     @handle_errors
     async def _handle_other_request(self, instruction: str, classification: Dict[str, Any]) -> str:
-        """Handle other types of requests."""
+        """
+        Handle general or unrecognized requests.
+        
+        Logic:
+        1. Extract request details
+        2. Generate appropriate response
+        3. Provide helpful suggestions
+        """
         # Generate a general response
         system_prompt = """
         You are an AI assistant for Petaly, an ETL (Extract, Transform, Load) tool that helps users create data pipelines 
@@ -495,7 +576,14 @@ class PetalyAgent:
 
     @handle_errors
     async def _handle_list_pipelines(self, instruction: str, classification: Dict[str, Any]) -> str:
-        """Handle pipeline listing requests."""
+        """
+        Handle pipeline listing requests.
+        
+        Logic:
+        1. Get pipeline directory
+        2. List available pipelines
+        3. Format and return list
+        """
         details = classification.get("details", {})
         endpoint_type = details.get("endpoint_type")
         
@@ -531,7 +619,14 @@ class PetalyAgent:
 
     @handle_errors
     async def _handle_list_output(self, instruction: str, classification: Dict[str, Any]) -> str:
-        """Handle requests to list pipeline output files."""
+        """
+        Handle output listing requests.
+        
+        Logic:
+        1. Get output directory
+        2. List available outputs
+        3. Format and return list
+        """
         details = classification.get("details", {})
         pipeline_name = details.get("pipeline_name")
         

@@ -60,8 +60,6 @@ source_attributes:  # or target_attributes
   gcp_project_id: your-project-id
   gcp_region: your-region
   database_schema: your_dataset
-  # Optional: Service account authentication
-  gcp_service_account_key: /path/to/key.json
 ```
 
 ## Redshift
@@ -115,8 +113,6 @@ source_attributes:  # or target_attributes
   gcp_region: your-region
   gcp_bucket_name: your-bucket-name
   bucket_pipeline_prefix: petaly/{pipeline_name}
-  # Optional: Service account authentication
-  gcp_service_account_key: /path/to/key.json
 ```
 
 ## AWS S3

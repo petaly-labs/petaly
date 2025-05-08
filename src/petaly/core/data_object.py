@@ -17,8 +17,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DataObject:
-    def __init__(self, pipeline, object_name):
+    """
+    Represents a data object in a Petaly pipeline.
+    Manages data object specifications, settings, and metadata.
+    Handles both source and destination object configurations,
+    including column mappings, file settings, and object properties.
+    """
 
+    def __init__(self, pipeline, object_name):
+        """
+        Initializes a new data object instance.
+        
+        Logic:
+        1. Get data object specifications from pipeline
+        2. Set up object paths and settings
+        3. Load object-specific settings
+        4. Handle different data object spec modes
+        """
         data_objects = pipeline.data_objects_spec
         self.pipeline_data_object_dir = pipeline.output_object_data_dpath.format(object_name=object_name)
         self.data_objects_spec_mode = pipeline.data_attributes.get('data_objects_spec_mode')
@@ -55,10 +70,23 @@ class DataObject:
         self.object_settings.update({'cleanup_linebreak_in_fields': cleanup_linebreak_in_fields})
 
     def to_dict(self) -> dict:
+        """
+        Converts the data object to a dictionary.
+        
+        Logic:
+        1. Convert all object attributes to dictionary format
+        """
         return {key: value for key, value in self.__dict__.items()}
 
     def get_object_spec(self, data_objects, object_name):
-
+        """
+        Gets the specification for a specific data object.
+        
+        Logic:
+        1. Search through data objects list
+        2. Find matching object by name
+        3. Return object specification
+        """
         return_object_spec = {}
         #for object_spec in data_objects.get('data_objects_spec'):
         for object_spec in data_objects:
@@ -68,6 +96,13 @@ class DataObject:
         return return_object_spec
 
     def set_default_object_spec(self, pipeline, object_name):
+        """
+        Sets default specifications for a data object.
+        
+        Logic:
+        1. Set basic object properties
+        2. Initialize default values for all settings
+        """
         self.object_name = object_name
         self.destination_object_name = None
         self.recreate_destination_object = False
@@ -78,6 +113,12 @@ class DataObject:
 
     def format_object_default_settings(self, object_default_settings):
         """
+        Formats default settings for a data object.
+        
+        Logic:
+        1. Copy default settings
+        2. Process header settings
+        3. Process column delimiter settings
         """
         object_settings = object_default_settings.copy()
         # 1. Header

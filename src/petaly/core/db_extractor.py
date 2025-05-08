@@ -28,202 +28,254 @@ from petaly.core.data_object import DataObject
 
 
 class DBExtractor(ABC):
+    """Abstract base class for database extractors.
+    
+    This class provides the core functionality for extracting data from database sources.
+    It handles metadata extraction, query composition, and data export to CSV files.
+    
+    Key responsibilities:
+    - Extracts metadata from database objects
+    - Composes and executes extraction queries
+    - Manages file output and metadata storage
+    - Handles type mapping and data transformation
+    
+    Attributes:
+        pipeline: The pipeline instance containing configuration and state
+        f_handler: FileHandler instance for file operations
+        composer: Composer instance for query composition
+        m_conf: Main configuration instance
+        type_mapping: TypeMapping instance for data type conversions
+        object_metadata: ObjectMetadata instance for metadata management
+    """
 
-	def __init__(self, pipeline):
-		super().__init__()
+    def __init__(self, pipeline):
+        super().__init__()
 
-		self.pipeline = pipeline
-		self.f_handler = FileHandler()
-		self.composer = Composer()
-		self.m_conf = self.pipeline.m_conf
-		self.type_mapping = TypeMapping(pipeline)
-		self.object_metadata = ObjectMetadata(pipeline)
+        self.pipeline = pipeline
+        self.f_handler = FileHandler()
+        self.composer = Composer()
+        self.m_conf = self.pipeline.m_conf
+        self.type_mapping = TypeMapping(pipeline)
+        self.object_metadata = ObjectMetadata(pipeline)
 
-		if self.m_conf.set_extractor_paths(self.pipeline.source_connector_id):
-			self.connector_extract_to_stmt_fpath = self.m_conf.connector_extract_to_stmt_fpath
-			self.connector_metadata_sql_fpath = self.m_conf.connector_metadata_sql_fpath
-			self.query_origin = self.f_handler.load_file(self.connector_metadata_sql_fpath)
+        if self.m_conf.set_extractor_paths(self.pipeline.source_connector_id):
+            self.connector_extract_to_stmt_fpath = self.m_conf.connector_extract_to_stmt_fpath
+            self.connector_metadata_sql_fpath = self.m_conf.connector_metadata_sql_fpath
+            self.query_origin = self.f_handler.load_file(self.connector_metadata_sql_fpath)
 
+    @abstractmethod
+    def extract_to(self, extractor_obj_conf):
+        pass
 
-	@abstractmethod
-	def extract_to(self, extractor_obj_conf):
-		pass
+    @abstractmethod
+    def get_query_result(self, meta_query):
+        pass
 
-	@abstractmethod
-	def get_query_result(self, meta_query):
-		pass
+    @abstractmethod
+    def compose_extract_to_stmt(self, extract_to_stmt, extract_config) -> dict:
+        pass
 
-	@abstractmethod
-	def compose_extract_to_stmt(self, extract_to_stmt, extract_config) -> dict:
-		pass
+    @measure_time
+    def extract_data(self):
+        """Extracts data from the database source and exports it to CSV files.
+        
+        This method orchestrates the entire extraction process:
+        1. Cleans up the pipeline output directory
+        2. Composes and executes metadata queries
+        3. Processes metadata for each object
+        4. Extracts data for each object to CSV files
+        
+        The method handles timing and logging of the extraction process.
+        """
 
-	@measure_time
-	def extract_data(self):
-		""" Its export data as csv into pipeline output directory.
-		"""
+        logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
+        start_total_time = time.time()
+        # 1. Start with cleanup
+        self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
 
-		logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
-		start_total_time = time.time()
-		# 1. Start with cleanup
-		self.f_handler.cleanup_dir(self.pipeline.output_pipeline_dpath)
+        # 2. compose_extract_scripts
+        meta_query = self.compose_meta_query()
 
-		# 2. compose_extract_scripts
-		meta_query = self.compose_meta_query()
+        # 3. get meta query result, expected as a dict
+        meta_query_result = self.execute_meta_query(meta_query)
 
-		# 3. get meta query result, expected as a dict
-		meta_query_result = self.execute_meta_query(meta_query)
+        # 4. save metadata and export scripts
+        object_list = self.object_metadata.process_metadata(meta_query_result)
 
-		# 4. save metadata and export scripts
-		object_list = self.object_metadata.process_metadata(meta_query_result)
+        # 5. run loop for each object
+        for object_name in object_list:
 
-		# 5. run loop for each object
-		for object_name in object_list:
+            logger.info(f"Extract object: {object_name} started...")
+            start_time = time.time()
 
-			logger.info(f"Extract object: {object_name} started...")
-			start_time = time.time()
+            # 5. get all export scripts and store data into output directory
+            extractor_obj_conf = self.get_extractor_obj_conf(object_name)
 
-			# 5. get all export scripts and store data into output directory
-			extractor_obj_conf = self.get_extractor_obj_conf(object_name)
+            # 6. run export data
+            self.extract_to(extractor_obj_conf)
 
-			# 6. run export data
-			self.extract_to(extractor_obj_conf)
+            end_time = time.time()
+            logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
 
-			end_time = time.time()
-			logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+        end_total_time = time.time()
+        logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
 
-		end_total_time = time.time()
-		logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
+    def execute_meta_query(self, meta_query):
+        """Executes a metadata query and returns the results.
+        
+        The method executes the provided SQL query for metadata extraction.
+        If the query cannot be executed, it raises a SystemExit error.
+        """
+        logger.debug("Execute meta-query and create extract scripts")
+        if meta_query is not None:
+            query_result = self.get_query_result(meta_query)
 
-	def execute_meta_query(self, meta_query):
-		""" compose and execute meta query and store result in json file """
-		logger.debug("Execute meta-query and create extract scripts")
-		if meta_query is not None:
-			query_result = self.get_query_result(meta_query)
+        else:
+            logger.error(
+                f"Meta Query for pipeline {self.pipeline.pipeline_name} can not be executed. Review your configuration.")
 
-		else:
-			logger.error(
-				f"Meta Query for pipeline {self.pipeline.pipeline_name} can not be executed. Review your configuration.")
+            query_result = None
+        return query_result
 
-			query_result = None
-		return query_result
+    def get_extractor_obj_conf(self, object_name) ->dict:
+        """Gets the configuration for extracting a specific object.
+        
+        The method composes a complete configuration dictionary containing:
+        - Object name and paths
+        - Metadata directory
+        - Extract queries
+        - Object settings
+        - Blob prefix for cloud storage
+        - Extract statements
+        """
 
-	def get_extractor_obj_conf(self, object_name) ->dict:
+        extractor_obj_conf = {'object_name': object_name}
 
-		extractor_obj_conf = {'object_name': object_name}
+        # 1. compose metadata directory
+        output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
+        extractor_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
+        metadata_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
 
-		# 1. compose metadata directory
-		output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
-		extractor_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
-		metadata_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
+        # 2. get and compose metadata query
+        table_metadata = self.f_handler.load_file_as_dict(metadata_fpath, 'json')
+        extract_queries_dict = self.compose_extract_queries(table_metadata)
+        extractor_obj_conf.update(extract_queries_dict)
 
-		# 2. get and compose metadata query
-		table_metadata = self.f_handler.load_file_as_dict(metadata_fpath, 'json')
-		extract_queries_dict = self.compose_extract_queries(table_metadata)
-		extractor_obj_conf.update(extract_queries_dict)
+        # 3. add object_default_settings
+        #extractor_obj_conf.update({'object_settings': table_metadata.get('object_settings')})
+        data_object = self.get_data_object(object_name)
+        logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
+        extractor_obj_conf.update({'object_settings': data_object.object_settings})
 
-		# 3. add object_default_settings
-		#extractor_obj_conf.update({'object_settings': table_metadata.get('object_settings')})
-		data_object = self.get_data_object(object_name)
-		logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
-		extractor_obj_conf.update({'object_settings': data_object.object_settings})
+        # blob-prefix, used for storage in cloud services (e.g. Redshift (s3), Bigquery (GCS))
+        blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.source_attr.get('bucket_pipeline_prefix'),
+                                                            self.pipeline.pipeline_name,
+                                                            object_name)
+        extractor_obj_conf.update({'blob_prefix': blob_prefix})
 
-		# blob-prefix, used for storage in cloud services (e.g. Redshift (s3), Bigquery (GCS))
-		blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.source_attr.get('bucket_pipeline_prefix'),
-																self.pipeline.pipeline_name,
-																object_name)
-		extractor_obj_conf.update({'blob_prefix': blob_prefix})
+        # 4. load stmt_extract_to.txt and transform it in later stage
+        extract_to_stmt = self.f_handler.load_file(self.connector_extract_to_stmt_fpath)
+        extract_to_stmt = self.compose_extract_to_stmt(extract_to_stmt, extractor_obj_conf)
+        extractor_obj_conf.update({'extract_to_stmt': extract_to_stmt})
 
-		# 4. load stmt_extract_to.txt and transform it in later stage
-		extract_to_stmt = self.f_handler.load_file(self.connector_extract_to_stmt_fpath)
-		extract_to_stmt = self.compose_extract_to_stmt(extract_to_stmt, extractor_obj_conf)
-		extractor_obj_conf.update({'extract_to_stmt': extract_to_stmt})
+        # 5.  save extract_to_stmt under output_extract_to_file_fpath
+        output_extract_to_stmt_fpath = self.pipeline.output_extract_to_stmt_fpath.format(object_name=object_name)
+        extractor_obj_conf.update({'extract_to_stmt_fpath': output_extract_to_stmt_fpath})
+        self.f_handler.save_file(output_extract_to_stmt_fpath, extract_to_stmt)
 
-		# 5.  save extract_to_stmt under output_extract_to_file_fpath
-		output_extract_to_stmt_fpath = self.pipeline.output_extract_to_stmt_fpath.format(object_name=object_name)
-		extractor_obj_conf.update({'extract_to_stmt_fpath': output_extract_to_stmt_fpath})
-		self.f_handler.save_file(output_extract_to_stmt_fpath, extract_to_stmt)
+        # 6. compose output data dir
+        output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
+        self.f_handler.make_dirs(output_data_object_dir)
 
-		# 6. compose output data dir
-		output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-		extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
-		self.f_handler.make_dirs(output_data_object_dir)
+        # compose output object file path
+        output_object_fpath = os.path.join(output_data_object_dir, object_name + '.csv')
+        extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
 
-		# compose output object file path
-		output_object_fpath = os.path.join(output_data_object_dir, object_name + '.csv')
-		extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
+        logger.debug(f"Config for data extract: {extractor_obj_conf}")
+        return extractor_obj_conf
 
-		logger.debug(f"Config for data extract: {extractor_obj_conf}")
-		return extractor_obj_conf
+    def compose_meta_query(self):
+        """Composes the metadata query based on pipeline configuration.
+        
+        The query is built using:
+        - Schema information
+        - Table list (if specified)
+        - Column definitions
+        """
+        logger.debug("Compose data source meta query:")
 
-	def compose_meta_query(self):
-		""" Its compose a meta query by using a meta query file and adding schema, tables and column definitions
+        if self.pipeline.data_attributes.get('data_objects_spec_mode') in ("ignore","prefer"):
+            table_stmt = ''
+        else:
 
-		:return:
-		"""
-		logger.debug("Compose data source meta query:")
+            if len(self.pipeline.data_objects)==0:
+                logger.warning(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If data_objects_spec_mode is set to \"only\" the data_objects_spec: [] should has at least one object specification")
+                sys.exit()
 
-		if self.pipeline.data_attributes.get('data_objects_spec_mode') in ("ignore","prefer"):
-			table_stmt = ''
-		else:
+            table_stmt = 'AND tb.table_name IN ({tbl_list})'
+            table_string = ''
+            for tbl in self.pipeline.data_objects:
+                table_string += "'" + tbl + "',"
 
-			if len(self.pipeline.data_objects)==0:
-				logger.warning(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If data_objects_spec_mode is set to \"only\" the data_objects_spec: [] should has at least one object specification")
-				sys.exit()
+            table_string = table_string.rstrip(',')
 
-			table_stmt = 'AND tb.table_name IN ({tbl_list})'
-			table_string = ''
-			for tbl in self.pipeline.data_objects:
-				table_string += "'" + tbl + "',"
+            table_stmt = table_stmt.format(tbl_list=table_string)
 
-			table_string = table_string.rstrip(',')
+        source_schema = self.pipeline.source_attr.get('database_schema')
 
-			table_stmt = table_stmt.format(tbl_list=table_string)
+        if source_schema is None:
+            if self.f_handler.check_dict_key_exist(self.pipeline.source_attr, 'database_schema'):
+                logger.warning(f"A source database schema wasn't specified. To continue, specify database_schema in pypeline.yaml ")
+                sys.exit()
 
-		source_schema = self.pipeline.source_attr.get('database_schema')
+            source_schema = self.pipeline.source_attr.get('database_name')
 
-		if source_schema is None:
-			if self.f_handler.check_dict_key_exist(self.pipeline.source_attr, 'database_schema'):
-				logger.warning(f"A source database schema wasn't specified. To continue, specify database_schema in pypeline.yaml ")
-				sys.exit()
+        meta_query = self.query_origin.format(schema=source_schema, table_statement_list=table_stmt)
 
-			source_schema = self.pipeline.source_attr.get('database_name')
+        logger.debug(f"Meta Query:\n {meta_query}")
 
-		meta_query = self.query_origin.format(schema=source_schema, table_statement_list=table_stmt)
+        return meta_query
 
-		logger.debug(f"Meta Query:\n {meta_query}")
+    @measure_time
+    def compose_extract_queries(self, dict_obj):
+        """Composes extraction queries for a specific object.
+        
+        The method processes object metadata to create:
+        - Source schema and object names
+        - Column list with type transformations
+        """
+        extract_obj_conf = {}
 
-		return meta_query
+        if dict_obj.get('source_object_name') is not None:
+            column_list = ''
 
-	@measure_time
-	def compose_extract_queries(self, dict_obj):
-		""" Its compose an extract queries using object dictionary
-		"""
-		extract_obj_conf = {}
+            transformation = self.type_mapping.get_extractor_type_transformer()
+            col_obj = dict_obj.get('columns')
 
-		if dict_obj.get('source_object_name') is not None:
-			column_list = ''
+            for idx, val in enumerate(col_obj):
 
-			transformation = self.type_mapping.get_extractor_type_transformer()
-			col_obj = dict_obj.get('columns')
+                column_transformation = transformation.get(val['data_type'])
 
-			for idx, val in enumerate(col_obj):
+                if column_transformation is not None:
+                    column_list += column_transformation.format(column_name=val['column_name']) + ","
+                else:
+                    column_list += f" {self.db_connector.metaquery_quote}{val['column_name']}{self.db_connector.metaquery_quote},"
+                    #columns += self.normalise_column_name(val['column_name']) + ","
 
-				column_transformation = transformation.get(val['data_type'])
+            column_list = column_list.rstrip(',')
 
-				if column_transformation is not None:
-					column_list += column_transformation.format(column_name=val['column_name']) + ","
-				else:
-					column_list += f" {self.db_connector.metaquery_quote}{val['column_name']}{self.db_connector.metaquery_quote},"
-					#columns += self.normalise_column_name(val['column_name']) + ","
+            extract_obj_conf.update({
+                                    'source_schema_name':dict_obj['source_schema_name'],
+                                    'source_object_name':dict_obj['source_object_name'],
+                                    'column_list':column_list})
 
-			column_list = column_list.rstrip(',')
+            return extract_obj_conf
 
-			extract_obj_conf.update({
-								 'source_schema_name':dict_obj['source_schema_name'],
-								 'source_object_name':dict_obj['source_object_name'],
-								 'column_list':column_list})
-
-			return extract_obj_conf
-
-	def get_data_object(self, object_name):
-		return DataObject(self.pipeline, object_name)
+    def get_data_object(self, object_name):
+        """Gets a DataObject instance for the specified object.
+        
+        Creates and returns a DataObject instance containing the object's
+        configuration and settings.
+        """
+        return DataObject(self.pipeline, object_name)

@@ -29,6 +29,17 @@ from petaly.core.data_object import DataObject
 
 
 class FExtractor(ABC):
+    """Abstract base class for file extractors.
+    
+    This class provides the core functionality for extracting data from file-based sources.
+    It handles file reading, metadata extraction, and data export to CSV files.
+    
+    Key responsibilities:
+    - Extracts data from various file formats (CSV, etc.)
+    - Analyzes file structure and metadata
+    - Manages file output and metadata storage
+    - Handles file compression and decompression
+    """
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
@@ -43,7 +54,16 @@ class FExtractor(ABC):
         pass
 
     def extract_data(self):
-        """ Its export data as csv into pipeline output directory.
+        """Extracts data from file sources and exports it to CSV files.
+        
+        This method orchestrates the entire extraction process:
+        1. Saves metadata and export scripts
+        2. Processes each object in the object list
+        3. Cleans up pipeline directories
+        4. Extracts data to files
+        5. Extracts metadata from files if needed
+        
+        The method handles timing and logging of the extraction process.
         """
 
         logger.info(f"[--- Extract from {self.pipeline.source_connector_id} ---]")
@@ -75,7 +95,13 @@ class FExtractor(ABC):
         logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
 
     def extract_metadata_from_file(self, first_file_fpath, object_name, file_format):
-        """
+        """Extracts metadata from a file and saves it.
+        
+        The method:
+        1. Checks if file is compressed and decompresses if needed
+        2. Analyzes file structure
+        3. Composes metadata
+        4. Saves metadata to file
         """
         logger.debug(f"Check if the file {first_file_fpath} is compressed.")
 
@@ -97,6 +123,17 @@ class FExtractor(ABC):
         self.f_handler.remove_file(parquet_fpath)
 
     def get_extractor_obj_conf(self, object_name) -> dict:
+        """Gets the configuration for extracting a specific object.
+        
+        The method composes a complete configuration containing:
+        - Object name and paths
+        - Output directories
+        - Object source directory
+        - Blob prefix
+        - File names
+        - Object settings
+        - Output file paths
+        """
 
         extractor_obj_conf = {'object_name': object_name}
 
@@ -157,8 +194,10 @@ class FExtractor(ABC):
         logger.debug(f"Config for data extract: {extractor_obj_conf}")
         return extractor_obj_conf
 
-    def save_metadata_into_file(self,meta_table):
-        """ Its save a table result as a metadata into file
+    def save_metadata_into_file(self, meta_table):
+        """Saves table metadata to a file.
+        
+        The metadata is saved in JSON format to the object's metadata directory.
         """
         object_name = meta_table.get('source_object_name')
         source_object_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
@@ -166,7 +205,13 @@ class FExtractor(ABC):
         self.f_handler.save_dict_to_file(source_object_fpath, meta_table, 'json')
 
     def extract_metadata_from_parquet_file(self, parquet_fpath):
-        """ Its extract metadata from parquet file and also change the dict from parquet.read_metadata in more readable format.
+        """Extracts metadata from a Parquet file.
+        
+        The method extracts and formats column metadata including:
+        - Column name and type
+        - Physical type
+        - Encoding and compression
+        - Statistics (if available)
         """
 
         pq_metadata = parquet.read_metadata(parquet_fpath).to_dict()
@@ -216,7 +261,12 @@ class FExtractor(ABC):
         return pq_columns_metadata_arr
 
     def compose_metadata_file(self, parquet_fpath, object_name):
-        """ Its creates a metadata file with all the attributes needed to recreate a table on the target.
+        """Composes a metadata file for an object.
+        
+        The method creates a metadata table containing:
+        - Source object information
+        - Column definitions
+        - Object settings
         """
         pq_columns_metadata_arr = self.extract_metadata_from_parquet_file(parquet_fpath)
 
@@ -255,9 +305,12 @@ class FExtractor(ABC):
         return output_text
 
     def analyse_file_structure(self, output_source_file, object_name, file_format_extension):
-        """ Analyse the csv file to determine the column format.
-        Transform the source file to parquet format to read the column data type.
-        Finally, store the result of this discovery to the metadata file
+        """Analyzes the structure of a file to determine column formats.
+        
+        The method:
+        1. Validates file existence and format
+        2. Reads CSV file with specified options
+        3. Converts to Parquet for analysis
         """
 
         is_file = self.f_handler.is_file(output_source_file)
@@ -287,5 +340,10 @@ class FExtractor(ABC):
         return parquet_fpath
 
     def get_data_object(self, object_name):
+        """Gets a DataObject instance for the specified object.
+        
+        Creates and returns a DataObject instance containing the object's
+        configuration and settings.
+        """
         return DataObject(self.pipeline, object_name)
 

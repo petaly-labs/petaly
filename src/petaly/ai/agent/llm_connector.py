@@ -22,23 +22,53 @@ from typing import Dict, List, Any, Optional, Union
 logger = logging.getLogger(__name__)
 
 class LLMConnector(ABC):
-    """Base abstract class for LLM integrations."""
+    """
+    Base abstract class for LLM integrations.
+    Defines interface for text completion and embedding generation.
+    Supports multiple LLM providers through concrete implementations.
+    """
     
     @abstractmethod
     def generate_completion(self, prompt: str, **kwargs) -> str:
-        """Generate a text completion for the given prompt."""
+        """
+        Generate a text completion for the given prompt.
+        
+        Logic:
+        1. Process input prompt
+        2. Call LLM API
+        3. Parse and return response
+        """
         pass
     
     @abstractmethod
     def generate_embeddings(self, text: Union[str, List[str]]) -> List[List[float]]:
-        """Generate embeddings for the given text(s)."""
+        """
+        Generate embeddings for the given text(s).
+        
+        Logic:
+        1. Process input text(s)
+        2. Call embeddings API
+        3. Return vector embeddings
+        """
         pass
 
 
 class AnthropicConnector(LLMConnector):
-    """Connector for Anthropic Claude models."""
+    """
+    Connector for Anthropic Claude models.
+    Handles API communication and response parsing for Claude.
+    Supports JSON response extraction and validation.
+    """
     
     def __init__(self, llm_config: Dict[str, Any]):
+        """
+        Initialize Anthropic connector.
+        
+        Logic:
+        1. Get API key from config or environment
+        2. Set model and API URL
+        3. Validate configuration
+        """
         self.api_key = llm_config.get('ai_agent_api_key') or os.environ.get("AI_AGENT_API_KEY")
         if not self.api_key:
             raise ValueError("Anthropic API key is required")
@@ -47,7 +77,16 @@ class AnthropicConnector(LLMConnector):
         self.api_url = "https://api.anthropic.com/v1/messages"
 
     def generate_completion(self, prompt: str, **kwargs) -> str:
-        """Generate a completion using Anthropic Claude."""
+        """
+        Generate a completion using Anthropic Claude.
+        
+        Logic:
+        1. Prepare API request with headers
+        2. Format prompt and parameters
+        3. Make API call
+        4. Extract and validate JSON response
+        5. Return parsed result
+        """
         headers = {
             "x-api-key": self.api_key,
             "anthropic-version": "2023-06-01",
@@ -143,16 +182,34 @@ class AnthropicConnector(LLMConnector):
 
 
     def generate_embeddings(self, text: Union[str, List[str]]) -> List[List[float]]:
-        """Generate embeddings using Anthropic's API."""
+        """
+        Generate embeddings using Anthropic's API.
+        
+        Logic:
+        1. Placeholder for future implementation
+        2. Raise NotImplementedError
+        """
         # Note: You would need to implement this when Anthropic releases their embeddings API
         # This is a placeholder implementation
         raise NotImplementedError("Anthropic embeddings API not implemented yet")
 
 
 class OpenAIConnector(LLMConnector):
-    """Connector for OpenAI models."""
+    """
+    Connector for OpenAI models.
+    Handles API communication for GPT models and embeddings.
+    Supports chat completions and text embeddings.
+    """
     
     def __init__(self, llm_config: Dict[str, Any]):
+        """
+        Initialize OpenAI connector.
+        
+        Logic:
+        1. Get API key from config or environment
+        2. Set model and API endpoints
+        3. Configure embedding model
+        """
         self.api_key = llm_config.get('ai_agent_api_key') or os.environ.get("AI_AGENT_API_KEY")
         if not self.api_key:
             raise ValueError("OpenAI API key is required")
@@ -164,7 +221,15 @@ class OpenAIConnector(LLMConnector):
         self.embedding_model = "text-embedding-3-large"
         
     def generate_completion(self, prompt: str, **kwargs) -> str:
-        """Generate a completion using OpenAI."""
+        """
+        Generate a completion using OpenAI.
+        
+        Logic:
+        1. Prepare API request with headers
+        2. Format messages with system prompt
+        3. Make API call
+        4. Extract and return response
+        """
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -200,7 +265,15 @@ class OpenAIConnector(LLMConnector):
             raise
     
     def generate_embeddings(self, text: Union[str, List[str]]) -> List[List[float]]:
-        """Generate embeddings using OpenAI's embedding model."""
+        """
+        Generate embeddings using OpenAI's embedding model.
+        
+        Logic:
+        1. Prepare API request
+        2. Handle single/multiple text inputs
+        3. Make API call
+        4. Extract embeddings from response
+        """
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -225,8 +298,14 @@ class OpenAIConnector(LLMConnector):
 
 
 def get_llm_connector(llm_config: Dict[str, Any]) -> LLMConnector:
+    """
+    Factory function to get the appropriate LLM connector.
     
-    """Factory function to get the appropriate LLM connector."""
+    Logic:
+    1. Check provider in config
+    2. Return corresponding connector instance
+    3. Raise error for unsupported providers
+    """
     if str(llm_config.get('llm_provider')).lower() == "anthropic":
         return AnthropicConnector(llm_config)
     elif str(llm_config.get('llm_provider')).lower() == "openai":

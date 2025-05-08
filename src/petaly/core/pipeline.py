@@ -22,7 +22,23 @@ from typing import Dict, List, Any, Optional
 from petaly.utils.file_handler import FileHandler
 
 class Pipeline:
+    """
+    Manages pipeline configuration and execution in Petaly.
+    Handles loading and parsing pipeline configuration files (YAML/JSON),
+    managing pipeline attributes, source and target connectors, and data objects.
+    Supports both YAML and JSON formats for pipeline configuration.
+    """
+
     def __init__(self, pipeline_name, main_config):
+        """
+        Initializes a new pipeline instance.
+        
+        Logic:
+        1. Set up pipeline paths and file names
+        2. Load pipeline configuration
+        3. Parse pipeline attributes and settings
+        4. Initialize data objects and specifications
+        """
         logger.debug("Load main ConfigHandler")
 
         self.m_conf = main_config
@@ -136,7 +152,14 @@ class Pipeline:
             return
 
     def _check_outdated_arguments(self, attributes: Dict[str, Any]) -> List[str]:
-        """Check for outdated arguments in the given attributes dictionary."""
+        """
+        Checks for outdated arguments in the given attributes dictionary.
+        
+        Logic:
+        1. Get list of outdated arguments from configuration
+        2. Check each attribute against outdated list
+        3. Return list of issues found
+        """
         issues = []
         pipeline_outdated_arguments = self.m_conf.get_pipeline_outdated_arguments()
 
@@ -148,11 +171,14 @@ class Pipeline:
         return issues
 
     def get_pipeline_entire_config(self):
-        """Get the entire pipeline configuration, handling both YAML and JSON formats.
+        """
+        Gets the entire pipeline configuration.
         
-        Returns:
-            list: A list containing the pipeline configuration. For YAML, it may contain multiple documents.
-                 For JSON, it will contain a single document.
+        Logic:
+        1. Determine file format (YAML/JSON)
+        2. Load configuration based on format
+        3. Handle multiple documents for YAML
+        4. Split JSON into pipeline and data objects
         """
         try:
             file_extension = os.path.splitext(self.pipeline_fpath)[1].lower()
@@ -181,6 +207,14 @@ class Pipeline:
 
     def get_object_default_settings(self):
         """
+        Gets default settings for data objects.
+        
+        Logic:
+        1. Copy default settings from data attributes
+        2. Check for outdated arguments
+        3. Process column delimiter settings
+        4. Process header settings
+        5. Process column quote settings
         """
 
         object_default_settings = self.data_attributes.get('object_default_settings').copy()
@@ -212,8 +246,14 @@ class Pipeline:
         return object_default_settings
 
     def check_pipeline_outdated_arguments(self, dict_to_check):
-        """ Check if one of pass dict include an outdated parameters. In case it has output the log message.
-
+        """
+        Checks for outdated parameters in the given dictionary.
+        
+        Logic:
+        1. Get list of outdated arguments
+        2. Check each parameter
+        3. Log issues based on severity
+        4. Exit if required by configuration
         """
         pipeline_outdated_arguments = self.m_conf.get_pipeline_outdated_arguments()
 
@@ -236,7 +276,13 @@ class Pipeline:
                     sys.exit()
 
     def get_config(self) -> Dict[str, Any]:
-        """Get the pipeline configuration as a dictionary."""
+        """
+        Gets the complete pipeline configuration.
+        
+        Logic:
+        1. Load entire pipeline configuration
+        2. Return pipeline and data objects spec
+        """
         try:
             pipeline_all_obj = self.get_pipeline_entire_config()
             if not pipeline_all_obj or len(pipeline_all_obj) < 2:

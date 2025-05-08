@@ -23,7 +23,11 @@ from petaly.utils.file_handler import FileHandler
 logger = logging.getLogger(__name__)
 
 class ConversationStore:
-    """Manages conversation history and memory for the Petaly agent."""
+    """
+    Manages conversation history and memory for the Petaly agent.
+    Handles storage, retrieval, and cleanup of conversation entries.
+    Supports backup creation and size management.
+    """
     
     def __init__(
         self,
@@ -35,11 +39,10 @@ class ConversationStore:
         """
         Initialize the conversation store.
         
-        Args:
-            storage_path: Path to store conversation history
-            max_entries: Maximum number of entries to store
-            cleanup_threshold: Threshold (0-1) at which to trigger cleanup
-            backup_enabled: Whether to create backups before cleanup
+        Logic:
+        1. Set storage parameters
+        2. Create storage directory
+        3. Load existing history
         """
         self.storage_path = storage_path
         self.max_entries = max_entries
@@ -54,7 +57,14 @@ class ConversationStore:
         self.conversation_history = self._load_history()
     
     def _load_history(self) -> List[Dict[str, Any]]:
-        """Load conversation history from storage."""
+        """
+        Load conversation history from storage.
+        
+        Logic:
+        1. Check if history file exists
+        2. Load and validate history
+        3. Trim to max size if needed
+        """
         try:
             if self.file_handler.is_file(self.storage_path):
                 history = self.file_handler.load_json(self.storage_path)
@@ -68,7 +78,14 @@ class ConversationStore:
             return []
     
     def _save_history(self):
-        """Save conversation history to storage."""
+        """
+        Save conversation history to storage.
+        
+        Logic:
+        1. Check cleanup threshold
+        2. Perform cleanup if needed
+        3. Save history to file
+        """
         try:
             # Check if we need to cleanup
             if len(self.conversation_history) > self.max_entries * self.cleanup_threshold:
@@ -79,7 +96,14 @@ class ConversationStore:
             logger.error(f"Error saving conversation history: {e}", exc_info=True)
     
     def _create_backup(self):
-        """Create a backup of the current conversation history."""
+        """
+        Create a backup of the current conversation history.
+        
+        Logic:
+        1. Check if backup is enabled
+        2. Generate backup filename with timestamp
+        3. Save current history to backup
+        """
         if not self.backup_enabled:
             return
             
@@ -92,7 +116,14 @@ class ConversationStore:
             logger.error(f"Error creating backup: {e}", exc_info=True)
     
     def _cleanup_history(self):
-        """Clean up old conversation entries to maintain size limits."""
+        """
+        Clean up old conversation entries to maintain size limits.
+        
+        Logic:
+        1. Create backup if enabled
+        2. Trim history to max entries
+        3. Log cleanup results
+        """
         self._create_backup()
         # Keep only the most recent entries
         self.conversation_history = self.conversation_history[-self.max_entries:]
@@ -102,10 +133,11 @@ class ConversationStore:
         """
         Add a new entry to the conversation history.
         
-        Args:
-            role: Role of the speaker ('user' or 'assistant')
-            content: Content of the message
-            metadata: Optional metadata about the entry
+        Logic:
+        1. Validate role
+        2. Create entry with timestamp
+        3. Add metadata if provided
+        4. Save to history
         """
         if role not in {"user", "assistant"}:
             raise ValueError("Role must be either 'user' or 'assistant'")
@@ -126,11 +158,9 @@ class ConversationStore:
         """
         Get the most recent conversation entries.
         
-        Args:
-            count: Number of entries to retrieve
-            
-        Returns:
-            List of recent conversation entries
+        Logic:
+        1. Get last N entries from history
+        2. Return entries list
         """
         return self.conversation_history[-count:]
     
@@ -138,30 +168,43 @@ class ConversationStore:
         """
         Get all entries for a specific role.
         
-        Args:
-            role: Role to filter by ('user' or 'assistant')
-            
-        Returns:
-            List of entries for the specified role
+        Logic:
+        1. Filter history by role
+        2. Return matching entries
         """
         return [entry for entry in self.conversation_history if entry["role"] == role]
     
     def clear_history(self):
-        """Clear all conversation history."""
+        """
+        Clear all conversation history.
+        
+        Logic:
+        1. Reset history list
+        2. Save empty history
+        3. Log operation
+        """
         self.conversation_history = []
         self._save_history()
         logger.info("Cleared conversation history")
     
     def get_history_size(self) -> int:
-        """Get the current size of the conversation history."""
+        """
+        Get the current size of the conversation history.
+        
+        Logic:
+        1. Return length of history list
+        """
         return len(self.conversation_history)
     
     def get_history_summary(self) -> Dict[str, Any]:
         """
         Get a summary of the conversation history.
         
-        Returns:
-            Dictionary containing history statistics
+        Logic:
+        1. Count total entries
+        2. Count entries by role
+        3. Get oldest and newest timestamps
+        4. Return summary dictionary
         """
         return {
             "total_entries": len(self.conversation_history),

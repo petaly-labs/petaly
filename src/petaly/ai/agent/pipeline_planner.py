@@ -50,7 +50,6 @@ class PlatformConfigs:
     }
     
     AWS = {
-        "aws_account": "aws_account",
         "aws_bucket_name": "aws_bucket_name",
         "bucket_pipeline_prefix": "bucket_pipeline_prefix",
         "aws_iam_role": "aws_iam_role",
@@ -76,15 +75,20 @@ class PipelinePlan(TypedDict):
     user_message: Optional[str]
 
 class PipelinePlanner:
-    """Generates plans and configurations for Petaly pipelines based on natural language instructions."""
+    """
+    Generates plans and configurations for Petaly pipelines based on natural language instructions.
+    Handles pipeline creation, modification, and configuration generation.
+    Manages connector-specific attributes and platform configurations.
+    """
     
     def __init__(self, llm: LLMConnector, main_config: Dict[str, Any]):
         """
         Initialize the pipeline planner.
         
-        Args:
-            llm: LLM connector for natural language processing
-            main_config: Petaly's main configuration
+        Logic:
+        1. Store LLM connector and main config
+        2. Initialize file handler
+        3. Load connector configurations
         """
         self.llm = llm
         self.m_conf = main_config
@@ -92,19 +96,25 @@ class PipelinePlanner:
         self.connector_configs = self._load_connector_configs()
         
     def _load_connector_configs(self) -> Dict[str, Any]:
-        """Load available connector configurations from the system."""
+        """
+        Load available connector configurations from the system.
+        
+        Logic:
+        1. Load JSON config from system config path
+        2. Return connector configurations
+        """
         return self.file_handler.load_json(self.m_conf.class_sysconfig_fpath)
     
     def create_pipeline_plan(self, instruction: str, system_prompt: Optional[str] = None) -> Dict[str, Any]:
         """
         Create a plan for a new pipeline based on natural language instruction.
         
-        Args:
-            instruction: User's natural language instruction
-            system_prompt: Optional custom system prompt to override the default
-            
-        Returns:
-            Dictionary containing the pipeline plan
+        Logic:
+        1. Get available connectors
+        2. Generate planning prompt
+        3. Get plan from LLM
+        4. Parse and validate response
+        5. Return structured plan
         """
         # Generate prompt for pipeline planning
         available_connectors = list(self.connector_configs.get("connectors", {}).keys())
@@ -161,7 +171,16 @@ class PipelinePlanner:
     
     def generate_pipeline_config(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                                objects: List[str] = None) -> Dict[str, Any]:
-        """Generate a pipeline configuration from source and target configs."""
+        """
+        Generate a pipeline configuration from source and target configs.
+        
+        Logic:
+        1. Validate plan completeness
+        2. Load pipeline metadata template
+        3. Build source and target attributes
+        4. Handle platform-specific configs
+        5. Build data objects specification
+        """
         # First, validate the plan
         if source_config.get("needs_more_info", False) or target_config.get("needs_more_info", False):
             raise ValueError("Cannot generate configuration: more information needed")
@@ -197,24 +216,7 @@ class PipelinePlanner:
         
         # Handle platform-specific configurations
         platform_type = target_attributes.get("platform_type")
-        platform_configs = {
-            "gcp": {
-                "gcp_project_id": target_details.get("gcp_project_id"),
-                "gcp_region": target_details.get("gcp_region"),
-                "gcp_bucket_name": target_details.get("gcp_bucket_name"),
-                "bucket_pipeline_prefix": target_details.get("bucket_pipeline_prefix")
-            },
-            "aws": {
-                "aws_account": target_details.get("aws_account"),
-                "aws_bucket_name": target_details.get("aws_bucket_name"),
-                "bucket_pipeline_prefix": target_details.get("bucket_pipeline_prefix"),
-                "aws_iam_role": target_details.get("aws_iam_role"),
-                "aws_profile_name": target_details.get("aws_profile_name"),
-                "aws_access_key_id": target_details.get("aws_access_key_id"),
-                "aws_secret_access_key": target_details.get("aws_secret_access_key"),
-                "aws_region": target_details.get("aws_region")
-            }
-        }
+        platform_configs = self._build_platform_configs(target_details)
         
         # Add platform-specific configurations
         if platform_type in platform_configs:
@@ -224,12 +226,7 @@ class PipelinePlanner:
         
         # Handle Redshift specific configurations
         if target_attributes.get("connector_type") == "redshift":
-            redshift_configs = {
-                "connection_method": target_details.get("connection_method"),
-                "is_serverless": target_details.get("is_serverless"),
-                "cluster_identifier": target_details.get("cluster_identifier"),
-                "workgroup_name": target_details.get("workgroup_name")
-            }
+            redshift_configs = self._build_redshift_configs(target_details)
             for key, value in redshift_configs.items():
                 if value is not None:
                     target_attributes[key] = value
@@ -294,17 +291,13 @@ class PipelinePlanner:
     
     def _build_connector_attributes(self, details: Dict[str, Any], connector_type: str, connector_category: str) -> Dict[str, Any]:
         """
-        Build connector attributes based on type and category.
-        All parameters are optional and can be empty strings, except for essential decision-making parameters.
-        Always includes connector_type and other essential attributes.
+        Build connector-specific attributes.
         
-        Args:
-            details: Connector details from the plan
-            connector_type: Type of connector (e.g., 'mysql', 'postgres')
-            connector_category: Category of connector (e.g., 'database', 'file')
-            
-        Returns:
-            Dict of connector attributes
+        Logic:
+        1. Get connector-specific attributes
+        2. Add default attributes
+        3. Handle platform-specific details
+        4. Return complete attributes
         """
         attributes = {}
         
@@ -698,7 +691,14 @@ class PipelinePlanner:
         return pipeline_config
 
     def _build_platform_configs(self, details: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-        """Build platform-specific configurations for GCP and AWS."""
+        """
+        Build platform-specific configurations.
+        
+        Logic:
+        1. Handle GCP configurations
+        2. Handle AWS configurations
+        3. Return platform configs
+        """
         return {
             "gcp": {
                 "gcp_project_id": details.get("gcp_project_id"),
@@ -707,7 +707,6 @@ class PipelinePlanner:
                 "bucket_pipeline_prefix": details.get("bucket_pipeline_prefix")
             },
             "aws": {
-                "aws_account": details.get("aws_account"),
                 "aws_bucket_name": details.get("aws_bucket_name"),
                 "bucket_pipeline_prefix": details.get("bucket_pipeline_prefix"),
                 "aws_iam_role": details.get("aws_iam_role"),
@@ -719,7 +718,14 @@ class PipelinePlanner:
         }
 
     def _build_redshift_configs(self, details: Dict[str, Any]) -> Dict[str, Any]:
-        """Build Redshift-specific configurations."""
+        """
+        Build Redshift-specific configurations.
+        
+        Logic:
+        1. Handle connection method
+        2. Handle serverless settings
+        3. Return Redshift configs
+        """
         return {
             "connection_method": details.get("connection_method"),
             "is_serverless": details.get("is_serverless"),
@@ -729,15 +735,13 @@ class PipelinePlanner:
 
     def create_full_pipeline_config(self, instruction: str, system_prompt: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Create a complete pipeline configuration based on natural language instruction.
-        This method handles the full pipeline structure including platform-specific configurations.
-
-        Args:
-            instruction: User's natural language instruction
-            system_prompt: Optional custom system prompt to override the default
-
-        Returns:
-            List containing complete pipeline configuration documents
+        Create a complete pipeline configuration from instruction.
+        
+        Logic:
+        1. Create pipeline plan
+        2. Generate source and target configs
+        3. Build data objects spec
+        4. Create final configuration
         """
         # Generate prompt for pipeline planning
         available_connectors = list(self.connector_configs.get("connectors", {}).keys())
@@ -804,14 +808,13 @@ class PipelinePlanner:
     
     def create_modification_plan(self, instruction: str, existing_config: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Create a plan for modifying an existing pipeline based on a natural language instruction.
+        Create a plan for modifying an existing pipeline.
         
-        Args:
-            instruction: User's natural language instruction
-            existing_config: The existing pipeline configuration
-            
-        Returns:
-            Dictionary containing the modification plan
+        Logic:
+        1. Analyze existing config
+        2. Generate modification prompt
+        3. Get plan from LLM
+        4. Parse and validate changes
         """
         # Serialize the existing config for the prompt
         existing_config_str = json.dumps(existing_config, indent=2)
@@ -859,14 +862,13 @@ class PipelinePlanner:
     
     def apply_modifications(self, existing_config: List[Dict[str, Any]], modification_plan: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        Apply modifications to an existing pipeline configuration based on a modification plan.
+        Apply modifications to an existing pipeline configuration.
         
-        Args:
-            existing_config: The existing pipeline configuration
-            modification_plan: The plan for modifications
-            
-        Returns:
-            Updated pipeline configuration
+        Logic:
+        1. Validate modification plan
+        2. Apply changes to config
+        3. Update data objects
+        4. Return modified config
         """
         # Make a deep copy of the existing config to avoid modifying the original
         updated_config = json.loads(json.dumps(existing_config))

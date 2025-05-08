@@ -43,7 +43,7 @@ class Cli():
         self.main_config = main_config
         self.console = Console()
         self.mode_message = (
-            f"Type one of the following top level positional arguments: show, init, run, cleanup; followed by options below."
+            f"Type one of the following top level positional arguments: show, init, run, cleanup, agent; followed by options below."
             f"\nUse -h for help"
         )
 
@@ -66,13 +66,14 @@ Available commands:
   init        Initialize workspace or pipeline
   run         Run pipeline operations
   cleanup     Cleanup pipeline objects
+  agent       Start AI agent mode for interactive assistance
             """
         )
 
         # Required arguments
         self.parser.add_argument(
             'command',
-            choices=['show', 'init', 'run', 'cleanup'],
+            choices=['show', 'init', 'run', 'cleanup', 'agent'],
             help='Command to execute'
         )
 
@@ -129,7 +130,6 @@ Available commands:
         elif args.command == 'cleanup':
             self.cleanup_p(args)
         else:
-            #self.exit_with_help(args.config_file_path, self.mode_message)
             self.parser.print_help()
             sys.exit(1)
 
@@ -258,6 +258,18 @@ Available commands:
     def start(self) -> None:
         """Start the CLI interface."""
         try:
+            # Check if agent mode is requested before parsing arguments
+            if len(sys.argv) > 1 and sys.argv[1] == 'agent':
+                # Import Agent here to avoid circular imports
+                self.main_config.set_ai_settings()
+                from petaly.ai.agent.cli_agent import CliAgent
+                # Remove 'agent' from sys.argv so it doesn't interfere with Agent's argument parsing
+                sys.argv.pop(1)
+                cli_agent = CliAgent(self.main_config)
+                cli_agent.start()
+                return
+
+            # Normal CLI mode
             args = self.parser.parse_args()
             logger.debug(f"Executing command with args: {args}")
             self._validate_args(args)

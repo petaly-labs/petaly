@@ -50,18 +50,27 @@ class TestCsvExtractor:
             'connector_type': 'csv',
             'path': 'test.csv'
         }
-        pipeline.data_objects = ['test_object']
-        pipeline.data_objects_spec = {
-            'data_objects_spec': [{
-                'object_spec': {
-                    'object_name': 'test_object',
-                    'object_source_dir': 'test_source_dir',
-                    'file_names': ['test.csv'],
-                    'source': {'path': 'test.csv'},
-                    'destination': {'path': 'test_output.csv'}
-                }
-            }]
+        pipeline.data_attributes = {
+            'data_objects_spec_mode': 'only',
+            'object_default_settings': {
+                'header': True,
+                'columns_delimiter': ','
+            }
         }
+        pipeline.object_default_settings = {
+            'header': True,
+            'columns_delimiter': ','
+        }
+        pipeline.data_objects = ['test_object']
+        pipeline.data_objects_spec = [{
+            'object_spec': {
+                'object_name': 'test_object',
+                'object_source_dir': 'test_source_dir',
+                'file_names': ['test.csv'],
+                'source': {'path': 'test.csv'},
+                'destination': {'path': 'test_output.csv'}
+            }
+        }]
         # Set up output paths
         output_dir = os.path.join(tempfile.gettempdir(), 'test_output')
         os.makedirs(output_dir, exist_ok=True)
@@ -138,22 +147,41 @@ class TestCsvLoader:
             'destination_dir': 'test_dest_dir'
         }
         pipeline.pipeline_name = 'test_pipeline'
+        pipeline.data_attributes = {
+            'data_objects_spec_mode': 'only',
+            'object_default_settings': {
+                'header': True,
+                'columns_delimiter': ','
+            }
+        }
+        pipeline.object_default_settings = {
+            'header': True,
+            'columns_delimiter': ','
+        }
+        pipeline.data_objects = ['test_object']
+        pipeline.data_objects_spec = [{
+            'object_spec': {
+                'object_name': 'test_object',
+                'object_source_dir': 'test_source_dir',
+                'file_names': ['test.csv'],
+                'source': {'path': 'test.csv'},
+                'destination': {'path': 'test_output.csv'}
+            }
+        }]
         # Set up directory paths
         output_dir = os.path.join(tempfile.gettempdir(), 'test_output')
         os.makedirs(output_dir, exist_ok=True)
         pipeline.output_pipeline_dpath = output_dir
         pipeline.data_objects = ['test_object']
-        pipeline.data_objects_spec = {
-            'data_objects_spec': [{
-                'object_spec': {
-                    'object_name': 'test_object',
-                    'object_source_dir': 'test_source_dir',
-                    'file_names': ['test.csv'],
-                    'source': {'path': 'test.csv'},
-                    'destination': {'path': 'test_output.csv'}
-                }
-            }]
-        }
+        pipeline.data_objects_spec = [{
+            'object_spec': {
+                'object_name': 'test_object',
+                'object_source_dir': 'test_source_dir',
+                'file_names': ['test.csv'],
+                'source': {'path': 'test.csv'},
+                'destination': {'path': 'test_output.csv'}
+            }
+        }]
         # Set up output paths
         output_object_dir = os.path.join(output_dir, 'test_object')
         os.makedirs(output_object_dir, exist_ok=True)

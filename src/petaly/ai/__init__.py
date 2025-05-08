@@ -1,3 +1,3 @@
-from petaly.ai.agent.agent import PetalyAgent
+from petaly.ai.agent.petaly_agent import PetalyAgent
 
 __all__ = ['PetalyAgent']

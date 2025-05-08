@@ -42,8 +42,7 @@ class DataObject:
 
         data_object_spec = self.get_object_spec(data_objects, object_name)
         logger.debug(f"Data object spec: {data_object_spec}")
-        if data_object_spec == {}:
-
+        if not data_object_spec:
             if self.data_objects_spec_mode == 'only':
                 logger.info(
                     f"For {pipeline.source_connector_id} extract the parameters data_objects_spec_mode=only and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
@@ -60,13 +59,13 @@ class DataObject:
 
             return self.set_default_object_spec(pipeline, object_name)
 
-        self.object_name = data_object_spec.get('object_spec').get('object_name')
-        self.destination_object_name = data_object_spec.get('object_spec').get('destination_object_name')
-        self.recreate_destination_object = True if data_object_spec.get('object_spec').get('recreate_destination_object') is True else False
-        self.exclude_columns = data_object_spec.get('object_spec').get('exclude_columns')
-        self.object_source_dir = data_object_spec.get('object_spec').get('object_source_dir')
-        self.file_names = data_object_spec.get('object_spec').get('file_names')
-        cleanup_linebreak_in_fields = data_object_spec.get('object_spec').get('cleanup_linebreak_in_fields')
+        self.object_name = object_name
+        self.destination_object_name = data_object_spec.get('destination_object_name')
+        self.recreate_destination_object = True if data_object_spec.get('recreate_destination_object') is True else False
+        self.exclude_columns = data_object_spec.get('exclude_columns')
+        self.object_source_dir = data_object_spec.get('object_source_dir')
+        self.file_names = data_object_spec.get('file_names')
+        cleanup_linebreak_in_fields = data_object_spec.get('cleanup_linebreak_in_fields')
         self.object_settings.update({'cleanup_linebreak_in_fields': cleanup_linebreak_in_fields})
 
     def to_dict(self) -> dict:
@@ -81,18 +80,18 @@ class DataObject:
     def get_object_spec(self, data_objects, object_name):
         """
         Gets the specification for a specific data object.
-        
+    
         Logic:
         1. Search through data objects list
         2. Find matching object by name
         3. Return object specification
         """
         return_object_spec = {}
-        #for object_spec in data_objects.get('data_objects_spec'):
         for object_spec in data_objects:
-            if object_spec != None:
-                if object_spec.get('object_spec').get('object_name') == object_name:
-                    return_object_spec = object_spec.copy()
+            if object_spec is not None:
+                if object_spec.get('object_spec', {}).get('object_name') == object_name:
+                    return_object_spec = object_spec.get('object_spec', {})
+                    break
         return return_object_spec
 
     def set_default_object_spec(self, pipeline, object_name):

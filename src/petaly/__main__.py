@@ -33,27 +33,10 @@ def main():
     m_conf.set_main_config_fpath(config_file_path=None, init_main_config=True)
     m_conf.set_global_settings()
     
-
     try:
-        if len(sys.argv) > 1:
-            mode = sys.argv[1]
-            if mode == 'agent':
-                # Import Agent here to avoid circular imports
-                m_conf.set_ai_settings()
-                from petaly.ai.agent.cli_agent import CliAgent
-                cli_agent = CliAgent(m_conf)
-                # Remove 'agent' from sys.argv so it doesn't interfere with Agent's argument parsing
-                sys.argv.pop(1)
-                cli_agent.start()
-            else:
-                # Default to CLI mode
-                cli = Cli(m_conf)
-                cli.start()
-        else:
-            # No mode specified, default to CLI
-            cli = Cli(m_conf)
-            cli.start()
-            
+        # Default to CLI mode
+        cli = Cli(m_conf)
+        cli.start()
     except Exception as e:
         logger.error(f"Error running Petaly: {e}", exc_info=True)
         sys.exit(1)

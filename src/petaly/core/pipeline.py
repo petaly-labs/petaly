@@ -55,12 +55,14 @@ class Pipeline:
             alt_fname = f'pipeline.{alt_format}'
             alt_fpath = os.path.join(self.pipeline_dpath, alt_fname)
             if os.path.exists(alt_fpath):
-                logger.warning(f"Pipeline file not found at {self.pipeline_fpath}, but found at {alt_fpath}. Using {alt_fpath} instead.")
                 self.pipeline_fname = alt_fname
                 self.pipeline_fpath = alt_fpath
             else:
                 logger.warning(f"Pipeline file not found at {self.pipeline_fpath} or {alt_fpath}")
-
+                return
+        
+        logger.info(f"Pipeline file found at {self.pipeline_fpath}.")
+                
         self.data_dname = 'data'
         self.metadata_dname = 'metadata'
         self.object_metadata_fname = 'object_meta.json'
@@ -85,7 +87,7 @@ class Pipeline:
         self.source_attr = {}
         self.target_attr = {}
         self.data_attributes = {}
-        self.data_objects_spec = None
+        self.data_objects_spec = []
         self.data_objects = []
         self.is_enabled = False
         self.source_connector_id = None

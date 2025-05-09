@@ -72,14 +72,14 @@ class MainConfig:
         self.pipeline_outdated_arguments_fpath = os.path.join(self.sysconfig_config, self.pipeline_outdated_arguments_fname)
         
         self.workspace_config = {
-                                            "pipeline_dir_path": None,
-                                            "logs_dir_path": None,
-                                            "output_dir_path": None
-                                         }
+            "pipeline_dir_path": None,
+            "logs_dir_path": None,
+            "output_dir_path": None
+        }
         self.global_settings = {
-                                        "logging_mode": "INFO",
-                                        "pipeline_format": "yaml"
-                                        }
+            "logging_mode": "INFO",
+            "pipeline_format": "yaml"
+        }
 
         self.ai_settings = {
             "ai_agent_api_key": None,

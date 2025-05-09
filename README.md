@@ -20,7 +20,7 @@ Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by a
 - **User-Friendly**: No programming knowledge required
 - **YAML/JSON Configuration**: Easy pipeline setup
 - **Cloud Ready**: Full support for AWS and GCP
-- **AI Integration**: AI agent mode for natural language commands (Experemental)
+- **AI Integration**: AI agent mode for natural language commands
 
 ## Quick Start
 
@@ -53,17 +53,6 @@ source .venv/bin/activate
 python3 -m pip install petaly
 ```
 
-### AI Agent Installation
-```bash
-# Install with AI support
-python3 -m pip install petaly[ai]
-
-# Or install all features including AI
-python3 -m pip install petaly[all]
-```
-
-For detailed AI Agent setup and usage, see our [AI Agent Guide](docs/ai_agent_mode.md).
-
 ### Cloud Provider Support
 
 #### GCP Support
@@ -87,9 +76,15 @@ python3 -m pip install petaly[aws]
 1. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html)
 2. Configure AWS credentials
 
+### AI Agent Installation
+```bash
+# Install with AI support
+python3 -m pip install petaly[ai]
+```
+
 ### Full Installation
 ```bash
-# Install all features
+# Install all features including AWS, GCP and AI
 python3 -m pip install petaly[all]
 ```
 
@@ -107,33 +102,52 @@ cd src/
 
 ### 1. Initialize Configuration
 ```bash
-# Create petaly.ini
+# Create petaly.ini in default location (~/.petaly/petaly.ini)
+python3 -m petaly init
+
+# Or specify custom location
 python3 -m petaly -c /absolute-path-to-your-config-dir/petaly.ini init
 ```
 
 ### 2. Set Environment Variable (Optional)
 ```bash
+# Set the environment variable if the folder differs from the default location
 export PETALY_CONFIG_DIR=/absolute-path-to-your-config-dir
+
+# Alternative run command using the main config parameter: -c /absolute-path-to-your-config-dir/petaly.ini
+python3 -m petaly -c /absolute-path-to-your-config-dir/petaly.ini [command]
 ```
 
 ### 3. Initialize Workspace
 1. Configure `petaly.ini`:
 ```ini
-pipeline_dir_path=/absolute-path-to-pipelines-dir
-logs_dir_path=/absolute-path-to-logs-dir
-output_dir_path=/absolute-path-to-output-dir
+[workspace_config]
+pipeline_dir_path=/home/user/petaly/pipelines
+logs_dir_path=/home/user/petaly/logs
+output_dir_path=/home/user/petaly/output
+
+[global_settings]
+logging_mode=INFO
+pipeline_format=yaml
+
+# [Optional] Required only in agent mode when using LLM.
+[ai_settings]
+llm_provider=openai
+llm_model=gpt-4
+agent_memory_file=~/.petaly/agent_memory.json
+ai_agent_api_key=your-api-key-here
 ```
 
 2. Create workspace:
 ```bash
-python3 -m petaly -c /path_to_config_dir/petaly.ini init --workspace
+python3 -m petaly init --workspace
 ```
 
 ## Create Pipeline
 
 Initialize a new pipeline:
 ```bash
-python3 -m petaly -c /path_to_config_dir/petaly.ini init -p my_pipeline
+python3 -m petaly init -p my_pipeline
 ```
 
 Follow the wizard to configure your pipeline. For detailed configuration options, see [Pipeline Configuration Guide](docs/pipeline_examples.md).
@@ -142,8 +156,33 @@ Follow the wizard to configure your pipeline. For detailed configuration options
 
 Execute your pipeline:
 ```bash
-python3 -m petaly -c /path_to_config_dir/petaly.ini run -p my_pipeline
+python3 -m petaly run -p my_pipeline
 ```
+
+### Run Specific Operations
+```bash
+# Extract data from source only
+python3 -m petaly run -p my_pipeline --source_only
+
+# Load data to target only
+python3 -m petaly run -p my_pipeline --target_only
+
+# Run specific objects
+python3 -m petaly run -p my_pipeline -o object1,object2
+```
+
+## AI Agent Mode
+
+Start the AI agent for interactive assistance:
+```bash
+python3 -m petaly agent interactive
+```
+
+The AI agent can help you with:
+- Pipeline creation and configuration
+- Data movement operations
+- Troubleshooting
+- Best practices and recommendations
 
 ## Tutorial: CSV to PostgreSQL
 
@@ -155,7 +194,7 @@ python3 -m petaly -c /path_to_config_dir/petaly.ini run -p my_pipeline
 
 1. **Initialize Pipeline**
 ```bash
-python3 -m petaly -c /path_to_config_dir/petaly.ini init -p csv_to_postgres
+python3 -m petaly init -p csv_to_postgres
 ```
 
 2. **Download Test Data**
@@ -172,7 +211,7 @@ gunzip stocks.csv.gz
 
 4. **Run Pipeline**
 ```bash
-python3 -m petaly -c /path_to_config_dir/petaly.ini run -p csv_to_postgres
+python3 -m petaly run -p csv_to_postgres
 ```
 
 ### Example Configuration

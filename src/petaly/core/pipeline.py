@@ -89,6 +89,7 @@ class Pipeline:
         self.data_attributes = {}
         self.data_objects_spec = []
         self.data_objects = []
+        self.data_objects_from_cli = []
         self.is_enabled = False
         self.source_connector_id = None
         self.target_connector_id = None

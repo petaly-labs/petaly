@@ -48,7 +48,7 @@ class MainCtl():
             logger.info(f"[Start] Pipeline {pipeline_name}")
 
             if object_name_list is not None:
-                pipeline.data_objects = object_name_list.split(',')
+                pipeline.data_objects_from_cli = object_name_list.split(',')
 
             if run_endpoint is None or run_endpoint == 'source':
                 self.run_source(pipeline)

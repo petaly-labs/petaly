@@ -62,11 +62,19 @@ def handle_errors(func: Callable) -> Callable:
                     "The response wasn't in the expected format. Please try again.\n\n"
                     f"Technical details: {str(e)}"
                 )
-            elif isinstance(e, KeyError):
+            elif isinstance(e, ValueError) and "API key is required" in str(e):
+                provider = "OpenAI" if "OpenAI" in str(e) else "Anthropic"
                 return (
-                    "I encountered an error while trying to process your request. "
-                    "Some required information is missing. Please try again with more details.\n\n"
-                    f"Technical details: {str(e)}"
+                    f"The {provider} API key is not configured. To fix this:\n\n"
+                    "1. Set the API key in your configuration file under 'ai_settings.ai_agent_api_key', or\n"
+                    "2. Set the AI_AGENT_API_KEY environment variable\n\n"
+                    f"Example configuration:\n"
+                    f"ai_settings:\n"
+                    f"  ai_agent_api_key: your-api-key-here\n"
+                    f"  llm_provider: {provider.lower()}\n"
+                    f"  llm_model: gpt-4  # or your preferred model\n\n"
+                    f"Or set the environment variable:\n"
+                    f"export AI_AGENT_API_KEY=your-api-key-here"
                 )
             else:
                 return (
@@ -117,13 +125,34 @@ class PetalyAgent:
                       "agent_memory_file": self.m_conf.ai_settings.get('agent_memory_file')
                       }
 
+        # Validate LLM configuration
+        if not llm_config["llm_provider"]:
+            raise RuntimeError(
+                "LLM provider is not configured. Please set 'llm_provider' in your configuration file under 'ai_settings'."
+            )
+
+        # Check for API key
+        if not llm_config["ai_agent_api_key"] and not os.environ.get("AI_AGENT_API_KEY"):
+            provider = llm_config["llm_provider"].capitalize()
+            raise RuntimeError(
+                f"{provider} API key is not configured. To fix this:\n\n"
+                "1. Set the API key in your configuration file under 'ai_settings.ai_agent_api_key', or\n"
+                "2. Set the AI_AGENT_API_KEY environment variable\n\n"
+                f"Example configuration:\n"
+                f"ai_settings:\n"
+                f"  ai_agent_api_key: your-api-key-here\n"
+                f"  llm_provider: {llm_config['llm_provider'].lower()}\n"
+                f"  llm_model: {llm_config.get('llm_model', 'gpt-4')}  # or your preferred model\n\n"
+                f"Or set the environment variable:\n"
+                f"export AI_AGENT_API_KEY=your-api-key-here"
+            )
         
         try:
             self.llm = get_llm_connector(llm_config)
         except Exception as e:
             logger.error(f"Failed to initialize LLM connector: {e}", exc_info=True)
             raise RuntimeError(
-                f"Failed to initialize LLM connector with provider '{self.m_conf.ai_settings.get('llm_provider')}'. "
+                f"Failed to initialize LLM connector with provider '{llm_config['llm_provider']}'. "
                 f"Please check your configuration and API keys. Error: {str(e)}"
             )
         

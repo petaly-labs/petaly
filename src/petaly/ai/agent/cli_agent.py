@@ -135,21 +135,40 @@ Natural Language Commands:
         self.m_conf.set_workspace_dpaths()
         self.m_conf.set_global_settings()
         
-        # Initialize the agent
-        agent = PetalyAgent(
-            main_config=self.m_conf
-        )
-        
-        # Determine mode
-        if args.action == 'interactive':
-            self.run_interactive_mode(agent)
-        elif args.action == 'command':
-            if not args.instruction:
-                self.console.print("[red]Error: the parameter --instruction is required in mode: agent command[/red]")
-                sys.exit(1)
+        try:
+            # Initialize the agent
+            agent = PetalyAgent(
+                main_config=self.m_conf
+            )
             
-            self.run_command_mode(agent, args.instruction)
-        
+            # Determine mode
+            if args.action == 'interactive':
+                self.run_interactive_mode(agent)
+            elif args.action == 'command':
+                if not args.instruction:
+                    self.console.print("[red]Error: the parameter --instruction is required in mode: agent command[/red]")
+                    sys.exit(1)
+                
+                self.run_command_mode(agent, args.instruction)
+        except RuntimeError as e:
+            if "API key is not configured" in str(e) or "LLM provider is not configured" in str(e):
+                self.console.print("\n[bold red]Configuration Error[/bold red]")
+                self.console.print("\n[bold]Missing Required Configuration[/bold]")
+                self.console.print(str(e))
+                self.console.print("\n[bold yellow]Quick Fix:[/bold yellow]")
+                self.console.print("1. Create or edit your configuration file (e.g., ~/.petaly/petaly.ini)")
+                self.console.print("2. Add the required settings under the 'ai_settings' section")
+                self.console.print("3. Or set the environment variable: export AI_AGENT_API_KEY=your-api-key-here\n")
+                sys.exit(1)
+            else:
+                logger.error(f"Error executing agent command: {e}", exc_info=True)
+                self.console.print(f"[red]Error: {str(e)}[/red]")
+                sys.exit(1)
+        except Exception as e:
+            logger.error(f"Error executing agent command: {e}", exc_info=True)
+            self.console.print(f"[red]Error: {str(e)}[/red]")
+            sys.exit(1)
+    
     def run_interactive_mode(self, agent):
         """
         Run the agent in interactive mode with a chat interface.

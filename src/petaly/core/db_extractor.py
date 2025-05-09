@@ -203,24 +203,35 @@ class DBExtractor(ABC):
         - Table list (if specified)
         - Column definitions
         """
+        def get_table_stmt(data_objects_list):
+            if len(data_objects_list)>0:
+                table_stmt = 'AND tb.table_name IN ({tbl_list})'
+                table_string = ''
+                for tbl in data_objects_list:
+                    table_string += "'" + tbl + "',"
+                         
+                table_string = table_string.rstrip(',')
+                return table_stmt.format(tbl_list=table_string)
+            else:
+                return ''
+
         logger.debug("Compose data source meta query:")
-
-        if self.pipeline.data_attributes.get('data_objects_spec_mode') in ("ignore","prefer"):
+        
+        # if data_objects_from_cli is set, use it to compose the table_stmt and ignore all other settings
+        if len(self.pipeline.data_objects_from_cli)>0:
+            table_stmt = get_table_stmt(self.pipeline.data_objects_from_cli)
+        
+        elif self.pipeline.data_attributes.get('data_objects_spec_mode') in ("ignore","prefer"):
             table_stmt = ''
+            
         else:
-
+        # it means data_objects_spec_mode is set to "only" and data_objects_spec: [] should has at least one object specification
+        
             if len(self.pipeline.data_objects)==0:
                 logger.warning(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If data_objects_spec_mode is set to \"only\" the data_objects_spec: [] should has at least one object specification")
                 sys.exit()
-
-            table_stmt = 'AND tb.table_name IN ({tbl_list})'
-            table_string = ''
-            for tbl in self.pipeline.data_objects:
-                table_string += "'" + tbl + "',"
-
-            table_string = table_string.rstrip(',')
-
-            table_stmt = table_stmt.format(tbl_list=table_string)
+			
+            table_stmt = get_table_stmt(self.pipeline.data_objects)
 
         source_schema = self.pipeline.source_attr.get('database_schema')
 

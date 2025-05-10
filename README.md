@@ -90,12 +90,22 @@ python3 -m pip install petaly[all]
 
 ### From Source
 ```bash
+# Clone the repository
 git clone https://github.com/petaly-labs/petaly.git
 cd petaly
+
+# Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
+
+# Install development dependencies
 pip3 install -r requirements.txt
-cd src/
+
+# Install in editable mode (recommended)
+pip install -e .
+
+# Alternative: Add src to PYTHONPATH
+export PYTHONPATH=$PYTHONPATH:$(pwd)/src
 ```
 
 ## Configuration

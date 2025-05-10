@@ -1,0 +1,80 @@
+# Petaly Configuration Template
+# This file serves as a template for configuring the Petaly data pipeline tool.
+# Copy this file to your workspace and rename it to petaly.ini manually or use the init command.
+# The petaly init command will create the folder in home directory ~/.petaly/petaly.ini
+# Customize the settings as needed.
+
+# This is the main configuration file for the Petaly tool.
+# It includes the workspace_config and global_settings sections.
+[workspace_config]
+# Workspace Configuration
+# ---------------------
+# These settings define the core directories for Petaly's operation.
+
+# Pipeline Directory
+# Absolute path where all pipeline configurations will be stored.
+pipeline_dir_path=
+
+# Log Directory
+# Absolute path where all log files will be stored.
+logs_dir_path=
+
+# Output Directory
+# Absolute path for temporary data storage during pipeline execution.
+# This directory serves as a transition space between source and destination.
+output_dir_path=
+
+[global_settings]
+# Global Settings
+# --------------
+# These settings control the general behavior of Petaly.
+
+# Logging Configuration
+# -------------------
+# Controls the verbosity of logging output:
+# - INFO: Standard logging with essential information (default)
+# - DEBUG: Detailed logging for troubleshooting
+logging_mode=INFO
+
+# Pipeline Format
+# -------------
+# Specifies the format for pipeline configuration files:
+# - yaml: YAML format (default)
+# - json: JSON format
+pipeline_format=yaml
+
+[ai_settings]
+# AI Agent Settings
+# ---------------
+# Configuration for Petaly's AI agent functionality.
+# These settings are only required when using Petaly in agent mode.
+
+# LLM Provider
+# -----------
+# Selects the Large Language Model provider:
+# - openai: OpenAI's models (default)
+# - anthropic: Anthropic's models
+llm_provider=openai
+
+# LLM Model
+# --------
+# Specifies the model to use for AI operations.
+# Tested models:
+# - OpenAI: gpt-4
+# - Anthropic: claude-3-opus-20240229
+llm_model=gpt-4
+
+# Memory File
+# ----------
+# Path to the file where the AI agent stores its memory.
+# Default: ~/.petaly/agent_memory.json (Linux/MacOS)
+agent_memory_file=~/.petaly/agent_memory.json
+
+# API Key Configuration
+# -------------------
+# Set your API key in one of two ways:
+# 1. Environment variable (recommended):
+#    export AI_AGENT_API_KEY="your-api-key-here" (Linux/MacOS)
+# 2. Direct configuration (not recommended for production):
+#    ai_agent_api_key=your-api-key-here
+ai_agent_api_key= 

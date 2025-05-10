@@ -41,6 +41,7 @@ class MainConfig:
         self.console = Console()
         self.env_config_dpath = os.getenv('PETALY_CONFIG_DIR')
         self.main_config_fname = 'petaly.ini'
+        self.main_config_template_fname = 'petaly.ini-template'
         self.logging_config_fname = 'logging_config.json'
 
         self.class_config_fname = 'class_config.json'
@@ -65,7 +66,7 @@ class MainConfig:
         self.sysconfig = os.path.join(self.base_dpath, 'sysconfig')
         self.sysconfig_config = os.path.join(self.sysconfig, 'config')
 
-        self.templates_main_config_fpath = os.path.join(self.root_dpath, 'template_' + self.main_config_fname)
+        self.templates_main_config_fpath = os.path.join(self.root_dpath, self.main_config_template_fname)
         self.logging_config_fpath = os.path.join(self.sysconfig_config, self.logging_config_fname)
         self.pipeline_meta_config_fpath = os.path.join(self.sysconfig_config, self.pipeline_meta_config_fname)
         self.class_sysconfig_fpath = os.path.join(self.sysconfig_config, self.class_config_fname)

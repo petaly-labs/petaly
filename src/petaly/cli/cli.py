@@ -269,6 +269,11 @@ Available commands:
                 cli_agent.start()
                 return
 
+            # If no arguments provided, show full help
+            if len(sys.argv) == 1:
+                self.parser.print_help()
+                return
+
             # Normal CLI mode
             args = self.parser.parse_args()
             logger.debug(f"Executing command with args: {args}")

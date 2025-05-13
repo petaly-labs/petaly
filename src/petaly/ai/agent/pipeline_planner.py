@@ -169,8 +169,7 @@ class PipelinePlanner:
                 "user_message": "I'm having trouble understanding your request. Could you provide more specific details about the source and target systems for your pipeline?"
             }
     
-    def generate_pipeline_config(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
-                               objects: List[str] = None) -> Dict[str, Any]:
+    def generate_pipeline_config(self, pipeline_plan: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate a pipeline configuration from source and target configs.
         
@@ -182,20 +181,20 @@ class PipelinePlanner:
         5. Build data objects specification
         """
         # First, validate the plan
-        if source_config.get("needs_more_info", False) or target_config.get("needs_more_info", False):
+        if pipeline_plan['source'].get("needs_more_info", False) or pipeline_plan['target'].get("needs_more_info", False):
             raise ValueError("Cannot generate configuration: more information needed")
         
         # Get pipeline metadata structure template
         pipeline_meta = self.file_handler.load_json(self.m_conf.pipeline_meta_config_fpath)
         
         # Extract source and target details
-        source_details = source_config.get("details", {})
-        target_details = target_config.get("details", {})
+        source_details = pipeline_plan['source'].get("details", {})
+        target_details = pipeline_plan['target'].get("details", {})
         
         # Build source attributes with platform-specific details
         source_attributes = self._build_connector_attributes(
             source_details,
-            source_config.get("connector_type", ""),
+            pipeline_plan['source'].get("connector_type", ""),
             "source"
         )
         
@@ -206,7 +205,7 @@ class PipelinePlanner:
         # Build target attributes with platform-specific details
         target_attributes = self._build_connector_attributes(
             target_details,
-            target_config.get("connector_type", ""),
+            pipeline_plan['target'].get("connector_type", ""),
             "target"
         )
         
@@ -233,12 +232,13 @@ class PipelinePlanner:
         
         # Build data objects specification
         data_objects_spec = []
-        for obj in objects or []:
+        for obj in pipeline_plan['data_objects'] or []:
             if isinstance(obj, str):
                 # Simple object name
                 spec = {
                     "object_spec": {
                         "object_name": obj,
+                        "destination_object_name": obj,
                         "recreate_destination_object": False,
                         "cleanup_linebreak_in_fields": False,
                         "exclude_columns": [None]
@@ -266,26 +266,24 @@ class PipelinePlanner:
             
             data_objects_spec.append(spec)
         
+        #pipeline_skeleton = self.file_handler.load_json(self.m_conf.pipeline_skeleton_fpath)
         # Construct the pipeline configuration
-        pipeline_config = [
-            {
+        pipeline_config = {
                 "pipeline": {
                     "pipeline_attributes": {
-                        "pipeline_name": source_config.get("pipeline_name", "new_pipeline"),
+                        "pipeline_name": pipeline_plan.get("pipeline_name", "new_pipeline"),
                         "is_enabled": True
                     },
                     "source_attributes": source_attributes,
                     "target_attributes": target_attributes,
                     "data_attributes": {
                         "data_objects_spec_mode": "only",
-                        "object_default_settings": self._build_default_settings(source_config)
+                        "object_default_settings": self._build_default_settings(pipeline_plan)
                     }
-                }
-            },
-            {
+                },
                 "data_objects_spec": data_objects_spec
             }
-        ]
+        
         
         return pipeline_config
     
@@ -551,7 +549,7 @@ class PipelinePlanner:
         }
         
         # Override with settings from plan if they exist
-        if "settings" in plan:
+        if plan.get("settings"):
             settings.update(plan.get("settings", {}))
             
         return settings
@@ -576,6 +574,7 @@ class PipelinePlanner:
         return {
             "object_spec": {
                 "object_name": object_name,
+                "destination_object_name": object_name,
                 "recreate_destination_object": False,
                 "cleanup_linebreak_in_fields": False,
                 "exclude_columns": [None]
@@ -879,12 +878,12 @@ class PipelinePlanner:
         if mod_type == "source_config":
             # Update source configuration
             if "source_attributes" in changes:
-                updated_config[0]["pipeline"]["source_attributes"].update(changes["source_attributes"])
+                updated_config["pipeline"]["source_attributes"].update(changes["source_attributes"])
                 
         elif mod_type == "target_config":
             # Update target configuration
             if "target_attributes" in changes:
-                updated_config[0]["pipeline"]["target_attributes"].update(changes["target_attributes"])
+                updated_config["pipeline"]["target_attributes"].update(changes["target_attributes"])
                 
         elif mod_type == "data_objects":
             # Handle data object modifications
@@ -894,12 +893,12 @@ class PipelinePlanner:
                     spec = {
                         "object_spec": obj
                     }
-                    updated_config[1]["data_objects_spec"].append(spec)
+                    updated_config["data_objects_spec"].append(spec)
                     
             if "remove" in changes:
                 # Remove data objects
                 remove_names = changes["remove"]
-                updated_config[1]["data_objects_spec"] = [
+                updated_config["data_objects_spec"] = [
                     spec for spec in updated_config[1]["data_objects_spec"]
                     if spec["object_spec"]["object_name"] not in remove_names
                 ]
@@ -908,24 +907,24 @@ class PipelinePlanner:
                 # Modify existing data objects
                 for mod in changes["modify"]:
                     obj_name = mod.get("object_name")
-                    for i, spec in enumerate(updated_config[1]["data_objects_spec"]):
+                    for i, spec in enumerate(updated_config["data_objects_spec"]):
                         if spec["object_spec"]["object_name"] == obj_name:
                             # Update the object spec with new values
                             for key, value in mod.items():
                                 if key != "object_name":
-                                    updated_config[1]["data_objects_spec"][i]["object_spec"][key] = value
+                                    updated_config["data_objects_spec"][i]["object_spec"][key] = value
                             break
                             
         elif mod_type == "settings":
             # Update object default settings
             if "object_default_settings" in changes:
-                updated_config[0]["pipeline"]["data_attributes"]["object_default_settings"].update(
+                updated_config["pipeline"]["data_attributes"]["object_default_settings"].update(
                     changes["object_default_settings"]
                 )
                 
         elif mod_type == "pipeline_attributes":
             # Update pipeline attributes
             if "pipeline_attributes" in changes:
-                updated_config[0]["pipeline"]["pipeline_attributes"].update(changes["pipeline_attributes"])
+                updated_config["pipeline"]["pipeline_attributes"].update(changes["pipeline_attributes"])
         
         return updated_config

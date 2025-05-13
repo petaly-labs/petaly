@@ -60,6 +60,7 @@ class Pipeline:
             else:
                 logger.warning(f"Pipeline file not found at {self.pipeline_fpath} or {alt_fpath}")
                 return
+
         
         logger.info(f"Pipeline file found at {self.pipeline_fpath}.")
                 
@@ -187,14 +188,16 @@ class Pipeline:
             file_extension = os.path.splitext(self.pipeline_fpath)[1].lower()
             
             if file_extension == '.yaml':
-                pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)
+                pipeline_all_obj = self.f_handler.load_yaml(self.pipeline_fpath)
             elif file_extension == '.json':
                 # For JSON, we need to split the single document into two parts to match YAML structure
                 json_data = self.f_handler.load_json(self.pipeline_fpath)
-                pipeline_all_obj = [
-                    {'pipeline': json_data.get('pipeline', {})},
-                    {'data_objects_spec': json_data.get('data_objects_spec', [])}
-                ]
+                pipeline_all_obj = json_data
+                #pipeline_all_obj = [
+                #    {'pipeline': json_data.get('pipeline', {})},
+                #    {'data_objects_spec': json_data.get('data_objects_spec', [])}
+                #]
+                pipeline_all_obj = json_data
             else:
                 logger.error(f"Unsupported pipeline file format: {file_extension}")
                 return None

@@ -42,21 +42,22 @@ class CliMenu():
 
         self.pipeline_meta_config = self.f_handler.load_json(self.m_conf.pipeline_meta_config_fpath)
 
-        self.composed_pipeline_config = [
-                                            {'pipeline':
+        self.composed_pipeline_config_depreated = {
+                                            'pipeline':
                                                  {'pipeline_attributes': {},
                                                   'source_attributes': {},
                                                   'target_attributes': {},
                                                   'data_attributes': {
                                                       'data_objects_spec_mode':{}
+                                                    }
                                                   }
-                                                  }
-                                            },
-                                            {
+                                            ,
+                                            
                                               'data_objects_spec': []
-                                            }
-                                        ]
-
+                                            
+                                        }
+        self.composed_pipeline_config = self.f_handler.load_json(self.m_conf.pipeline_skeleton_fpath)
+        
     def force_assign_value(self, key, message):
         while True:
             self.console.print(message)
@@ -83,7 +84,7 @@ class CliMenu():
         predefined_values = {'pipeline_name': pipeline_name}
         pipeline_attributes = self.pipeline_meta_config.get("pipeline_attributes")
         assigned_attributes = self.assign_attributes(pipeline_attributes, predefined_values=predefined_values)
-        self.composed_pipeline_config[0]['pipeline']['pipeline_attributes'].update(assigned_attributes)
+        self.composed_pipeline_config['pipeline']['pipeline_attributes'].update(assigned_attributes)
 
     def compose_endpoint_attributes(self, endpoint_attributes_name):
         self.console.print(f"\n[bold]{self.break_line}[/bold]")
@@ -98,7 +99,7 @@ class CliMenu():
         predefined_values.update({'connector_type': connector_type})
 
         assigned_endpoint_attributes = self.assign_attributes(endpoint_attributes_dict, predefined_values=predefined_values)
-        self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_endpoint_attributes)
+        self.composed_pipeline_config['pipeline'][endpoint_attributes_name].update(assigned_endpoint_attributes)
 
         # step 2. get connector category
         connector_category = self.m_conf.get_connector_class_config(connector_type).get('connector_category')
@@ -111,7 +112,7 @@ class CliMenu():
             exclude_key_list = ['destination_dir','bucket_pipeline_prefix']
 
         assigned_connector_attributes = self.assign_attributes(connector_attributes, exclude_key_list=exclude_key_list, predefined_values=None)
-        self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)
+        self.composed_pipeline_config['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)
 
         # step 4. get and define platform type
         platform_type_list = self.m_conf.get_supported_platforms(connector_type)
@@ -127,7 +128,7 @@ class CliMenu():
             predefined_values.update({'platform_type': platform_type})
             platform_attributes = self.m_conf.get_platform_attributes(platform_id=platform_type)
             assigned_platform_attributes = self.assign_attributes(platform_attributes, predefined_values=predefined_values, exclude_key_list=['connector_type'])
-            self.composed_pipeline_config[0]['pipeline'][endpoint_attributes_name].update(assigned_platform_attributes)
+            self.composed_pipeline_config['pipeline'][endpoint_attributes_name].update(assigned_platform_attributes)
 
     def compose_data_attributes(self):
 
@@ -138,13 +139,13 @@ class CliMenu():
 
         object_default_settings = data_attributes.get('object_default_settings')
         assigned_object_default_settings = self.assign_attributes(object_default_settings, predefined_values=None)
-        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update({"object_default_settings": assigned_object_default_settings})
+        self.composed_pipeline_config['pipeline']['data_attributes'].update({"object_default_settings": assigned_object_default_settings})
 
         self.console.print(f"\n[bold]{self.break_line}[/bold]")
         self.console.print(f"[bold]Specify data object attributes[/bold]")
 
         assigned_data_attributes = self.assign_attributes(data_attributes, predefined_values=None, exclude_key_list=[None])
-        self.composed_pipeline_config[0]['pipeline']['data_attributes'].update(assigned_data_attributes)
+        self.composed_pipeline_config['pipeline']['data_attributes'].update(assigned_data_attributes)
 
     def compose_object_spec(self, pipeline, object_name, use_pipeline_wizard):
         self.use_pipeline_wizard = use_pipeline_wizard

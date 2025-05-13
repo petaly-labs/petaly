@@ -393,7 +393,7 @@ class PetalyAgent:
         try:
             # Use synchronous generate_pipeline_config since it's not an async method
             pipeline_config = self.planner.generate_pipeline_config(pipeline_plan)
-            pipeline_name = pipeline_config[0]['pipeline']['pipeline_attributes'].get('pipeline_name')
+            pipeline_name = pipeline_config['pipeline']['pipeline_attributes'].get('pipeline_name')
             
             # Save the configuration
             pipeline_dpath = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name)
@@ -401,7 +401,7 @@ class PetalyAgent:
                 self.file_handler.make_dirs(pipeline_dpath)
                 
             pipeline_fpath = os.path.join(pipeline_dpath, self.m_conf.pipeline_fname)
-            self.file_handler.save_dict_to_yaml(pipeline_fpath, pipeline_config, dump_all=True)
+            self.file_handler.save_dict_to_yaml(pipeline_fpath, pipeline_config, dump_all=False)
             
             return f"I've created a new pipeline named '{pipeline_name}'. The configuration has been saved to {pipeline_fpath}. Would you like to review it or make any changes?"
             
@@ -458,7 +458,7 @@ class PetalyAgent:
             self.file_handler.backup_file(pipeline_fpath)
             
             # Save the updated configuration
-            self.file_handler.save_dict_to_yaml(pipeline_fpath, updated_config, dump_all=True)
+            self.file_handler.save_dict_to_yaml(pipeline_fpath, updated_config, dump_all=False)
             
             return f"I've updated the pipeline '{pipeline_name}' with your requested changes. The original configuration has been backed up. Would you like to review the changes?"
             
@@ -615,7 +615,6 @@ class PetalyAgent:
         """
         details = classification.get("details", {})
         endpoint_type = details.get("endpoint_type")
-        
         # Get all pipeline directories
         pipelines = self.file_handler.get_all_dir_names(self.m_conf.pipeline_base_dpath)
         
@@ -626,12 +625,17 @@ class PetalyAgent:
         if endpoint_type:
             filtered_pipelines = []
             for pipeline_name in pipelines:
-                pipeline_path = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name, self.m_conf.pipeline_fname)
-                if self.file_handler.is_file(pipeline_path):
-                    config = self.file_handler.load_yaml_all(pipeline_path)
-                    if config[0]['pipeline']['source_attributes']['connector_type'] == endpoint_type or \
-                       config[0]['pipeline']['target_attributes']['connector_type'] == endpoint_type:
-                        filtered_pipelines.append(pipeline_name)
+                try:
+                    pipeline_path = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name, self.m_conf.pipeline_fname)
+                    if self.file_handler.is_file(pipeline_path):
+                        config = self.file_handler.load_yaml(pipeline_path)
+                        
+                        if config['pipeline']['source_attributes']['connector_type'] == endpoint_type or \
+                        config['pipeline']['target_attributes']['connector_type'] == endpoint_type:
+                            filtered_pipelines.append(pipeline_name)
+                except Exception as e:
+                    logger.error(f"Error loading pipeline {pipeline_name}: {e}")
+                    continue
             pipelines = filtered_pipelines
         
         # Format response

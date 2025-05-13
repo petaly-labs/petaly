@@ -12,8 +12,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI agent integration with LLM providers [EXPERIMENTAL]:
   - OpenAI
   - Anthropic
-- Support for JSON format in pipeline configuration
 - Comprehensive unit tests for all connectors and AI agent
+- Support for JSON format in pipeline configuration
+
+### Changed
+- For compatibility reasons, the YAML format has been updated:
+  The structure using two documents separated by three dashes (---) is now deprecated.
+  To ensure compatibility with the updated format, remove the three dashes from the YAML file or recreate the pipeline. petaly init -p pipeline-name
+  
+  Old Format:
+  ```yaml
+  pipeline:
+    pipeline_attributes:
+    source_attributes:
+    target_attributes:
+    data_attributes:
+  ---
+  data_objects_spec:
+  - object_spec:   
+  ```
+  New Format:
+  ```yaml
+  pipeline:
+    pipeline_attributes:
+    source_attributes:
+    target_attributes:
+    data_attributes:
+  data_objects_spec:
+  - object_spec:   
+  ```
 - Enhanced documentation and README
 - renamed templates_petaly.ini to petaly.ini-template
 

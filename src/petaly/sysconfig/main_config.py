@@ -46,6 +46,7 @@ class MainConfig:
 
         self.class_config_fname = 'class_config.json'
         self.pipeline_meta_config_fname = 'pipeline_meta_config.json'
+        self.pipeline_skeleton_fname = 'pipeline_skeleton.json'
         self.extractor_type_transformer_fname = 'extractor_type_transformer.json'
         self.type_mapping_fname = '{source_connector_id}.json'
         self.metadata_sql_fname = 'metadata.sql'
@@ -69,6 +70,7 @@ class MainConfig:
         self.templates_main_config_fpath = os.path.join(self.root_dpath, self.main_config_template_fname)
         self.logging_config_fpath = os.path.join(self.sysconfig_config, self.logging_config_fname)
         self.pipeline_meta_config_fpath = os.path.join(self.sysconfig_config, self.pipeline_meta_config_fname)
+        self.pipeline_skeleton_fpath = os.path.join(self.sysconfig_config, self.pipeline_skeleton_fname)
         self.class_sysconfig_fpath = os.path.join(self.sysconfig_config, self.class_config_fname)
         self.pipeline_outdated_arguments_fpath = os.path.join(self.sysconfig_config, self.pipeline_outdated_arguments_fname)
         
@@ -184,7 +186,7 @@ class MainConfig:
         Logic:
         1. Check each workspace path in the configuration
         2. Verify that each path is absolute
-        3. Print warning for any invalid paths
+        3. Warning for any invalid paths
         """
         return_value = True
 

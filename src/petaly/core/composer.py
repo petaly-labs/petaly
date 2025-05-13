@@ -99,16 +99,16 @@ class Composer:
 		file_format = 'yaml' if file_extension == '.yaml' else 'json'
 
 		# Update the data objects specification
-		pipeline_all_obj[1]['data_objects_spec'] = data_objects_spec
+		pipeline_all_obj['data_objects_spec']= data_objects_spec
 
 		# Save in the appropriate format
 		if file_format == 'yaml':
-			self.f_handler.save_dict_to_yaml(pipeline_fpath, pipeline_all_obj, dump_all=True)
+			self.f_handler.save_dict_to_yaml(pipeline_fpath, pipeline_all_obj, dump_all=False)
 		else:
 			# For JSON, we need to combine both documents into one
 			combined_config = {
-				'pipeline': pipeline_all_obj[0]['pipeline'],
-				'data_objects_spec': pipeline_all_obj[1]['data_objects_spec']
+				'pipeline': pipeline_all_obj['pipeline'],
+				'data_objects_spec': pipeline_all_obj['data_objects_spec']
 			}
 			self.f_handler.save_dict_to_json(pipeline_fpath, combined_config)
 

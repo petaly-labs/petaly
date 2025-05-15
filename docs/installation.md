@@ -48,15 +48,10 @@ python3 -m pip install petaly[aws]
 1. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html)
 2. Configure AWS credentials
 
-#### AI Agent Installation [EXPERIMENTAL]
-```bash
-# Install with AI support
-python3 -m pip install petaly[ai]
-```
 
 #### Full Installation
 ```bash
-# Install all features including AWS, GCP and AI
+# Install all features including AWS and GCP
 python3 -m pip install petaly[all]
 ```
 
@@ -174,12 +169,6 @@ logging_mode=INFO
 # Pipeline configuration format: yaml or json
 pipeline_format=yaml
 
-# [Optional] Required only in agent mode when using LLM
-[ai_settings]
-llm_provider=openai
-llm_model=gpt-4
-agent_memory_file=~/.petaly/agent_memory.json
-ai_agent_api_key=your-api-key-here
 ```
 
 ### 3. Initialize Workspace
@@ -200,4 +189,3 @@ This command will:
 
 1. [Configure Petaly](petaly_ini.md)
 2. [Create Your First Pipeline](pipeline_examples.md)
-3. [Learn About AI Agent Mode](ai_agent_mode.md)

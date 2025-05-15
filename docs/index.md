@@ -7,7 +7,6 @@ Welcome to the Petaly documentation! This guide will help you understand and use
 - [Installation Guide](installation.md)
 - [Configuration Guide](petaly_ini.md)
 - [Pipeline Examples](pipeline_examples.md)
-- [AI Agent Guide](ai_agent_mode.md)
 - [Troubleshooting Guide](troubleshooting.md)
 
 ## Documentation Sections
@@ -22,7 +21,6 @@ Welcome to the Petaly documentation! This guide will help you understand and use
 - [Cloud Platforms](cloud_platforms.md) - Cloud platform integration
 
 ### Advanced Topics
-- [AI Agent Mode](ai_agent_mode.md) - AI-powered features
 - [Custom Connectors](custom_connectors.md) - Extending Petaly
 - [Performance](performance.md) - Optimization guides
 

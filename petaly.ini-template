@@ -42,39 +42,3 @@ logging_mode=INFO
 # - yaml: YAML format (default)
 # - json: JSON format
 pipeline_format=yaml
-
-[ai_settings]
-# AI Agent Settings
-# ---------------
-# Configuration for Petaly's AI agent functionality.
-# These settings are only required when using Petaly in agent mode.
-
-# LLM Provider
-# -----------
-# Selects the Large Language Model provider:
-# - openai: OpenAI's models (default)
-# - anthropic: Anthropic's models
-llm_provider=openai
-
-# LLM Model
-# --------
-# Specifies the model to use for AI operations.
-# Tested models:
-# - OpenAI: gpt-4
-# - Anthropic: claude-3-opus-20240229
-llm_model=gpt-4
-
-# Memory File
-# ----------
-# Path to the file where the AI agent stores its memory.
-# Default: ~/.petaly/agent_memory.json (Linux/MacOS)
-agent_memory_file=~/.petaly/agent_memory.json
-
-# API Key Configuration
-# -------------------
-# Set your API key in one of two ways:
-# 1. Environment variable (recommended):
-#    export AI_AGENT_API_KEY="your-api-key-here" (Linux/MacOS)
-# 2. Direct configuration (not recommended for production):
-#    ai_agent_api_key=your-api-key-here
-ai_agent_api_key= 

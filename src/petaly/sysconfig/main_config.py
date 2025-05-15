@@ -27,8 +27,8 @@ from petaly.sysconfig.load_class import load_class_obj
 class MainConfig:
     """
     Main configuration manager for Petaly that handles all configuration-related operations.
-    Manages the main configuration file (petaly.ini), workspace paths, global settings,
-    AI-related settings, and connector configurations. The configuration file is resolved
+    Manages the main configuration file (petaly.ini), workspace paths, global settings, 
+    and connector configurations. The configuration file is resolved
     in the following order: path provided with -c option, path specified in PETALY_CONFIG_DIR
     environment variable, and user's home directory (~/.petaly/petaly.ini).
     """
@@ -84,12 +84,6 @@ class MainConfig:
             "pipeline_format": "yaml"
         }
 
-        self.ai_settings = {
-            "ai_agent_api_key": None,
-            "llm_provider": "openai",
-            "llm_model": "gpt-4o",
-            "agent_memory_file": None
-        }
 
     def set_main_config_fpath(self, config_file_path, init_main_config=False):
         """
@@ -257,42 +251,6 @@ class MainConfig:
         else:
             self.console.print(f"The section {section_name} is not specified in petaly.ini.")
 
-    def set_ai_settings(self):
-        """
-        Sets AI-related settings from the configuration file.
-        
-        Logic:
-        1. Load the ai_settings section
-        2. Set AI provider (openai or anthropic)
-        3. Set model and API key
-        4. Check environment variable if API key not in config
-        """
-        section_name = 'ai_settings'
-        conf_parser = self.load_main_config_file()
-        if self.check_main_config_section(conf_parser, section_name):
-            for key in self.ai_settings.keys():
-                if key in conf_parser.options(section_name):
-                    value = conf_parser.get(section_name, key)
-                    if key == 'ai_agent_api_key':
-                        if value is not None:
-                            self.ai_settings['ai_agent_api_key'] = value
-                        else:
-                            if os.getenv('AI_AGENT_API_KEY') is not None:
-                                self.ai_settings['ai_agent_api_key'] = os.getenv('AI_AGENT_API_KEY')
-                            else:
-                                self.console.print(
-                                    f"Neither the option ai_agent_api_key nor the env AI_AGENT_API_KEY was set. Check ai_agent_api_key under section ai_settings in petaly.ini.")
-                    elif key == 'llm_provider':
-                        if value in ('openai', 'anthropic'):
-                            self.ai_settings['llm_provider'] = value
-                        else:
-                            self.console.print(f"The option llm_provider supports openai or anthropic only. Check llm_provider under section ai_settings in petaly.ini.")
-                    else:
-                        self.ai_settings[key] = value
-                else:
-                    self.console.print(f"The option {key} is not specified under section ai_settings in petaly.ini.")
-        else:
-            self.console.print(f"The section {section_name} is not specified in petaly.ini.")
 
     def missing_main_config_file_message(self):
         return (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"

@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Official Beta release of Petaly
-- AI agent integration with LLM providers [EXPERIMENTAL]:
-  - OpenAI
-  - Anthropic
-- Comprehensive unit tests for all connectors and AI agent
 - Support for JSON format in pipeline configuration
 
 ### Changed
@@ -50,20 +46,6 @@ New configuration options in `petaly.ini`:
 # Pipeline format selection (yaml or json, default: yaml)
 pipeline_format=yaml
 
-[ai_settings]
-# LLM provider selection (openai or anthropic, default: openai)
-llm_provider=openai
-
-# LLM model selection (tested with gpt-4, claude-3-opus-20240229)
-llm_model=gpt-4
-
-# Memory file path (default: ~/.petaly/agent_memory.json)
-agent_memory_file=~/.petaly/agent_memory.json
-
-# AI Agent API Key configuration
-# Set via environment variable: export AI_AGENT_API_KEY="YOUR-KEY"
-# Or directly in config (not recommended for production)
-ai_agent_api_key=
 ```
 
 ## [v0.0.10] - 2025-02-05

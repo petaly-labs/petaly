@@ -20,7 +20,6 @@ Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by a
 - **User-Friendly**: No programming knowledge required
 - **YAML/JSON Configuration**: Easy pipeline setup
 - **Cloud Ready**: Full support for AWS and GCP
-- **AI Integration**: AI agent mode for natural language commands
 
 ## Quick Start
 
@@ -76,15 +75,10 @@ python3 -m pip install petaly[aws]
 1. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html)
 2. Configure AWS credentials
 
-### AI Agent Installation
-```bash
-# Install with AI support
-python3 -m pip install petaly[ai]
-```
 
 ### Full Installation
 ```bash
-# Install all features including AWS, GCP and AI
+# Install all features including AWS, GCP
 python3 -m pip install petaly[all]
 ```
 
@@ -140,12 +134,6 @@ output_dir_path=/home/user/petaly/output
 logging_mode=INFO
 pipeline_format=yaml
 
-# [Optional] Required only in agent mode when using LLM.
-[ai_settings]
-llm_provider=openai
-llm_model=gpt-4
-agent_memory_file=~/.petaly/agent_memory.json
-ai_agent_api_key=your-api-key-here
 ```
 
 2. Create workspace:
@@ -180,19 +168,6 @@ python3 -m petaly run -p my_pipeline --target_only
 # Run specific objects
 python3 -m petaly run -p my_pipeline -o object1,object2
 ```
-
-## AI Agent Mode
-
-Start the AI agent for interactive assistance:
-```bash
-python3 -m petaly agent interactive
-```
-
-The AI agent can help you with:
-- Pipeline creation and configuration
-- Data movement operations
-- Troubleshooting
-- Best practices and recommendations
 
 ## Tutorial: CSV to PostgreSQL
 
@@ -251,7 +226,6 @@ pipeline:
 ## Documentation
 
 - [Pipeline Configuration Guide](docs/pipeline_examples.md)
-- [AI Agent Mode Guide](docs/ai_agent_mode.md)
 - [Cloud Platform Guide](docs/cloud_platforms.md)
 - [Troubleshooting Guide](docs/troubleshooting.md)
 - [Video Tutorials](docs/recording/)

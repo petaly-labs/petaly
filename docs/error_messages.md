@@ -109,27 +109,6 @@ Cannot specify both --source_only and --target_only
 - Provide both --pipeline_name and --object_name
 - Or use the interactive mode to specify these values
 
-## AI Agent Errors
-
-### Pipeline Creation Error
-```
-I encountered an error while trying to create the pipeline: {error}
-```
-**Cause**: Error during pipeline creation by the AI agent.
-**Solution**:
-- Check the error message for specific details
-- Verify all required parameters are provided
-- Ensure the AI agent has necessary permissions
-
-### Pipeline Modification Error
-```
-I encountered an error while trying to modify the pipeline: {error}
-```
-**Cause**: Error during pipeline modification by the AI agent.
-**Solution**:
-- Review the modification request
-- Check if the pipeline exists
-- Verify the changes are valid
 
 ### Pipeline Execution Error
 ```

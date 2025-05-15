@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "petaly"
 version = "0.1.0"
 license = {file = "LICENSE.md"}
-description = "Python ETL and Data Pipeline Tool with AI Agent and MCP capabilities"
+description = "Python ETL and Data Pipeline Tool"
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [{name = "Pavel Rabaev", email = "contact@petaly.org"},]
 maintainers = [{name = "Pavel Rabaev", email = "contact@petaly.org"},]
@@ -45,11 +45,7 @@ gcp = [
 aws = [
         "redshift_connector[full]"
     ]
-ai  = [
-        "requests", 
-        "prompt_toolkit"
-    ]
-all = ["petaly[gcp]", "petaly[aws]", "petaly[ai]"]
+all = ["petaly[gcp]", "petaly[aws]"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -57,10 +53,7 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = [
-    "petaly",
-    "petaly.ai",
-    "petaly.ai.agent",
-    "petaly.ai.mcp"
+    "petaly"
 ]
 namespaces = false
 

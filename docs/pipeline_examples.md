@@ -16,7 +16,6 @@ pipeline:
     ...
   data_attributes:
     ...
----
 data_objects_spec: []
 ```
 
@@ -105,7 +104,6 @@ data_attributes:
 The `data_objects_spec` section defines how to handle specific data objects (tables/files):
 
 ```yaml
----
 data_objects_spec:
 - object_spec:
     object_name: source_table
@@ -169,7 +167,6 @@ pipeline:
       header: true
       columns_delimiter: ","
       columns_quote: none
----
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -210,7 +207,7 @@ pipeline:
     database_schema: public
   data_attributes:
     data_objects_spec_mode: only
----
+
 data_objects_spec:
 - object_spec:
     object_name: customers
@@ -291,7 +288,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: double
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -327,7 +324,7 @@ pipeline:
       header: true
       columns_delimiter: ","
       columns_quote: none
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -381,7 +378,7 @@ pipeline:
       header: true
       columns_delimiter: ","
       columns_quote: single
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -427,7 +424,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: single
----
+
 data_objects_spec:
 - object_spec:
     object_name: osm_admin
@@ -462,7 +459,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: none
----
+
 data_objects_spec:
 - object_spec:
     object_name: osm_admin
@@ -499,7 +496,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: none
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -546,7 +543,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: double
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -661,7 +658,7 @@ pipeline:
       header: true
       columns_delimiter: '\t'
       columns_quote: none
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks

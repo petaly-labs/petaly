@@ -1,16 +1,16 @@
 # Data Objects Specification Guide
 
-This guide explains how to use the `data_objects_spec` document in your pipeline configuration to handle specific data objects and their settings.
+This guide explains how to use the `data_objects_spec` section in your pipeline configuration to handle specific data objects and their settings.
 
 ## Overview
 
-The `data_objects_spec` is a separate document in your pipeline YAML file that defines how to handle specific data objects (tables/files) in your pipeline, including source and destination mappings, file specifications, and object-specific settings.
+The `data_objects_spec` is second main section in your pipeline YAML file that defines how to handle specific data objects (tables/files) in your pipeline, including source and destination mappings, file specifications, and object-specific settings.
 
 ## Connection Between Sections
 
 The pipeline configuration uses three connected sections to handle data objects:
 
-1. **Pipeline Document**:
+1. **Pipeline main section**:
    ```yaml
    pipeline:
      data_attributes:
@@ -21,10 +21,9 @@ The pipeline configuration uses three connected sections to handle data objects:
          columns_quote: double
    ```
 
-2. **Data Objects Specification Document**:
+2. **Data Objects Specification main section**:
    ```yaml
-   ---
-   # Second document: Data objects specification
+   # Second main section: Data objects specification
    data_objects_spec:
    - object_spec:
        object_name: source_table
@@ -33,7 +32,7 @@ The pipeline configuration uses three connected sections to handle data objects:
 
 ### data_objects_spec_mode
 
-The `data_objects_spec_mode` in `data_attributes` controls how the `data_objects_spec` document is used:
+The `data_objects_spec_mode` in `data_attributes` controls how the `data_objects_spec` main section is used:
 
 - `only`: Load only the objects explicitly specified in `data_objects_spec`. These objects will be configured in the next step.
 - `ignore`: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section, completely disregarding `data_objects_spec`.
@@ -42,8 +41,7 @@ The `data_objects_spec_mode` in `data_attributes` controls how the `data_objects
 ## Basic Structure
 
 ```yaml
----
-# Second document: Data objects specification
+# Second main section: Data objects specification
 data_objects_spec:
 - object_spec:
     object_name: source_table
@@ -75,7 +73,7 @@ Settings for each data object:
 
 ### CSV Files with Default Settings
 ```yaml
-# First document: Pipeline configuration
+# First main section: Pipeline configuration
 pipeline:
   data_attributes:
     data_objects_spec_mode: only
@@ -83,9 +81,7 @@ pipeline:
       header: true
       columns_delimiter: ","
       columns_quote: double
-
----
-# Second document: Data objects specification
+# Second main section: Data objects specification
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -98,13 +94,12 @@ data_objects_spec:
 
 ### Database Tables with Prefer Mode
 ```yaml
-# First document: Pipeline configuration
+# First top section: Pipeline configuration
 pipeline:
   data_attributes:
     data_objects_spec_mode: prefer  # Will load all tables but apply specific settings to listed ones
 
----
-# Second document: Data objects specification
+# Second top section: Data objects specification
 data_objects_spec:
 - object_spec:
     object_name: customers
@@ -148,8 +143,7 @@ data_objects_spec:
 
 1. **Object Not Found**
    ```yaml
-   ---
-   # Second document: Data objects specification
+   # Second main section: Data objects specification
    data_objects_spec:
    - object_spec:
        object_name: "table1"  # Check exact name
@@ -158,8 +152,7 @@ data_objects_spec:
 
 2. **Invalid Configuration**
    ```yaml
-   ---
-   # Second document: Data objects specification
+   # Second main section: Data objects specification
    data_objects_spec:
    - object_spec:
        object_name: "table1"
@@ -169,8 +162,7 @@ data_objects_spec:
 
 3. **CSV File Issues**
    ```yaml
-   ---
-   # Second document: Data objects specification
+   # Second main section: Data objects specification
    data_objects_spec:
    - object_spec:
        object_name: "data"

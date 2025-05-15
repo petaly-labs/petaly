@@ -24,6 +24,17 @@ from petaly.utils.file_handler import FileHandler
 from petaly.core.data_object import DataObject
 
 class FLoader(ABC):
+    """Abstract base class for file loaders.
+    
+    This class provides the core functionality for loading data into file-based targets.
+    It handles file writing, compression, and metadata management.
+    
+    Key responsibilities:
+    - Loads data into various file formats
+    - Manages file compression and decompression
+    - Handles file output and metadata storage
+    - Processes multiple files in a directory
+    """
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
@@ -33,9 +44,24 @@ class FLoader(ABC):
 
     @abstractmethod
     def load_from(self, loader_obj_conf):
-        pass
+        """Abstract method to be implemented by concrete loaders.
+        
+        This method should implement the specific logic for loading data
+        into the target file format.
+        """
 
     def load_data(self, file_to_gzip=False):
+        """Loads data into file-based targets.
+        
+        This method orchestrates the entire loading process:
+        1. Gets list of objects to load
+        2. For each object:
+           - Composes loader configuration
+           - Optionally compresses files
+           - Loads data to files
+        
+        The method handles timing and logging of the loading process.
+        """
 
         logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
         start_total_time = time.time()
@@ -82,4 +108,9 @@ class FLoader(ABC):
         logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
 
     def get_data_object(self, object_name):
+        """Gets a DataObject instance for the specified object.
+        
+        Creates and returns a DataObject instance containing the object's
+        configuration and settings.
+        """
         return DataObject(self.pipeline, object_name)

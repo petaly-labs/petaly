@@ -26,6 +26,18 @@ from petaly.core.data_object import DataObject
 
 
 class DBLoader(ABC):
+    """Abstract base class for database loaders.
+    
+    This class provides the core functionality for loading data into database targets.
+    It handles table creation, data loading, and metadata management.
+    
+    Key responsibilities:
+    - Creates and manages database tables
+    - Loads data from CSV files into database tables
+    - Handles type mapping and data transformation
+    - Manages table DDL and loading statements
+
+    """
 
     def __init__(self, pipeline):
         self.pipeline = pipeline
@@ -52,7 +64,17 @@ class DBLoader(ABC):
 
     @measure_time
     def load_data(self):
-        """  Load data into Database. Recreate table if parameter recreate_table=True. """
+        """Loads data into the database target.
+        
+        This method orchestrates the entire loading process:
+        1. Gets list of objects to load
+        2. For each object:
+           - Composes loader configuration
+           - Loads data into table
+        3. Handles timing and logging
+        
+        The method supports table recreation if specified in configuration.
+        """
 
         logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
         start_total_time = time.time()
@@ -77,6 +99,16 @@ class DBLoader(ABC):
         logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
 
     def get_loader_obj_conf(self, object_name) ->dict:
+        """Gets the configuration for loading a specific object.
+        
+        The method composes a complete configuration containing:
+        - Object name and paths
+        - Metadata directory
+        - Table DDL components
+        - Object settings
+        - Load statements
+        - Blob prefix for cloud storage
+        """
         loader_obj_conf = {}
         loader_obj_conf.update({'object_name': object_name})
 
@@ -117,10 +149,22 @@ class DBLoader(ABC):
         return loader_obj_conf
 
     def get_data_object(self, object_name):
+        """Gets a DataObject instance for the specified object.
+        
+        Creates and returns a DataObject instance containing the object's
+        configuration and settings.
+        """
         return DataObject(self.pipeline, object_name)
 
     def compose_table_ddl(self, data_object, table_metadata: dict) -> (dict):
-        """ Its composes statement for create table command by using table_metadata dictionary. """
+        """Composes the DDL statement for creating a table.
+        
+        The method creates table DDL components including:
+        - Table name
+        - Schema name
+        - Column definitions
+        - Primary key
+        """
 
         object_name = data_object.object_name
         table_name = data_object.destination_object_name

@@ -17,20 +17,17 @@ logger = logging.getLogger(__name__)
 
 from petaly.utils.file_handler import FileHandler
 from petaly.core.f_loader import FLoader
-from petaly.connectors.gcp.gs.gs_connector import GSConnector
+from petaly.connectors.s3.s3_connector import S3Connector
 
 
-class GSLoader(FLoader):
+class S3Loader(FLoader):
     def __init__(self, pipeline):
-        self.gs_connector = GSConnector()
+        self.s3_connector = S3Connector(pipeline.target_attr, aws_session=None)
         self.f_handler = FileHandler()
 
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.target_attr.get('gcp_bucket_name')
-        self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
-        self.load_from_bucket = False if self.cloud_bucket_name is None else True
-        self.cloud_region = self.pipeline.target_attr.get('gcp_region')
-        self.cloud_project_id = self.pipeline.target_attr.get('gcp_project_id')
+        self.cloud_bucket_name = self.pipeline.target_attr.get('aws_bucket_name')
+        self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name + '/'
 
     def load_data(self):
         super().load_data(file_to_gzip=True)
@@ -38,6 +35,5 @@ class GSLoader(FLoader):
     def load_from(self, loader_obj_conf):
         """ Load files to bucket
         """
-        self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix') )
-        self.gs_connector.upload_files_to_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'),loader_obj_conf.get('file_list') )
-
+        self.s3_connector.delete_object_in_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'))
+        self.s3_connector.upload_files_to_bucket(self.cloud_bucket_name, loader_obj_conf.get('blob_prefix'), loader_obj_conf.get('file_list'))

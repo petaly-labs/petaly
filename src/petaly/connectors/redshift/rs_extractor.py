@@ -19,8 +19,8 @@ import sys
 from petaly.core.db_extractor import DBExtractor
 from petaly.utils.utils import FormatDict
 
-from petaly.connectors.aws.redshift.rs_connector import RSConnectorIAM, RSConnectorTCP
-from petaly.connectors.aws.s3.s3_connector import S3Connector
+from petaly.connectors.redshift.rs_connector import RSConnectorIAM, RSConnectorTCP
+from petaly.connectors.s3.s3_connector import S3Connector
 
 
 class RSExtractor(DBExtractor):

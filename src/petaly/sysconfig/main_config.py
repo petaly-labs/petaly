@@ -25,17 +25,28 @@ from petaly.sysconfig.load_class import load_class_obj
 
 
 class MainConfig:
+    """
+    Main configuration manager for Petaly that handles all configuration-related operations.
+    Manages the main configuration file (petaly.ini), workspace paths, global settings, 
+    and connector configurations. The configuration file is resolved
+    in the following order: path provided with -c option, path specified in PETALY_CONFIG_DIR
+    environment variable, and user's home directory (~/.petaly/petaly.ini).
+    """
 
     def __init__(self):
+        """
+        Initializes the MainConfig instance with default values and settings.
+        """
         self.f_handler = FileHandler()
         self.console = Console()
-        self.pipeline_fname = 'pipeline.yaml'
         self.env_config_dpath = os.getenv('PETALY_CONFIG_DIR')
         self.main_config_fname = 'petaly.ini'
+        self.main_config_template_fname = 'petaly.ini-template'
         self.logging_config_fname = 'logging_config.json'
 
         self.class_config_fname = 'class_config.json'
         self.pipeline_meta_config_fname = 'pipeline_meta_config.json'
+        self.pipeline_skeleton_fname = 'pipeline_skeleton.json'
         self.extractor_type_transformer_fname = 'extractor_type_transformer.json'
         self.type_mapping_fname = '{source_connector_id}.json'
         self.metadata_sql_fname = 'metadata.sql'
@@ -45,8 +56,10 @@ class MainConfig:
         self.connector_attributes_fname = 'connector_attributes.json'
         self.pipeline_outdated_arguments_fname = 'pipeline_outdated_arguments.json'
 
-        self.base_dpath = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        # Initialize pipeline_fname with default value
+        self.pipeline_fname = 'pipeline.yaml'
 
+        self.base_dpath = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
         self.src_dpath = os.path.dirname(self.base_dpath)
         self.root_dpath = os.path.dirname(self.src_dpath)
         self.main_config_fpath = None
@@ -54,68 +67,104 @@ class MainConfig:
         self.sysconfig = os.path.join(self.base_dpath, 'sysconfig')
         self.sysconfig_config = os.path.join(self.sysconfig, 'config')
 
-        self.templates_main_config_fpath = os.path.join(self.sysconfig_config, 'template_' + self.main_config_fname)
+        self.templates_main_config_fpath = os.path.join(self.root_dpath, self.main_config_template_fname)
         self.logging_config_fpath = os.path.join(self.sysconfig_config, self.logging_config_fname)
         self.pipeline_meta_config_fpath = os.path.join(self.sysconfig_config, self.pipeline_meta_config_fname)
+        self.pipeline_skeleton_fpath = os.path.join(self.sysconfig_config, self.pipeline_skeleton_fname)
         self.class_sysconfig_fpath = os.path.join(self.sysconfig_config, self.class_config_fname)
         self.pipeline_outdated_arguments_fpath = os.path.join(self.sysconfig_config, self.pipeline_outdated_arguments_fname)
-
+        
         self.workspace_config = {
-                                            "pipeline_dir_path": None,
-                                            "logs_dir_path": None,
-                                            "output_dir_path": None
-                                         }
+            "pipeline_dir_path": None,
+            "logs_dir_path": None,
+            "output_dir_path": None
+        }
         self.global_settings = {
-                                        "logging_mode": "INFO"
-                                        }
+            "logging_mode": "INFO",
+            "pipeline_format": "yaml"
+        }
 
 
     def set_main_config_fpath(self, config_file_path, init_main_config=False):
         """
+        Sets the main configuration file path based on the specified priority order.
+        
+        Logic:
+        1. If config_file_path is provided and is absolute:
+           - Use it as the configuration file path
+        2. If PETALY_CONFIG_DIR environment variable is set:
+           - Use it to construct the configuration file path
+        3. Otherwise:
+           - Use ~/.petaly/petaly.ini as the default path
+        4. If the file doesn't exist and init_main_config is True:
+           - Create the directory if it doesn't exist
+           - Copy the template configuration file
         """
-        # 1. if config file wasn't pass, set to default one
-        if config_file_path is None:
-            config_file_path = self.main_config_fname
-
-        # 2. exit, if config file is not absolute or env variable wasn't set
-        if os.path.isabs(config_file_path) is False:
-            if self.env_config_dpath:
-                config_file_path = os.path.join(self.env_config_dpath, config_file_path)
-            else:
-                self.console.print(self.missing_main_config_file_message())
-                sys.exit()
-
-        # 3. exit, if file hasn't *.ini file extension
-        if self.f_handler.check_file_extension(config_file_path, '.ini') is False:
-            self.console.print(self.missing_main_config_file_message())
-            sys.exit()
-
-        # 4. If the configuration file or directory does not exist, create it.
-        if self.f_handler.is_file(config_file_path) is False:
-            if init_main_config == True:
-                if self.f_handler.is_dir(config_file_path):
-                    config_file_name = self.main_config_fname
-                else:
-                    config_file_name = os.path.basename(config_file_path)
-
-                self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(config_file_path), os.path.basename(config_file_name))
-
-                self.console.print(f"The main config file was created: {config_file_path}\n"
+        def create_config_file(path):
+            """Helper function to create config file if it doesn't exist"""
+            # If file exists, just return True
+            if self.f_handler.is_file(path):
+                return True
+                
+            # Only create new file if init_main_config is True
+            if init_main_config:
+                # Create directory if it doesn't exist
+                if not self.f_handler.is_dir(os.path.dirname(path)):
+                    self.f_handler.make_dirs(os.path.dirname(path))
+                    self.console.print(f"Created directory: {os.path.dirname(path)}")
+                
+                # Copy template to target location
+                self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(path), os.path.basename(path))
+                self.console.print(f"The main config file was created: {path}\n"
                       f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
+                return True
+            
+            return False
+
+        # 1. Use provided config_file_path if it exists
+        if config_file_path is not None:
+            if os.path.isabs(config_file_path):
+                if create_config_file(config_file_path):
+                    self.main_config_fpath = config_file_path
+                    return
             else:
                 self.console.print(self.missing_main_config_file_message())
+                sys.exit(1)
 
-        self.main_config_fpath = config_file_path
+        # 2. Check environment variable PETALY_CONFIG_DIR
+        if self.env_config_dpath:
+            config_file_path = os.path.join(self.env_config_dpath, self.main_config_fname)
+            if create_config_file(config_file_path):
+                self.main_config_fpath = config_file_path
+                return
+
+        # 3. Use user home directory
+        home_dir = os.path.expanduser("~")
+        home_config_path = os.path.join(home_dir, ".petaly", self.main_config_fname)
+        if create_config_file(home_config_path):
+            self.main_config_fpath = home_config_path
+            return
+
+        # No valid config found and init_main_config is False
+        self.console.print(self.missing_main_config_file_message())
+        sys.exit(1)
 
     def load_main_config_file(self):
-
+        """
+        Loads and parses the main configuration file.
+        """
         conf_parser = ConfigParser(interpolation=ExtendedInterpolation())
         conf_parser.read(self.main_config_fpath)
-
         return conf_parser
 
     def check_main_config_section(self, conf_parser, section_name):
-
+        """
+        Checks if a section exists in the configuration file.
+        
+        Logic:
+        1. Check if the section exists in the configuration
+        2. If not found, print warning message
+        """
         if conf_parser.has_section(section_name):
             return_result = True
         else:
@@ -125,7 +174,14 @@ class MainConfig:
         return return_result
 
     def validate_workspace_abs_paths(self, conf_parser):
-
+        """
+        Validates that all workspace paths in the configuration are absolute paths.
+        
+        Logic:
+        1. Check each workspace path in the configuration
+        2. Verify that each path is absolute
+        3. Warning for any invalid paths
+        """
         return_value = True
 
         for key in self.workspace_config.keys():
@@ -143,6 +199,12 @@ class MainConfig:
 
     def set_workspace_dpaths(self):
         """
+        Sets workspace directory paths from the configuration file.
+        
+        Logic:
+        1. Load the workspace_config section
+        2. Validate all paths are absolute
+        3. Set pipeline, logs, and output directory paths
         """
         section_name = 'workspace_config'
 
@@ -157,13 +219,18 @@ class MainConfig:
             sys.exit()
 
     def set_global_settings(self):
-
+        """
+        Sets global application settings from the configuration file.
+        
+        Logic:
+        1. Load the global_settings section
+        2. Validate logging_mode (INFO or DEBUG)
+        3. Validate pipeline_format (yaml or json)
+        """
         section_name = 'global_settings'
-
         conf_parser = self.load_main_config_file()
 
         if self.check_main_config_section(conf_parser, section_name):
-
             for key in self.global_settings.keys():
                 if key in conf_parser.options(section_name):
                     value = conf_parser.get(section_name, key)
@@ -172,15 +239,34 @@ class MainConfig:
                             self.global_settings['logging_mode'] = value
                         else:
                             self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section global_settings in petaly.ini.")
+                    elif key == 'pipeline_format':
+                        if value in ('yaml', 'json'):
+                            self.global_settings['pipeline_format'] = value
+                            # Update pipeline_fname based on the configured format
+                            self.pipeline_fname = f"{self.pipeline_fname.split('.')[0]}.{value}"
+                        else:
+                            self.console.print(f"The option pipeline_format supports yaml or json only. Check pipeline_format under section global_settings in petaly.ini.")
                 else:
                     self.console.print(f"The option {key} is not specified under section global_settings in petaly.ini.")
+        else:
+            self.console.print(f"The section {section_name} is not specified in petaly.ini.")
+
 
     def missing_main_config_file_message(self):
-        return    (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"
-                   f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
+        return (f"To initialize config file for the first time, provide the absolute path to petaly config file: init -c /ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR/{self.main_config_fname}\n"
+                f"Or simply run 'init' to create it in ~/.petaly/{self.main_config_fname}\n"
+                f"To skip '-c' argument at runtime, set an environment variable: export PETALY_CONFIG_DIR=/ABSOLUTE_PATH_TO_PETALY_CONFIG_DIR\n")
 
 
     def get_platform_attributes(self, platform_id):
+        """
+        Gets configuration attributes for a specific platform.
+        
+        Logic:
+        1. Load platform configuration from class_config.json
+        2. Return attributes for the specified platform
+        3. Exit if platform not found
+        """
         platforms_cl_config = self.f_handler.load_json(self.class_sysconfig_fpath).get('platforms')
         platform_config = platforms_cl_config.get(platform_id)
 
@@ -191,6 +277,14 @@ class MainConfig:
         return platform_config
 
     def get_supported_platforms(self, connector_id):
+        """
+        Gets list of platforms supported by a connector.
+        
+        Logic:
+        1. Load connector configuration from class_config.json
+        2. Get supported platforms list
+        3. Return ['local'] if no platforms specified
+        """
         platforms_cl_config = self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors")
         platform_type_list = platforms_cl_config.get(connector_id).get('supported_platforms')
         if platform_type_list is None or len(platform_type_list)==0:
@@ -215,8 +309,13 @@ class MainConfig:
         return True
 
     def get_connector_dpath(self, connector_id):
-        """ The connector_id_dpath has a dot as path delimiter in class_config.json, e.g. connector_id_dpath: "connectors.mysql".
-            To make it cross-platform compatible the split('.') and replace with directory delimiter is required.
+        """
+        Gets the directory path for a connector.
+        
+        Logic:
+        1. Get connector class configuration
+        2. Convert dot-notation path to directory path
+        3. Join with source directory path
         """
         connector_class_config = self.get_connector_class_config(connector_id)
         connector_id_dpath = connector_class_config.get('connector_dpath')
@@ -225,18 +324,38 @@ class MainConfig:
         return connector_dpath
 
     def get_connector_class_config(self, connector_id):
+        """
+        Gets the class configuration for a connector.
+        
+        Logic:
+        1. Check if connector_id is provided
+        2. Load connector configuration from class_config.json
+        3. Return configuration or None if not found
+        """
+        if not connector_id:
+            logger.warning("Connector ID is not specified")
+            return None
+            
         connectors_cl_config = self.f_handler.load_json(self.class_sysconfig_fpath).get("connectors")
+        if not connectors_cl_config:
+            logger.warning("No connectors configuration found in class_config.json")
+            return None
+            
         connector_class_config = connectors_cl_config.get(connector_id)
-
         if not connector_class_config:
             logger.warning(f"The connector_id {connector_id} in class_config.json is not specified")
-            sys.exit()
-
+            return None
+            
         return connector_class_config
 
     def get_connector_attributes(self, connector_id):
-
-        #connector_class_config = self.get_connector_class_config(connector_id)
+        """
+        Gets the attributes configuration for a connector.
+        
+        Logic:
+        1. Get connector directory path
+        2. Load attributes from connector_attributes.json
+        """
         connector_dpath = self.get_connector_dpath(connector_id)
         connector_attributes_fpath = os.path.join(connector_dpath, 'config', self.connector_attributes_fname)
 
@@ -281,8 +400,17 @@ class MainConfig:
         return class_object
 
     def get_connector_category(self, connector_id):
-        connector_category = self.get_connector_class_config(connector_id).get('connector_category')
-        return connector_category
+        """
+        Gets the category of a connector.
+        
+        Logic:
+        1. Get connector class configuration
+        2. Return connector category or None if not found
+        """
+        connector_config = self.get_connector_class_config(connector_id)
+        if not connector_config:
+            return None
+        return connector_config.get('connector_category')
 
     def get_pipeline_outdated_arguments(self):
         return self.f_handler.load_json(self.pipeline_outdated_arguments_fpath)

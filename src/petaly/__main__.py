@@ -12,8 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
+import logging
+import sys
+from typing import Optional
+
+from petaly.sysconfig.main_config import MainConfig
 from petaly.cli.cli import Cli
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+def main():
+    """Main entry point for the Petaly package."""
+    m_conf = MainConfig()
+    m_conf.set_main_config_fpath(config_file_path=None, init_main_config=True)
+    m_conf.set_global_settings()
+    
+    try:
+        # Default to CLI mode
+        cli = Cli(m_conf)
+        cli.start()
+    except Exception as e:
+        logger.error(f"Error running Petaly: {e}", exc_info=True)
+        sys.exit(1)
+
 if __name__ == "__main__":
-    cli = Cli()
-    cli.start()
+    main()

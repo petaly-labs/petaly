@@ -15,19 +15,18 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from petaly.connectors.gcp.gs.gs_connector import GSConnector
+import logging
+
+from petaly.connectors.s3.s3_connector import S3Connector
 from petaly.core.f_extractor import FExtractor
 from petaly.utils.file_handler import FileHandler
 
 
-class GSExtractor(FExtractor):
+class S3Extractor(FExtractor):
     def __init__(self, pipeline):
-        self.gs_connector = GSConnector()
-
+        self.s3_connector = S3Connector(pipeline.source_attr, aws_session=None)
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.source_attr.get('gcp_bucket_name')
-        self.cloud_project_id = self.pipeline.source_attr.get('gcp_project_id')
-        self.cloud_region = self.pipeline.source_attr.get('gcp_region')
+        self.cloud_bucket_name = self.pipeline.source_attr.get('aws_bucket_name')
         self.file_format = 'csv'
         self.f_handler = FileHandler()
 
@@ -37,14 +36,12 @@ class GSExtractor(FExtractor):
     def extract_to(self, extractor_obj_conf):
         """ Download export from bucket into local folder
         """
-        output_data_object_dir = extractor_obj_conf.get('output_data_object_dir')
-        self.f_handler.cleanup_dir(output_data_object_dir)
 
-        file_list = self.gs_connector.download_files_from_bucket(
+        file_list = self.s3_connector.download_files_from_bucket(
                                                     bucket_name=self.cloud_bucket_name,
                                                     blob_prefix=extractor_obj_conf.get('blob_prefix'),
                                                     file_names=extractor_obj_conf.get('file_names'),
-                                                    destination_dpath=output_data_object_dir)
+                                                    destination_dpath=extractor_obj_conf.get('output_data_object_dir'))
 
         logger.debug(f"The following file list were downloaded from bucket:\n{file_list}")
 

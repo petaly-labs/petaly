@@ -6,9 +6,12 @@ __pycache__/
 # C extensions
 *.so
 
+# exclude all ini files except MANIFEST.ini and petaly.ini-template
+*.ini
+!MANIFEST.ini
+!petaly.ini-template
+
 # exclude project realted folders or files
-petaly.ini
-!template_petaly.ini
 logs/
 output/
 temp/
@@ -130,7 +133,8 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv*
+.aivenv*
 env/
 venv/
 ENV/

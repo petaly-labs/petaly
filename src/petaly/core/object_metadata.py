@@ -22,6 +22,18 @@ from petaly.utils.file_handler import FileHandler
 
 
 class ObjectMetadata():
+    """Class for managing object metadata.
+    
+    This class handles the creation, processing, and storage of metadata for data objects.
+    It manages column definitions, data types, and object settings.
+    
+    Key responsibilities:
+    - Processes and formats metadata from queries
+    - Manages column metadata and data types
+    - Saves and loads metadata files
+    - Handles object settings and configurations
+    """
+
     def __init__(self, pipeline):
         self.pipeline = pipeline
         self.f_handler = FileHandler()
@@ -37,7 +49,10 @@ class ObjectMetadata():
         pass
 
     def save_table_metadata(self, meta_table):
-        """ Its save a table result as a metadata into file """
+        """Saves table metadata to a file.
+        
+        The metadata is saved in JSON format to the object's metadata directory.
+        """
         object_name = meta_table.get('source_object_name')
 
         source_object_fpath = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
@@ -46,15 +61,13 @@ class ObjectMetadata():
         self.f_handler.save_dict_to_file(source_object_fpath, meta_table, 'json')
 
     def compose_objects_meta_from_query(self, meta_query_result):
-        """ Its format array of dicts of table metadata result to the array of dict
-        Given format:
-        [{'source_schema_name': table_schema_1, 'source_object_name': table_name_1, 'column_name_1': attributes},
-        {'source_schema_name': table_schema_1, 'source_object_name': table_name_1, 'column_name_2': attributes},
-        ]
-        Result format:
-        [{'table_schema': table_schema_1, 'table_name': table_name_1, 'columns': [all]},
-        {'table_schema': table_schema_1, 'table_name': table_name_2, 'columns': [all]}
-        ]
+        """Composes object metadata from query results.
+        
+        The method processes query results to create formatted object metadata including:
+        - Source object information
+        - Column definitions
+        - Object settings
+        - Excluded columns
         """
         distinct_object_list = []
         formated_object_meta_list = []
@@ -127,6 +140,11 @@ class ObjectMetadata():
         return self.object_metadata_dict
 
     def process_metadata(self, meta_query_result):
+        """Processes metadata query results and saves them.
+        
+        The method processes each object's metadata and saves it to files.
+        If the meta query result is empty, it raises a SystemExit error.
+        """
         object_list = []
         if meta_query_result is not None:
             for meta_table in self.compose_objects_meta_from_query(meta_query_result):
@@ -140,6 +158,14 @@ class ObjectMetadata():
         return object_list
 
     def compose_column_metadata(self, column_name, ordinal_position, is_nullable, data_type, character_maximum_length, numeric_precision, numeric_scale, primary_key):
+        """Composes metadata for a single column.
+        
+        The method creates a column metadata dictionary containing:
+        - Column name and position
+        - Nullability
+        - Data type and precision
+        - Primary key information
+        """
 
         column_meta = {}
         column_meta.update({'column_name': column_name})
@@ -153,6 +179,11 @@ class ObjectMetadata():
         return column_meta
 
     def get_column_metadata_dict(self):
+        """Gets the default structure for column metadata.
+        
+        Creates and returns an empty column metadata dictionary with all
+        fields initialized to None.
+        """
         return {
                     'column_name':None,
                     'ordinal_position': None,
@@ -165,11 +196,15 @@ class ObjectMetadata():
                 }
 
     def __replace_nan_to_none(self, value):
-
-        """ This help private function. It replaces NaN or nan value to None for metadat result"""
+        """Helper function that replaces NaN or nan values with None in metadata results."""
         return_val = value if str(value).lower() != 'nan' else None
         return return_val
 
     def get_data_object(self, object_name):
+        """Gets a DataObject instance for the specified object.
+        
+        Creates and returns a DataObject instance containing the object's
+        configuration and settings.
+        """
         return DataObject(self.pipeline, object_name)
 

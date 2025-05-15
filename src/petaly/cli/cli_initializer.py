@@ -59,7 +59,7 @@ class CliInitializer():
 		if pipeline_name is None:
 			pipeline_name = self.cli_menu.force_assign_value(key='pipeline_name', message="Specify unique pipeline name")
 
-		self.cli_menu.composed_pipeline_config[0]['pipeline']['pipeline_attributes'].update({'pipeline_name': pipeline_name})
+		self.cli_menu.composed_pipeline_config['pipeline']['pipeline_attributes'].update({'pipeline_name': pipeline_name})
 
 		pipeline_dpath = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name)
 		pipeline_fpath = os.path.join(pipeline_dpath, self.m_conf.pipeline_fname)
@@ -95,12 +95,27 @@ class CliInitializer():
 
 		self.cli_menu.compose_pipeline(pipeline_name)
 		self.f_handler.backup_file(pipeline_fpath)
-		self.f_handler.save_dict_to_yaml(pipeline_fpath, self.cli_menu.composed_pipeline_config, dump_all=True)
+		
+		# Prepare the configuration based on format
+		pipeline_format = self.m_conf.global_settings.get('pipeline_format', 'yaml')
+		if pipeline_format == 'yaml':
+			config_to_save = {
+				'pipeline': self.cli_menu.composed_pipeline_config['pipeline'],
+				'data_objects_spec': []
+			}
+		else:
+			# For JSON, combine the pipeline and data_objects_spec into a single document
+			config_to_save = {
+				'pipeline': self.cli_menu.composed_pipeline_config['pipeline'],
+				'data_objects_spec': []
+			}
+		
+		self.f_handler.save_dict_to_file(pipeline_fpath, config_to_save, file_format=pipeline_format)
 
 		self.console.print(f"\nCheck pipeline {pipeline_name} under: {pipeline_fpath}")
 		self.console.print(f"Check output directory under: {output_pipeline_dpath}")
 
-		data_objects_spec_mode = self.cli_menu.composed_pipeline_config[0]['pipeline']['data_attributes'].get('data_objects_spec_mode')
+		data_objects_spec_mode = self.cli_menu.composed_pipeline_config['pipeline']['data_attributes'].get('data_objects_spec_mode')
 
 		process_continue = True
 		if data_objects_spec_mode in ("ignore"):

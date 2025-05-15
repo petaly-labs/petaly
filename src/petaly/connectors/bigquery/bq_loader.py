@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 from petaly.utils.file_handler import FileHandler
 from petaly.core.db_loader import DBLoader
 from petaly.utils.utils import FormatDict
-from petaly.connectors.gcp.bigquery.bq_connector import BQConnector
-from petaly.connectors.gcp.gs.gs_connector import GSConnector
+from petaly.connectors.bigquery.bq_connector import BQConnector
+from petaly.connectors.gs.gs_connector import GSConnector
 
 
 class BQLoader(DBLoader):
@@ -31,8 +31,7 @@ class BQLoader(DBLoader):
         self.cloud_bucket_name = self.pipeline.target_attr.get('gcp_bucket_name')
         self.cloud_project_id = self.pipeline.target_attr.get('gcp_project_id')
         self.cloud_region = self.pipeline.target_attr.get('gcp_region')
-        #self.cloud_service_account = self.pipeline.target_attr.get('gcp_service_account')
-
+        
         self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
         self.load_from_bucket = False if self.cloud_bucket_name is None else True
 

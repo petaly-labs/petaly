@@ -1,38 +1,86 @@
-# ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)Petaly: Change Log
+# Petaly: Change Log ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_favicon_small.png)
 
+All notable changes to the Petaly project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [v0.1.0] - 2025-05-10 (BETA)
+
+### Added
+- Official Beta release of Petaly
+- Support for JSON format in pipeline configuration
+- Added unit tests for all connectors
+
+### Changed
+- For compatibility reasons, the YAML format has been updated:
+  The structure using two documents separated by three dashes (---) is now deprecated.
+  To ensure compatibility with the updated format, remove the three dashes from the YAML file or recreate the pipeline. petaly init -p pipeline-name
+  
+  Old Format:
+  ```yaml
+  pipeline:
+    pipeline_attributes:
+    source_attributes:
+    target_attributes:
+    data_attributes:
+  ---
+  data_objects_spec:
+  - object_spec:   
+  ```
+  New Format:
+  ```yaml
+  pipeline:
+    pipeline_attributes:
+    source_attributes:
+    target_attributes:
+    data_attributes:
+  data_objects_spec:
+  - object_spec:   
+  ```
+- Enhanced documentation and README
+- renamed templates_petaly.ini to petaly.ini-template
+
+### Configuration
+New configuration options in `petaly.ini`:
+```ini
+# Pipeline format selection (yaml or json, default: yaml)
+pipeline_format=yaml
+
+```
 
 ## [v0.0.10] - 2025-02-05
 
 ### Added
-
-New connectors were added Redshift Connectors:
-  - Redshift Cluster over IAM using iam credentials as well as over TCP using host and port
-  - Redshift Serverless over IAM using iam credentials as well as over TCP using host and port
-  - AWS S3-Bucket connections
+- New AWS Redshift Connectors:
+  - Redshift Cluster (IAM and TCP connections)
+  - Redshift Serverless (IAM and TCP connections)
+- AWS S3-Bucket connection support
 
 ### Changed
-The attribute in pipeline.yaml file: `destination_file_dir` was renamed to `destination_dir`
-
-The attribute in pipeline.yaml file: `destination_blob_dir` was renamed to `bucket_pipeline_prefix`
-[Optional] Define the path prefix to your objects in the bucket without the bucket name. Use a forward slash (/) to separate folders. 
-By default, the pattern {pipeline_name} will be added to the prefix and automatically replaced with the pipeline name during runtime. If not needed, you can remove it manually after the pipeline is created.
+- Renamed pipeline.yaml attributes:
+  - `destination_file_dir` → `destination_dir`
+  - `destination_blob_dir` → `bucket_pipeline_prefix`
+- Updated bucket pipeline prefix behavior:
+  - Default pattern: `{pipeline_name}`
+  - Optional custom prefix with forward slash (/) for folder separation
 
 ### Fixed
-bug fixed
+- Various bug fixes and improvements
 
 ## [v0.0.9] - 2024-12-24
 
 ### Added
-GCP connectors added:
-- BigQuery
-- Google Storage (GS-Bucket)
+- GCP Connectors:
+  - BigQuery
+  - Google Storage (GS-Bucket)
 
 ### Changed
-The attribute in pipeline.yaml file: data_attributes:object_default_settings:quote_char was renamed to columns_quote
-The possible option for this attribute is changed to: ["double","single","none"]
-```
+- Renamed pipeline.yaml attribute:
+  - `data_attributes:object_default_settings:quote_char` → `columns_quote`
+- Updated quote options to: `["double", "single", "none"]`
+```yaml
 pipeline:
-
   object_default_settings:
     header: true
     columns_delimiter: ','
@@ -40,33 +88,29 @@ pipeline:
 ```
 
 ### Fixed
-several bug fixes
-
+- Multiple bug fixes and stability improvements
 
 ## [v0.0.8] - 2024-12-12
 
 ### Added
-
-Improved logging behaviour and added new section in petaly.ini config file:
-
+- Enhanced logging system with new `petaly.ini` configuration:
+```ini
 [global_settings]
-The logging mode has two settings: INFO and DEBUG.
-By default, it is set to INFO, which generates minimal log output.
-If an issue occurs, switch to DEBUG for more detailed output that can assist in troubleshooting.
-
+# Logging modes: INFO (default) or DEBUG
 logging_mode=DEBUG
+```
 
 ### Changed
+- Restructured pipeline/data_objects_spec parameters:
+  - `recreate_target_object` → `recreate_destination_object`
+  - `files_source_dir` → `object_source_dir`
+  - `object_attributes` → `object_spec`
+  - Moved `object_name` under `object_spec`
+- Consolidated documentation in README.md
 
-renamed pipeline/data_objects_spec parameters:
-renamed `recreate_target_object` to `recreate_destination_object`
-renamed `files_source_dir` `object_source_dir`
-renamed `object_attributes` to `object_spec` 
-relocate the parameter `object_name` into nested part under `object_spec:` 
-
-previous structure of `data_objects_spec`:
-
-```
+### Structure Changes
+Previous:
+```yaml
 data_objects_spec:
 - object_name: stocks
   object_attributes:
@@ -74,122 +118,110 @@ data_objects_spec:
     destination_object_name:
     recreate_target_object: true
     cleanup_linebreak_in_fields: true
-    exclude_columns: 
-    -
+    exclude_columns: []
     files_source_dir:
-    file_names:
-    -
+    file_names: []
 ```
 
-new structure of `data_objects_spec`:
-
-```
+New:
+```yaml
 data_objects_spec:
 - object_spec:
     object_name: stocks
     destination_object_name:
     recreate_destination_object: true
     cleanup_linebreak_in_fields: true
-    exclude_columns: 
-    -
+    exclude_columns: []
     object_source_dir:
-    file_names:
-    -
+    file_names: []
 ```
 
-The entire documentation is now consolidated in the README.md file
-
-### Fixed
-
-## [v0.0.7.1] - 2024-12-05 - Major Release - Post 1
+## [v0.0.7.1] - 2024-12-05
 
 ### Added
-
-New documentation is added under [run_pipeline.md](.docs/tutorial/run_pipeline.md)
-Added gzip csv files as test data to the `.tests/data/csv/` folder: `stocks.csv.gz` and `options.csv.gz`
+- New documentation: [run_pipeline.md](.docs/tutorial/run_pipeline.md)
+- Test data: gzip CSV files in `.tests/data/csv/`
+  - `stocks.csv.gz`
+  - `options.csv.gz`
 
 ### Changed
+- Renamed `csv_parse_options` to `object_default_settings` for broader configuration scope
 
-The parameter `csv_parse_options` has been renamed to `object_default_settings` because the context of csv_parse_options was very limited. 
-The new object_default_settings allows for the inclusion of a broader range of options.
-
-## [v0.0.7] - 2024-12-04 - Major Release
-
-This is a major release that affects all files and changes the logic flow of pipelines, as well as renaming several parameters and changing their behaviour.
-For pipelines created with the previous version, it is recommended to rebuild all pipelines with the wizard and set all parameters again.
+## [v0.0.7] - 2024-12-04
 
 ### Added
+- New tutorial files:
+  - petaly_init_workspace.md
+  - petaly_install.md
+- CSV parsing configuration:
+```yaml
+csv_parse_options:
+  header: true
+  columns_delimiter: ','
+  quote_char: double-quote
+```
 
-- New tutorial files: petaly_init_workspace.md, petaly_install.md
-- Improved petaly_install.md
-- Added main parsing definition for csv files for: header, delimiter, quote
-  ```
-  csv_parse_options:
-    header: true
-    columns_delimiter: ','
-    quote_char: double-quote```
-- 
 ### Changed
-The following pipeline parameters have been modified:
-- `endpoint_type` to `connector_type`
-- `use_data_objects_spec` to `data_objects_spec_mode`; The behaviour has also changed. New modes have been added: ***only***, ***ignore***, ***prefer***
-- Removed all unused parameters
-- Simplified the entire pipeline to make it easier to use
-      
+- Pipeline parameter updates:
+  - `endpoint_type` → `connector_type`
+  - `use_data_objects_spec` → `data_objects_spec_mode`
+    - New modes: `only`, `ignore`, `prefer`
+- Simplified pipeline structure
+- Removed unused parameters
+
 ### Fixed
-- All md links have been changed to absolute paths. This should work on both github.com and pypi.com. 
-- Fixed bugs
+- Updated MD links to absolute paths
+- Various bug fixes
 
 ## [v0.0.6] - 2024-11-22
-minor change
+- Minor improvements and bug fixes
 
 ## [v0.0.5] - 2024-11-18
 
-- renamed petaly.ini parameters:
-  - **pipeline_base_dir_path** renamed to **pipeline_dir_path**
-  - **logs_base_dir_path** renamed to **logs_dir_path**
-  - **output_base_dir_path** renamed to **output_dir_path**
-<br><br>
-- renamed pipeline.yaml config parameter:
-  - **load_data_objects_spec_only** renamed to **use_data_objects_spec**
-<br><br>
-- following parameters were moved into the block **data_object_main_config:** in pipeline:  
-```
+### Changed
+- Renamed `petaly.ini` parameters:
+  - `pipeline_base_dir_path` → `pipeline_dir_path`
+  - `logs_base_dir_path` → `logs_dir_path`
+  - `output_base_dir_path` → `output_dir_path`
+- Renamed pipeline.yaml parameter:
+  - `load_data_objects_spec_only` → `use_data_objects_spec`
+- Moved parameters to `data_object_main_config` block:
+```yaml
 pipeline:
-...
-    data_object_main_config:   
-      # Only full load is supported yet
-      preferred_load_type: full
-      # Only csv format is supported yet  
-      data_transition_format: csv
-      # provide fine definition 
-      use_data_objects_spec: true
----      
+  data_object_main_config:   
+    preferred_load_type: full
+    data_transition_format: csv
+    use_data_objects_spec: true
 ```
+
 ### Fixed
+- Improved MD link formatting
 
-- MD links were improved
+## [v0.0.4-alpha] - 2024-10-18
 
-## [v0.0.4-alpha] - 2024-10-18 
+### Changed
+- Set default logging level to INFO
+
+### Fixed
+- Fixed `recreate_target_object` parameter control in pipeline definition
+
+## [v0.0.3-alpha] - 2024-09-26
+
 ### Added
-- None
-### Changed
-- Changed logging_config to INFO level for log files
-### Fixed
-Fixed the recreate_target_object parameter, now it can be controlled from the pipeline definition.
+- Initial CHANGELOG.md
 
-## [v0.0.3-alpha] - 2024-09-26 
-### Added
-- CHANGELOG file was added to repo   
 ### Changed
-- changed PETALY_CONFIG_PATH to PETALY_CONFIG_DIR
-  - switched environment variable to allow use of multiple .ini files configured in directory path
-- cli message was improved 
-### Fixed
-- fixed issue with templates_petaly.ini file
+- Renamed `PETALY_CONFIG_PATH` to `PETALY_CONFIG_DIR`
+  - Supports multiple .ini files in directory
+- Enhanced CLI messaging
 
-## [v0.0.2-alpha] - 2024-09-26 
+### Fixed
+- Fixed templates_petaly.ini file issues
+
+## [v0.0.2-alpha] - 2024-09-26
+
 ### Changed
-- moved csv file analysis from source folder into in workspace folder
-## [v0.0.1-alpha] - 2024-09-25 
-- Initial version
+- Moved CSV file analysis to workspace folder
+
+## [v0.0.1-alpha] - 2024-09-25
+- Initial release

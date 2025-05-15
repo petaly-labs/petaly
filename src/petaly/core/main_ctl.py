@@ -19,6 +19,21 @@ from petaly.sysconfig.logger import setup_logging
 
 
 class MainCtl():
+    """Main controller class for pipeline execution.
+    
+    This class orchestrates the execution of data pipelines, managing both source
+    extraction and target loading operations.
+    
+    Key responsibilities:
+    - Initializes and manages pipeline configuration
+    - Coordinates source data extraction
+    - Coordinates target data loading
+    - Handles pipeline execution flow
+    
+    Attributes:
+        main_config: Main configuration instance containing pipeline settings
+    """
+
     def __init__(self, main_config):
         self.m_conf = main_config
         logging_mode = self.m_conf.global_settings.get('logging_mode')
@@ -33,7 +48,7 @@ class MainCtl():
             logger.info(f"[Start] Pipeline {pipeline_name}")
 
             if object_name_list is not None:
-                pipeline.data_objects = object_name_list.split(',')
+                pipeline.data_objects_from_cli = object_name_list.split(',')
 
             if run_endpoint is None or run_endpoint == 'source':
                 self.run_source(pipeline)
@@ -48,7 +63,14 @@ class MainCtl():
     ####################### run source ####################################
 
     def run_source(self, pipe):
-        """ Call this function to run pipeline source part
+        """Runs the source part of a pipeline.
+        
+        This method:
+        1. Loads source configuration
+        2. Gets the appropriate extractor class
+        3. Initializes and runs the extractor
+        
+        If the extractor cannot be initialized, it raises a SystemExit error.
         """
         logger.debug("Load source config")
 
@@ -64,7 +86,14 @@ class MainCtl():
     ####################### run targets ####################################
 
     def run_target(self, pipe):
-        """ Call this function to run pipeline target part
+        """Runs the target part of a pipeline.
+        
+        This method:
+        1. Loads target configuration
+        2. Gets the appropriate loader class
+        3. Initializes and runs the loader
+        
+        If the loader cannot be initialized, it raises a SystemExit error.
         """
         logger.debug("Load target config")
         class_obj = self.m_conf.get_loader_class(pipe.target_connector_id)

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 import os
 import re
 import pathlib
+import glob
 import sys
 
 import yaml
@@ -48,12 +49,27 @@ class FileHandler:
         self.file_format = "json" if file_format == "json" else "yaml"
         self.file_extension = "." + self.file_format
 
-    def load_file_as_dict(self, file_fpath, file_format):
-        dict_data = {}
+    def load_file_as_dict(self, file_fpath, file_format=None):
+        """Load a file as a dictionary, supporting both YAML and JSON formats.
+        
+        Args:
+            file_fpath (str): Path to the file to load
+            file_format (str, optional): Format of the file ('yaml' or 'json'). 
+                                       If None, will use the instance's file_format.
+        
+        Returns:
+            dict: The loaded data as a dictionary
+        """
+        if file_format is None:
+            file_format = self.file_format
+            
         if file_format == 'yaml':
             dict_data = self.load_yaml(file_fpath)
         elif file_format == 'json':
             dict_data = self.load_json(file_fpath)
+        else:
+            raise ValueError(f"Unsupported file format: {file_format}. Must be 'yaml' or 'json'.")
+            
         return dict_data
 
     def load_json(self, file_fpath) -> {}:
@@ -106,13 +122,24 @@ class FileHandler:
         path_in_arr = os.path.splitext(file_fpath)
         return path_in_arr[1] == file_extension
 
-    def save_dict_to_file(self, file_fpath, dict_data, file_format='yaml'):
+    def save_dict_to_file(self, file_fpath, dict_data, file_format=None):
+        """Save a dictionary to a file in the specified format.
+        
+        Args:
+            file_fpath (str): Path where to save the file
+            dict_data (dict): Dictionary to save
+            file_format (str, optional): Format to save in ('yaml' or 'json').
+                                       If None, will use the instance's file_format.
         """
-        """
+        if file_format is None:
+            file_format = self.file_format
+            
         if file_format == 'yaml':
             self.save_dict_to_yaml(file_fpath, dict_data)
         elif file_format == 'json':
             self.save_dict_to_json(file_fpath, dict_data)
+        else:
+            raise ValueError(f"Unsupported file format: {file_format}. Must be 'yaml' or 'json'.")
 
     def save_dict_to_yaml(self, file_fpath, dict_data, dump_all=False):
         """
@@ -228,9 +255,17 @@ class FileHandler:
 
         return result_arr
 
+    def get_all_files_from_dir(self, dir_path):
+        """ iterating over all files with determine extension
+        Example: if dir_path is something like this pipeline_name/**/data/*.*,
+                it will return all files with all extensions from pipeline_name/all_table_names/data/*.*
+        """
+
+        result_arr = glob.glob(dir_path, recursive=True)
+        return result_arr
+
     def get_all_dir_names(self, path_to_dir):
-        """ """
-        # iterating over all files with determine extension
+        """  iterating over all files with determine extension """
         result_arr = []
 
         for dir in os.listdir(path_to_dir):
@@ -325,18 +360,6 @@ class FileHandler:
 
         if files_are_not_exist:
             logger.debug('Directory has no files')
-
-    def deprecated_copy_file_without_comments(self, path_to_file, path_to_target_file, comment_sign='#'):
-        """ This function copy templates file without comments to the specified pipeline
-        """
-        target_file = open(path_to_target_file, 'w')
-        with open(path_to_file, "r") as file:
-            for line in file:
-                if line.find(comment_sign) < 0:
-                    target_file.write(line)
-
-
-        target_file.close()
 
     def load_combined_json(self, first_json_fpath, second_json_fpath) -> {}:
         """ combine two json files and return a dict

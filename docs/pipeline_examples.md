@@ -1,3 +1,262 @@
+# Pipeline Configuration Guide
+
+This guide provides detailed information about configuring Petaly pipelines, including examples for different data sources and targets.
+
+## Pipeline Structure
+
+A Petaly pipeline configuration consists of two main documents:
+
+```yaml
+pipeline:
+  pipeline_attributes:
+    ...
+  source_attributes:
+    ...
+  target_attributes:
+    ...
+  data_attributes:
+    ...
+data_objects_spec: []
+```
+
+## Configuration Blocks
+
+### Pipeline Attributes
+```yaml
+pipeline_attributes:
+  # Unique pipeline name
+  pipeline_name: my_pipeline
+  
+  # Enable/disable pipeline execution
+  is_enabled: true
+```
+
+### Source Attributes
+Source configuration varies by connector type. Here are examples for common sources:
+
+#### PostgreSQL Source
+```yaml
+source_attributes:
+  connector_type: postgres
+  database_user: root
+  database_password: dbpassword
+  database_host: localhost
+  database_port: 5432
+  database_name: source_db
+  database_schema: public
+```
+
+#### MySQL Source
+```yaml
+source_attributes:
+  connector_type: mysql
+  database_user: root
+  database_password: dbpassword
+  database_host: localhost
+  database_port: 3306
+  database_name: source_db
+```
+
+#### CSV Source
+```yaml
+source_attributes:
+  connector_type: csv
+  # CSV files will be specified in data_objects_spec
+```
+
+### Target Attributes
+Target configuration also varies by connector type:
+
+#### PostgreSQL Target
+```yaml
+target_attributes:
+  connector_type: postgres
+  database_user: postgres
+  database_password: dbpassword
+  database_host: localhost
+  database_port: 5432
+  database_name: target_db
+  database_schema: public
+```
+
+#### CSV Target
+```yaml
+target_attributes:
+  connector_type: csv
+  destination_dir: /path/to/output/directory
+```
+
+### Data Attributes
+```yaml
+data_attributes:
+  # Mode for handling data objects
+  data_objects_spec_mode: only  # Options: only, prefer, ignore
+  
+  # Default settings for data processing
+  object_default_settings:
+    header: true
+    columns_delimiter: ","
+    columns_quote: double  # Options: double, single, none
+```
+
+## Data Objects Specification
+
+The `data_objects_spec` section defines how to handle specific data objects (tables/files):
+
+```yaml
+data_objects_spec:
+- object_spec:
+    object_name: source_table
+    destination_object_name: target_table  # Optional
+    recreate_destination_object: true      # Optional
+    cleanup_linebreak_in_fields: false     # Optional
+    exclude_columns:                       # Optional
+      - column1
+      - column2
+    object_source_dir: /path/to/files      # For CSV sources
+    file_names:                            # For CSV sources
+      - file1.csv
+      - file2.csv
+```
+
+## Cloud Platform Configuration
+
+### GCP Configuration
+```yaml
+target_attributes:
+  platform_type: gcp
+  connector_type: bigquery  # or gcs
+  gcp_project_id: your-project-id
+  gcp_region: your-region
+  gcp_bucket_name: your-bucket-name
+  bucket_pipeline_prefix: petaly/{pipeline_name}
+```
+
+### AWS Configuration
+```yaml
+target_attributes:
+  platform_type: aws
+  connector_type: redshift  # or s3
+  aws_bucket_name: bucket-name
+  aws_iam_role: arn:aws:iam::xxxxxxxx:role/YourRedshiftRole
+  aws_profile_name: your-aws-profile
+  aws_region: eu-north-1
+```
+
+## Complete Examples
+
+### CSV to PostgreSQL
+```yaml
+pipeline:
+  pipeline_attributes:
+    pipeline_name: csv_to_postgres
+    is_enabled: true
+  source_attributes:
+    connector_type: csv
+  target_attributes:
+    connector_type: postgres
+    database_user: root
+    database_password: db-password
+    database_host: localhost
+    database_port: 5432
+    database_name: petalydb
+    database_schema: petaly_tutorial
+  data_attributes:
+    data_objects_spec_mode: only
+    object_default_settings:
+      header: true
+      columns_delimiter: ","
+      columns_quote: none
+
+data_objects_spec:
+- object_spec:
+    object_name: stocks
+    destination_object_name: stocks_new
+    recreate_destination_object: true
+    object_source_dir: /path/to/csv/files
+    file_names:
+      - stocks.csv
+- object_spec:
+    object_name: options
+    destination_object_name: options_new
+    recreate_destination_object: true
+    object_source_dir: /path/to/csv/files
+    file_names:
+      - options.csv
+```
+
+### MySQL to PostgreSQL
+```yaml
+pipeline:
+  pipeline_attributes:
+    pipeline_name: mysql_to_postgres
+    is_enabled: true
+  source_attributes:
+    connector_type: mysql
+    database_user: root
+    database_password: dbpassword
+    database_host: localhost
+    database_port: 3306
+    database_name: source_db
+  target_attributes:
+    connector_type: postgres
+    database_user: postgres
+    database_password: dbpassword
+    database_host: localhost
+    database_port: 5432
+    database_name: target_db
+    database_schema: public
+  data_attributes:
+    data_objects_spec_mode: only
+
+data_objects_spec:
+- object_spec:
+    object_name: customers
+    destination_object_name: customers_new
+    recreate_destination_object: true
+    exclude_columns:
+      - created_at
+      - updated_at
+```
+
+## Best Practices
+
+1. **Security**:
+   - Store sensitive credentials in environment variables
+   - Use IAM roles for cloud services when possible
+   - Avoid hardcoding passwords in configuration files
+
+2. **Performance**:
+   - Use appropriate batch sizes for large datasets
+   - Consider using `recreate_destination_object` for fresh loads
+   - Use `exclude_columns` to minimize data transfer
+
+3. **Maintenance**:
+   - Use meaningful pipeline names
+   - Document pipeline purposes in comments
+   - Keep configurations in version control
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **Connection Issues**:
+   - Verify network connectivity
+   - Check credentials and permissions
+   - Ensure ports are open
+
+2. **Data Type Mismatches**:
+   - Review source and target schemas
+   - Use appropriate data type mappings
+   - Handle NULL values appropriately
+
+3. **Performance Issues**:
+   - Check batch sizes
+   - Monitor system resources
+   - Optimize query performance
+
+For more detailed troubleshooting, see our [Troubleshooting Guide](troubleshooting.md).
+
 ## 7. More Pipeline Examples
 
 #### MySQL to Postgres
@@ -30,7 +289,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: double
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -66,7 +325,7 @@ pipeline:
       header: true
       columns_delimiter: ","
       columns_quote: none
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -120,7 +379,7 @@ pipeline:
       header: true
       columns_delimiter: ","
       columns_quote: single
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -166,7 +425,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: single
----
+
 data_objects_spec:
 - object_spec:
     object_name: osm_admin
@@ -201,7 +460,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: none
----
+
 data_objects_spec:
 - object_spec:
     object_name: osm_admin
@@ -238,7 +497,7 @@ pipeline:
       header: true
       columns_delimiter: ','
       columns_quote: none
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -279,14 +538,13 @@ pipeline:
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
     aws_secret_access_key:
-    aws_region:
   data_attributes:
     data_objects_spec_mode: only
     object_default_settings:
       header: true
       columns_delimiter: ','
       columns_quote: double
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -401,7 +659,7 @@ pipeline:
       header: true
       columns_delimiter: '\t'
       columns_quote: none
----
+
 data_objects_spec:
 - object_spec:
     object_name: stocks
@@ -412,3 +670,11 @@ data_objects_spec:
     -
 
 ```
+
+## Related Topics
+
+- [Data Objects Specification](data_objects_spec.md)
+- [Configuration Guide](petaly_ini.md)
+- [Error Messages](error_messages.md)
+- [Source and Target Attributes](source_target_attributes.md)
+- [Installation Guide](installation.md)

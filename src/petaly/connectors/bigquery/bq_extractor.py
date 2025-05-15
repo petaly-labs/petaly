@@ -15,8 +15,8 @@
 import logging
 logger = logging.getLogger(__name__)
 
-from petaly.connectors.gcp.bigquery.bq_connector import BQConnector
-from petaly.connectors.gcp.gs.gs_connector import GSConnector
+from petaly.connectors.bigquery.bq_connector import BQConnector
+from petaly.connectors.gs.gs_connector import GSConnector
 from petaly.core.db_extractor import DBExtractor
 from petaly.utils.utils import FormatDict
 
@@ -30,8 +30,7 @@ class BQExtractor(DBExtractor):
         self.cloud_bucket_name = self.pipeline.source_attr.get('gcp_bucket_name')
         self.cloud_project_id = self.pipeline.source_attr.get('gcp_project_id')
         self.cloud_region = self.pipeline.source_attr.get('gcp_region')
-        #self.cloud_service_account = self.pipeline.source_attr.get('gcp_service_account')
-
+        
     def extract_data(self):
         super().extract_data()
 

@@ -49,24 +49,28 @@ class GSConnector():
             blob = bucket.blob(blob_file_name)
             new_target_file = bucket.rename_blob(blob, new_blob_name)
             logger.debug(f"Blob {blob.name} has been renamed to {new_target_file.name}")
-
+            return new_target_file.name
+        except exceptions.NotFound as err:
+            logger.error(err)
+            raise
         except exceptions.GoogleCloudError as err:
             logger.error(err)
+            raise
 
     def delete_object_in_bucket(self, bucket_name, blob_prefix):
-        """
+        """Delete all objects under a prefix in a bucket
         """
         logger.debug(f"Delete folder in Google Storage: {bucket_name}/{blob_prefix}")
         try:
             st_client = storage.Client()
-            bucket = st_client.get_bucket(bucket_name)
+            bucket = st_client.bucket(bucket_name)
             """Delete object under folder"""
             blobs_list = list(bucket.list_blobs(prefix=blob_prefix))
             bucket.delete_blobs(blobs_list)
             logger.debug(f"Folder deleted: {bucket_name}/{blob_prefix}")
         except exceptions.GoogleCloudError as err:
             logger.error(err)
-            pass
+            raise
 
     def delete_gs_blob(self, bucket_name, blob_name):
         """ Function drop a blob in specific bucket
@@ -77,27 +81,32 @@ class GSConnector():
             bucket = st_client.bucket(bucket_name)
             bucket.delete_blob(blob_name)
             logger.debug(f"Blob {blob_name} in {bucket_name} has been deleted")
+        except exceptions.NotFound as err:
+            logger.error(err)
+            raise
         except exceptions.GoogleCloudError as err:
             logger.error(err)
-            pass
+            raise
 
     def download_files_from_bucket(self, bucket_name, blob_prefix, file_names, destination_dpath):
-        """
+        """Download files from a bucket to a local directory
         """
         logger.debug(f"Download files from bucket-name: {bucket_name}; blob-prefix: {blob_prefix}; destination-directory: {destination_dpath}")
         blob_prefix += self.bucket_path_delimiter
 
         try:
             storage_client = storage.Client()
-            bucket = storage_client.get_bucket(bucket_name)
+            bucket = storage_client.bucket(bucket_name)
             object_list = []
             if file_names is None:
                 object_list = self.get_bucket_file_list(bucket_name, blob_prefix)
-
             else:
                 for file_name in file_names:
                     file_name = blob_prefix + file_name
                     object_list.append(file_name)
+
+            if not os.path.exists(destination_dpath):
+                os.makedirs(destination_dpath, exist_ok=True)
 
             downloaded_file_list = []
             for blob_fpath in object_list:
@@ -105,7 +114,6 @@ class GSConnector():
                 object_fname = blob_fpath.split(self.bucket_path_delimiter)[-1]
 
                 target_fpath = os.path.join(destination_dpath, object_fname)
-
 
                 blob.download_to_filename(filename=target_fpath)
                 is_gzipped, target_fpath = self.f_handler.check_gzip_modify_path(target_fpath)
@@ -117,13 +125,22 @@ class GSConnector():
 
             return downloaded_file_list
 
+        except exceptions.NotFound as err:
+            logger.error(err)
+            raise
         except exceptions.GoogleCloudError as err:
             logger.error(err)
+            raise
+        except OSError as err:
+            logger.error(err)
+            raise
 
     def get_bucket_file_list(self, bucket_name, blob_prefix):
+        """Get list of files in a bucket under a prefix
+        """
         try:
             storage_client = storage.Client()
-            bucket = storage_client.get_bucket(bucket_name)
+            bucket = storage_client.bucket(bucket_name)
 
             object_list = []
             blobs = bucket.list_blobs(prefix=blob_prefix, delimiter=self.bucket_path_delimiter)
@@ -132,9 +149,9 @@ class GSConnector():
 
             return object_list
 
-        except (Exception) as error:
-            logger.debug(bucket_name, blob_prefix)
-            logger.error(error)
+        except exceptions.GoogleCloudError as err:
+            logger.error(err)
+            raise
 
     def upload_blob(self, full_fpath, bucket_name, destination_blob_name):
         """Function uploads a file to the GS bucket.
@@ -142,28 +159,34 @@ class GSConnector():
         logger.debug(
             f"Load data from the local path {full_fpath} to the backet: {bucket_name} with destination path {destination_blob_name}; ")
 
+        if not os.path.exists(full_fpath):
+            raise FileNotFoundError(f"File not found: {full_fpath}")
+
         try:
             st_client = storage.Client()
             bucket = st_client.bucket(bucket_name)
             blob = bucket.blob(destination_blob_name)
             blob.upload_from_filename(full_fpath)
+            return self.bucket_prefix + bucket_name + self.bucket_path_delimiter + destination_blob_name
         except exceptions.GoogleCloudError as err:
             logger.error(err)
-            pass
+            raise
 
     def upload_files_to_bucket(self, bucket_name, blob_prefix, local_file_list):
         """ upload file to GS bucket
         """
+        for file_local_fpath in local_file_list:
+            if not os.path.exists(file_local_fpath):
+                raise FileNotFoundError(f"File not found: {file_local_fpath}")
+
         bucket_file_list = []
         for file_local_fpath in local_file_list:
             file_name = os.path.basename(file_local_fpath)
 
-            blob_path = blob_prefix  + self.bucket_path_delimiter + os.path.basename(file_name)
-            self.upload_blob(file_local_fpath, bucket_name, blob_path)
+            blob_path = blob_prefix + self.bucket_path_delimiter + os.path.basename(file_name)
+            uploaded_path = self.upload_blob(file_local_fpath, bucket_name, blob_path)
+            bucket_file_list.append(uploaded_path)
 
-            full_blob_path = self.bucket_prefix + bucket_name + self.bucket_path_delimiter + blob_path
-            bucket_file_list.append(full_blob_path)
-
-            logger.debug(f"Upload file {file_local_fpath} to destination {full_blob_path}")
+            logger.debug(f"Upload file {file_local_fpath} to destination {uploaded_path}")
 
         return bucket_file_list

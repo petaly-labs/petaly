@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Official Beta release of Petaly
 - Support for JSON format in pipeline configuration
+- Added unit tests for all connectors
 
 ### Changed
 - For compatibility reasons, the YAML format has been updated:

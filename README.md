@@ -1,3 +1,6 @@
+
+**BRANCH: petaly-ai-agent - THIS BRANCH IS EXPERIMENTAL!**
+
 ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_logo_transparent.png)
 
 ![](https://raw.githubusercontent.com/petaly-labs/petaly/main/docs/tutorial/recording/petaly_run_pipe.gif)
@@ -5,6 +8,8 @@
 ## Overview
 
 Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by and for data professionals! Our mission is to simplify data movement across different platforms with a tool that truly understands the needs of the data community.
+
+
 
 ### Key Features
 
@@ -16,6 +21,14 @@ Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by a
   - Google Cloud Storage (GCS Bucket)
   - S3 Bucket
   - Local CSV files
+
+- **Features**:
+  - Source to target schema evaluation and mapping
+  - CSV file structure analysis and recognition
+  - Target table structure generation
+  - Configurable database type mapping
+  - Configurable database type mapping
+  - Full data unload/load in CSV format
 
 - **User-Friendly**: No programming knowledge required
 - **YAML/JSON Configuration**: Easy pipeline setup
@@ -41,54 +54,7 @@ Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by a
 
 ## Installation
 
-### Basic Installation
-```bash
-# Create and activate virtual environment
-mkdir petaly
-cd petaly
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install Petaly
-python3 -m pip install petaly
-```
-
-### Cloud Provider Support
-
-#### GCP Support
-```bash
-# Install with GCP support
-python3 -m pip install petaly[gcp]
-```
-
-**Prerequisites**:
-1. Install [Google Cloud SDK](https://cloud.google.com/sdk/docs/install-sdk)
-2. Configure access to your Google Project
-3. Set up service account authentication
-
-#### AWS Support
-```bash
-# Install with AWS support
-python3 -m pip install petaly[aws]
-```
-
-**Prerequisites**:
-1. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html)
-2. Configure AWS credentials
-
-### AI Agent Installation
-```bash
-# Install with AI support
-python3 -m pip install petaly[ai]
-```
-
-### Full Installation
-```bash
-# Install all features including AWS, GCP and AI
-python3 -m pip install petaly[all]
-```
-
-### From Source
+### To use AI Agent, source installation is required
 ```bash
 # Clone the repository
 git clone https://github.com/petaly-labs/petaly.git
@@ -246,6 +212,7 @@ pipeline:
       header: true
       columns_delimiter: ","
       columns_quote: none
+data_objects_spec: []
 ```
 
 ## Documentation

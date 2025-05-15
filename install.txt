@@ -22,7 +22,8 @@ pip install --upgrade "redshift_connector[full]"
 pip install requests
 pip install prompt_toolkit
 
+
+# pip freeze > requirements.txt
+
 # PytTest
 # pip install pytest pytest-asyncio pytest-cov
-
-pip3 freeze > requirements.txt

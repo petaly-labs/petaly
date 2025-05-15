@@ -48,12 +48,6 @@ python3 -m pip install petaly[aws]
 1. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html)
 2. Configure AWS credentials
 
-#### AI Agent Installation [EXPERIMENTAL]
-```bash
-# Install with AI support
-python3 -m pip install petaly[ai]
-```
-
 #### Full Installation
 ```bash
 # Install all features including AWS, GCP and AI
@@ -63,6 +57,7 @@ python3 -m pip install petaly[all]
 ### 2. From Source (Recommended for Developers)
 
 #### Method 1: Editable Installation (Recommended)
+##### To use AI Agent, source installation is required [EXPERIMENTAL]
 ```bash
 # Clone the repository
 git clone https://github.com/petaly-labs/petaly.git

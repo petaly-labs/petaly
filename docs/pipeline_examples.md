@@ -4,7 +4,7 @@ This guide provides detailed information about configuring Petaly pipelines, inc
 
 ## Pipeline Structure
 
-A Petaly pipeline configuration consists of two main documents:
+A Petaly pipeline configuration consists of two main sections: pipeline and data_objects_spec. View a skeleton example below:
 
 ```yaml
 pipeline:

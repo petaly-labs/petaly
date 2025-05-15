@@ -8,7 +8,7 @@ The `data_objects_spec` is a separate document in your pipeline YAML file that d
 
 ## Connection Between Sections
 
-The pipeline configuration uses three connected sections to handle data objects:
+The pipeline configuration uses data_objects_spec sections to handle data objects:
 
 1. **Pipeline Document**:
    ```yaml
@@ -23,7 +23,6 @@ The pipeline configuration uses three connected sections to handle data objects:
 
 2. **Data Objects Specification Document**:
    ```yaml
-   ---
    # Second document: Data objects specification
    data_objects_spec:
    - object_spec:
@@ -42,7 +41,6 @@ The `data_objects_spec_mode` in `data_attributes` controls how the `data_objects
 ## Basic Structure
 
 ```yaml
----
 # Second document: Data objects specification
 data_objects_spec:
 - object_spec:
@@ -84,7 +82,6 @@ pipeline:
       columns_delimiter: ","
       columns_quote: double
 
----
 # Second document: Data objects specification
 data_objects_spec:
 - object_spec:
@@ -103,7 +100,6 @@ pipeline:
   data_attributes:
     data_objects_spec_mode: prefer  # Will load all tables but apply specific settings to listed ones
 
----
 # Second document: Data objects specification
 data_objects_spec:
 - object_spec:
@@ -148,7 +144,6 @@ data_objects_spec:
 
 1. **Object Not Found**
    ```yaml
-   ---
    # Second document: Data objects specification
    data_objects_spec:
    - object_spec:
@@ -158,7 +153,6 @@ data_objects_spec:
 
 2. **Invalid Configuration**
    ```yaml
-   ---
    # Second document: Data objects specification
    data_objects_spec:
    - object_spec:
@@ -169,7 +163,6 @@ data_objects_spec:
 
 3. **CSV File Issues**
    ```yaml
-   ---
    # Second document: Data objects specification
    data_objects_spec:
    - object_spec:

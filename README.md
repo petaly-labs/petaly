@@ -17,9 +17,25 @@ Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by a
   - S3 Bucket
   - Local CSV files
 
+- **Features**:
+  - Source to target schema evaluation and mapping
+  - CSV file load with column-type recognition
+  - Target table structure generation
+  - Configurable type mapping between different databases
+  - Full table unload/load in CSV format
+
 - **User-Friendly**: No programming knowledge required
 - **YAML/JSON Configuration**: Easy pipeline setup
 - **Cloud Ready**: Full support for AWS and GCP
+
+
+**[EXPERIMENTAL]**:
+
+Petaly went agentic!<br>
+The AI Agent can create and run pipeline using natural language prompts.<br>
+If you're interested in exploring, check out the experimental branch: [petaly-ai-agent](https://github.com/petaly-labs/petaly/tree/petaly-ai-agent)<br>
+
+Feedback is welcome! 
 
 ## Quick Start
 

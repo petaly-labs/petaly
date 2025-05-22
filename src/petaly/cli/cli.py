@@ -273,8 +273,9 @@ Available commands:
 
     def _validate_args(self, args: argparse.Namespace) -> None:
         """Validate command line arguments."""
-        if args.command == 'init' and not args.workspace and not args.pipeline_name:
-            self.parser.error("init requires either --workspace or --pipeline_name")
+
+        #if args.command == 'init' and not args.workspace and not args.pipeline_name:
+        #    self.parser.error("init requires either --workspace or --pipeline_name")
         
         if args.object_name and not args.pipeline_name:
             self.parser.error("--object_name requires --pipeline_name")

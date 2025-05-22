@@ -49,7 +49,6 @@ class CliAgent:
         4. Set up command history
         """
         self.m_conf = MainConfig() if main_config is None else main_config
-        self.m_conf.set_workspace_dpaths()
         self.console = Console()
         
         # Set up argument parser
@@ -88,11 +87,17 @@ Natural Language Commands:
         # Add subparsers for different actions
         subparsers = self.parser.add_subparsers(dest='action', help='Action to perform')
         
+        # Common arguments
+        
         # interactive command
         interactive_parser = subparsers.add_parser(
             'interactive',
             help='Run in interactive mode for natural language conversations'
         )
+        interactive_parser.add_argument(
+            '-c', '--config_file_path',
+            help=self.m_conf.missing_main_config_file_message()
+        ) 
         interactive_parser.set_defaults(func=self.process)
         
         # command command
@@ -105,13 +110,13 @@ Natural Language Commands:
             required=True,
             help='Natural language instruction to process'
         )
-        command_parser.set_defaults(func=self.process)
-        
-        # Common arguments
-        self.parser.add_argument(
+        command_parser.add_argument(
             '-c', '--config_file_path',
             help=self.m_conf.missing_main_config_file_message()
-        )
+        ) 
+        command_parser.set_defaults(func=self.process)
+        
+        
         
         # Set default function to show help if no command is provided
         self.parser.set_defaults(func=lambda args: self.parser.print_help())
@@ -134,6 +139,7 @@ Natural Language Commands:
         self.m_conf.set_main_config_fpath(args.config_file_path)
         self.m_conf.set_workspace_dpaths()
         self.m_conf.set_global_settings()
+        self.m_conf.set_ai_settings()
         
         try:
             # Initialize the agent
@@ -144,6 +150,7 @@ Natural Language Commands:
             # Determine mode
             if args.action == 'interactive':
                 self.run_interactive_mode(agent)
+
             elif args.action == 'command':
                 if not args.instruction:
                     self.console.print("[red]Error: the parameter --instruction is required in mode: agent command[/red]")

@@ -261,7 +261,6 @@ Available commands:
             # Check if agent mode is requested before parsing arguments
             if len(sys.argv) > 1 and sys.argv[1] == 'agent':
                 # Import Agent here to avoid circular imports
-                self.main_config.set_ai_settings()
                 from petaly.ai.agent.cli_agent import CliAgent
                 # Remove 'agent' from sys.argv so it doesn't interfere with Agent's argument parsing
                 sys.argv.pop(1)
@@ -285,8 +284,8 @@ Available commands:
 
     def _validate_args(self, args: argparse.Namespace) -> None:
         """Validate command line arguments."""
-        if args.command == 'init' and not args.workspace and not args.pipeline_name:
-            self.parser.error("init requires either --workspace or --pipeline_name")
+        #if args.command == 'init' and not args.workspace and not args.pipeline_name:
+        #    self.parser.error("init requires either --workspace or --pipeline_name")
         
         if args.object_name and not args.pipeline_name:
             self.parser.error("--object_name requires --pipeline_name")

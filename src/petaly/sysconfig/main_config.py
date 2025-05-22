@@ -102,52 +102,56 @@ class MainConfig:
         """
         def create_config_file(path):
             """Helper function to create config file if it doesn't exist"""
-            # If file exists, just return True
+            if not self.f_handler.check_file_extension(path, '.ini'):
+                sys.exit(f"The file {path} is not a valid config file. It must have .ini extension.")
+
             if self.f_handler.is_file(path):
-                return True
-                
-            # Only create new file if init_main_config is True
+                return path
+
+            # Only create new directory if init_main_config is True and directory doesn't exist
             if init_main_config:
                 # Create directory if it doesn't exist
                 if not self.f_handler.is_dir(os.path.dirname(path)):
                     self.f_handler.make_dirs(os.path.dirname(path))
                     self.console.print(f"Created directory: {os.path.dirname(path)}")
                 
-                # Copy template to target location
+                # Copy petaly.ini-template to target location
                 self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(path), os.path.basename(path))
                 self.console.print(f"The main config file was created: {path}\n"
                       f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
-                return True
+                return path
             
-            return False
+            return path 
 
         # 1. Use provided config_file_path if it exists
+        
         if config_file_path is not None:
+            
             if os.path.isabs(config_file_path):
-                if create_config_file(config_file_path):
-                    self.main_config_fpath = config_file_path
-                    return
+                self.main_config_fpath = create_config_file(config_file_path)
+                return
             else:
+                # No valid config found and init_main_config is False
                 self.console.print(self.missing_main_config_file_message())
                 sys.exit(1)
 
         # 2. Check environment variable PETALY_CONFIG_DIR
         if self.env_config_dpath:
-            config_file_path = os.path.join(self.env_config_dpath, self.main_config_fname)
-            if create_config_file(config_file_path):
-                self.main_config_fpath = config_file_path
-                return
+            config_file_path = self.env_config_dpath
+            if not self.f_handler.check_file_extension(config_file_path, '.ini'):
+                config_file_path = os.path.join(self.env_config_dpath, self.main_config_fname)
+            self.main_config_fpath = create_config_file(config_file_path)
+            return
 
         # 3. Use user home directory
         home_dir = os.path.expanduser("~")
         home_config_path = os.path.join(home_dir, ".petaly", self.main_config_fname)
-        if create_config_file(home_config_path):
-            self.main_config_fpath = home_config_path
-            return
+        self.main_config_fpath = create_config_file(home_config_path)
+        return
 
         # No valid config found and init_main_config is False
-        self.console.print(self.missing_main_config_file_message())
-        sys.exit(1)
+        # self.console.print(self.missing_main_config_file_message())
+        # sys.exit(1)
 
     def load_main_config_file(self):
         """

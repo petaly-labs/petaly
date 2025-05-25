@@ -113,10 +113,9 @@ class MainConfig:
                 sys.exit(f"The file {path} is not a valid config file. It must have .ini extension.")
 
             if self.f_handler.is_file(path):
-                return path
-
+                pass
             # Only create new directory if init_main_config is True and directory doesn't exist
-            if init_main_config:
+            elif init_main_config:
                 # Create directory if it doesn't exist
                 if not self.f_handler.is_dir(os.path.dirname(path)):
                     self.f_handler.make_dirs(os.path.dirname(path))
@@ -126,8 +125,6 @@ class MainConfig:
                 self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(path), os.path.basename(path))
                 self.console.print(f"The main config file was created: {path}\n"
                       f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
-                return path
-
             return path 
 
         # 1. Use provided config_file_path if it exists
@@ -135,6 +132,7 @@ class MainConfig:
 
             if os.path.isabs(config_file_path):
                 self.main_config_fpath = create_config_file(config_file_path)
+                self.console.print(f"The following main config file is used: {self.main_config_fpath}")
                 return
             else:
                 # No valid config found and init_main_config is False
@@ -147,17 +145,15 @@ class MainConfig:
             if not self.f_handler.check_file_extension(config_file_path, '.ini'):
                 config_file_path = os.path.join(self.env_config_dpath, self.main_config_fname)
             self.main_config_fpath = create_config_file(config_file_path)
+            self.console.print(f"The following main config file is used: {self.main_config_fpath}")
             return
 
         # 3. Use user home directory
         home_dir = os.path.expanduser("~")
         home_config_path = os.path.join(home_dir, ".petaly", self.main_config_fname)
         self.main_config_fpath = create_config_file(home_config_path)
+        self.console.print(f"The following main config file is used: {self.main_config_fpath}")
         return
-
-        # No valid config found and init_main_config is False
-        # self.console.print(self.missing_main_config_file_message())
-        # sys.exit(1)
 
     def load_main_config_file(self):
         """
@@ -245,15 +241,15 @@ class MainConfig:
                 if key in conf_parser.options(section_name):
                     value = conf_parser.get(section_name, key)
                     if key == 'logging_mode':
-                        if value in ('INFO', 'DEBUG'):
-                            self.global_settings['logging_mode'] = value
+                        if value.upper() in ('INFO', 'DEBUG'):
+                            self.global_settings['logging_mode'] = value.upper()
                         else:
                             self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section global_settings in petaly.ini.")
                     elif key == 'pipeline_format':
-                        if value in ('yaml', 'json'):
-                            self.global_settings['pipeline_format'] = value
+                        if value.lower() in ('yaml', 'json'):
+                            self.global_settings['pipeline_format'] = value.lower()
                             # Update pipeline_fname based on the configured format
-                            self.pipeline_fname = f"{self.pipeline_fname.split('.')[0]}.{value}"
+                            self.pipeline_fname = f"{self.pipeline_fname.split('.')[0]}.{value.lower()}"
                         else:
                             self.console.print(f"The option pipeline_format supports yaml or json only. Check pipeline_format under section global_settings in petaly.ini.")
                 else:

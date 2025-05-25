@@ -137,6 +137,8 @@ Available commands:
         """
         m_conf = MainConfig() if self.main_config == None else self.main_config
         m_conf.set_main_config_fpath(args.config_file_path, init_main_config = True)
+        self.console.print(f"The following main config file is used: {m_conf.main_config_fpath}")
+        m_conf.set_global_settings()
         m_conf.set_workspace_dpaths()
 
         initialize = CliInitializer(m_conf)
@@ -156,6 +158,7 @@ Available commands:
         """
         m_conf = MainConfig() if self.main_config == None else self.main_config
         m_conf.set_main_config_fpath(args.config_file_path)
+        m_conf.set_global_settings()
         m_conf.set_workspace_dpaths()
 
         visualize = CliVisualizer(m_conf)
@@ -177,9 +180,9 @@ Available commands:
         m_conf = MainConfig() if self.main_config == None else self.main_config
 
         m_conf.set_main_config_fpath(args.config_file_path)
-        m_conf.set_workspace_dpaths()
         m_conf.set_global_settings()
-
+        m_conf.set_workspace_dpaths()
+        
         initialize = CliInitializer(m_conf)
         initialize.init_workspace(skip_message_if_exist=True)
 
@@ -233,6 +236,7 @@ Available commands:
         m_conf = MainConfig() if self.main_config == None else self.main_config
 
         m_conf.set_main_config_fpath(args.config_file_path)
+        m_conf.set_global_settings()
         m_conf.set_workspace_dpaths()
 
         cleanup = CliCleanup(m_conf)

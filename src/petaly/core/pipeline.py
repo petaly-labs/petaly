@@ -62,7 +62,7 @@ class Pipeline:
                 return
 
         
-        logger.info(f"Pipeline file found at {self.pipeline_fpath}.")
+        logger.info(f"Pipeline file: {self.pipeline_fpath}")
                 
         self.data_dname = 'data'
         self.metadata_dname = 'metadata'

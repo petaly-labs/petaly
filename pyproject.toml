@@ -48,21 +48,11 @@ aws = [
     ]
 all = ["petaly[gcp]", "petaly[aws]"]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-
 [tool.setuptools.packages.find]
 where = ["src"]
-include = [
-    "petaly"
-]
-namespaces = false
 
 [tool.setuptools.package-data]
-"*" = ["*.ini", "*.json", "*.yaml", "petaly/*.txt", "*.sql"]
+"*" = ["*.ini","*.json","*.yaml","petaly/*.txt","*.sql"]
 
 [project.urls]
 Homepage = "https://petaly.org"
-
-[project.scripts]
-petaly = "petaly.__main__:main"

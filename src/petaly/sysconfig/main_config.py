@@ -106,27 +106,25 @@ class MainConfig:
                 sys.exit(f"The file {path} is not a valid config file. It must have .ini extension.")
 
             if self.f_handler.is_file(path):
-                return path
-
+                pass
             # Only create new directory if init_main_config is True and directory doesn't exist
-            if init_main_config:
+            elif init_main_config:
                 # Create directory if it doesn't exist
                 if not self.f_handler.is_dir(os.path.dirname(path)):
                     self.f_handler.make_dirs(os.path.dirname(path))
                     self.console.print(f"Created directory: {os.path.dirname(path)}")
-                
+
                 # Copy petaly.ini-template to target location
                 self.f_handler.cp_file(self.templates_main_config_fpath, os.path.dirname(path), os.path.basename(path))
                 self.console.print(f"The main config file was created: {path}\n"
                       f"Open it with an editor and provide absolute paths for the following parameters: \nlogs_dir_path= \npipeline_dir_path= \noutput_dir_path=\n")
-                return path
             
+            self.console.print(f"The following main config file is used: {path}")
             return path 
 
         # 1. Use provided config_file_path if it exists
-        
         if config_file_path is not None:
-            
+
             if os.path.isabs(config_file_path):
                 self.main_config_fpath = create_config_file(config_file_path)
                 return
@@ -148,10 +146,6 @@ class MainConfig:
         home_config_path = os.path.join(home_dir, ".petaly", self.main_config_fname)
         self.main_config_fpath = create_config_file(home_config_path)
         return
-
-        # No valid config found and init_main_config is False
-        # self.console.print(self.missing_main_config_file_message())
-        # sys.exit(1)
 
     def load_main_config_file(self):
         """
@@ -233,7 +227,7 @@ class MainConfig:
         """
         section_name = 'global_settings'
         conf_parser = self.load_main_config_file()
-        
+
         if self.check_main_config_section(conf_parser, section_name):
             for key in self.global_settings.keys():
                 if key in conf_parser.options(section_name):

@@ -98,6 +98,7 @@ class CliInitializer():
 		
 		# Prepare the configuration based on format
 		pipeline_format = self.m_conf.global_settings.get('pipeline_format', 'yaml')
+		
 		if pipeline_format == 'yaml':
 			config_to_save = {
 				'pipeline': self.cli_menu.composed_pipeline_config['pipeline'],

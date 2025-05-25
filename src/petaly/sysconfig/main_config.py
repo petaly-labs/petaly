@@ -233,21 +233,21 @@ class MainConfig:
         """
         section_name = 'global_settings'
         conf_parser = self.load_main_config_file()
-
+        
         if self.check_main_config_section(conf_parser, section_name):
             for key in self.global_settings.keys():
                 if key in conf_parser.options(section_name):
                     value = conf_parser.get(section_name, key)
                     if key == 'logging_mode':
-                        if value in ('INFO', 'DEBUG'):
-                            self.global_settings['logging_mode'] = value
+                        if value.upper() in ('INFO', 'DEBUG'):
+                            self.global_settings['logging_mode'] = value.upper()
                         else:
                             self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section global_settings in petaly.ini.")
                     elif key == 'pipeline_format':
-                        if value in ('yaml', 'json'):
-                            self.global_settings['pipeline_format'] = value
+                        if value.lower() in ('yaml', 'json'):
+                            self.global_settings['pipeline_format'] = value.lower()
                             # Update pipeline_fname based on the configured format
-                            self.pipeline_fname = f"{self.pipeline_fname.split('.')[0]}.{value}"
+                            self.pipeline_fname = f"{self.pipeline_fname.split('.')[0]}.{value.lower()}"
                         else:
                             self.console.print(f"The option pipeline_format supports yaml or json only. Check pipeline_format under section global_settings in petaly.ini.")
                 else:

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 77"]
+requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -15,7 +15,12 @@ requires-python = ">= 3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "Topic :: Database :: Database Engines/Servers"
+    "Topic :: Database :: Database Engines/Servers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13"
 ]
 keywords = ["petaly", "etl", "ingestion", "database", "postgres", "postgresql", "mysql", "bigquery", "redshift", "s3", "gcs", "google storage", "bucket"]
 dependencies = [

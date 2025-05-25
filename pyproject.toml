@@ -51,6 +51,9 @@ all = ["petaly[gcp]", "petaly[aws]"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[project.scripts]
+petaly = "petaly.__main__:main"
+
 [tool.setuptools.package-data]
 "*" = ["*.ini","*.json","*.yaml","petaly/*.txt","*.sql"]
 

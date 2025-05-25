@@ -29,9 +29,6 @@ logger = logging.getLogger(__name__)
 
 def main(main_config: Optional[MainConfig] = None):
     """Main entry point for the Petaly package."""
-    #m_conf = MainConfig()
-    #m_conf.set_main_config_fpath(config_file_path=None, init_main_config=True)
-    #m_conf.set_global_settings()
     
     try:
         # Default to CLI mode

@@ -228,8 +228,11 @@ class Pipeline:
 
         columns_delimiter = object_default_settings.get('columns_delimiter')
         object_default_settings.update({'columns_delimiter': columns_delimiter})
-        if columns_delimiter == "\t":
-            object_default_settings.update({'columns_delimiter': '\\t'})
+        
+        # Remove the problematic conversion that was causing PyArrow to fail
+        # The delimiter should remain as a single character for PyArrow compatibility
+        #if columns_delimiter == "\t":
+        #    object_default_settings.update({'columns_delimiter': '\\t'})
 
         header = object_default_settings.get('header')
         if header is not True:

@@ -111,8 +111,8 @@ class BQLoader(DBLoader):
         columns_delimiter = object_settings.get("columns_delimiter")
 
         load_options.update({'delimiter': columns_delimiter})
-        if columns_delimiter == "\t":
-            load_options.update({'delimiter': '\\t'})
+        # Remove the problematic conversion that was causing PyArrow to fail
+        # The delimiter should remain as a single character for PyArrow compatibility
 
         header = True if object_settings.get("header") is None or True else False
         load_options.update({'header': header})

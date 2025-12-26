@@ -32,7 +32,8 @@ dependencies = [
         "psycopg",
         "psycopg-binary",
         "mysql-connector-python",
-        "jsonschema"
+        "jsonschema",
+        "pandas"
 ]
 
 [project.optional-dependencies]

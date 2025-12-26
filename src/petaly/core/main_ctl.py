@@ -43,7 +43,7 @@ class MainCtl():
         """ Call this function to run pipeline source and target
         """
         pipeline_name = pipeline.pipeline_name
-
+        
         if pipeline.is_enabled is True:
             logger.info(f"[Start] Pipeline {pipeline_name}")
 

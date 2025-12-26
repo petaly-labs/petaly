@@ -14,6 +14,7 @@
 
 import logging
 import sys
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,16 @@ class CsvExtractor(FExtractor):
 
     def extract_to(self, extractor_obj_conf):
         """
+        Extracts CSV files and processes them to remove excluded columns.
         """
         object_source_dir = extractor_obj_conf.get('object_source_dir')
         file_list = extractor_obj_conf.get('file_names')
         prepared_file_list = []
+        
+        # Get excluded columns from data object
+        data_object = self.get_data_object(extractor_obj_conf.get('object_name'))
+        exclude_columns = data_object.exclude_columns if data_object.exclude_columns else []
+        object_settings = extractor_obj_conf.get('object_settings')
 
         if file_list is None:
             file_list = self.f_handler.get_file_names_with_extensions(object_source_dir, self.file_format)
@@ -43,13 +50,37 @@ class CsvExtractor(FExtractor):
             file_source_fpath = os.path.join(object_source_dir, file_name)
 
             if self.f_handler.is_file(file_source_fpath):
-                self.f_handler.cp_file(file_source_fpath, extractor_obj_conf.get('output_data_object_dir'))
+                # Process CSV file to remove excluded columns
+                output_fpath = os.path.join(extractor_obj_conf.get('output_data_object_dir'), file_name)
+                self.process_csv_file(file_source_fpath, output_fpath, exclude_columns, object_settings)
+                prepared_file_list.append(output_fpath)
             else:
                 logger.error(f"The file: {file_source_fpath} wasn't found. Check the source and pipeline.yaml configuration.")
                 sys.exit()
 
-            prepared_file_list.append(file_source_fpath)
-
         logger.debug(f"The following file list is prepared for further processing:\n{prepared_file_list}")
 
         return prepared_file_list
+
+    def process_csv_file(self, input_fpath, output_fpath, exclude_columns, object_settings):
+        """
+        Processes a CSV file to remove excluded columns.
+        """
+        try:
+            # Read CSV with proper delimiter
+            delimiter = object_settings.get('columns_delimiter', ',')
+            df = pd.read_csv(input_fpath, delimiter=delimiter, dtype=str)
+            
+            # Remove excluded columns
+            if exclude_columns:
+                logger.debug(f"Removing excluded columns: {exclude_columns}")
+                df = df.drop(columns=exclude_columns, errors='ignore')
+            
+            # Write processed CSV
+            df.to_csv(output_fpath, sep=delimiter, index=False)
+            logger.debug(f"Processed CSV file: {input_fpath} -> {output_fpath}")
+            
+        except Exception as e:
+            logger.error(f"Error processing CSV file {input_fpath}: {e}")
+            # Fallback to simple copy if processing fails
+            self.f_handler.cp_file(input_fpath, output_fpath)

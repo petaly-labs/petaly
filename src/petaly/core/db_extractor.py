@@ -188,7 +188,7 @@ class DBExtractor(ABC):
         extractor_obj_conf.update({'output_data_object_dir': output_data_object_dir})
         self.f_handler.make_dirs(output_data_object_dir)
 
-        # compose output object file path
+        # compose output object file path (always .csv for database extracts)
         output_object_fpath = os.path.join(output_data_object_dir, object_name + '.csv')
         extractor_obj_conf.update({'output_object_fpath': output_object_fpath})
 
@@ -216,22 +216,27 @@ class DBExtractor(ABC):
                 return ''
 
         logger.debug("Compose data source meta query:")
+        logger.debug(f"load_all_from_schema={self.pipeline.load_all_from_schema}, data_objects={self.pipeline.data_objects}, data_objects_from_cli={self.pipeline.data_objects_from_cli}")
         
         # if data_objects_from_cli is set, use it to compose the table_stmt and ignore all other settings
         if len(self.pipeline.data_objects_from_cli)>0:
             table_stmt = get_table_stmt(self.pipeline.data_objects_from_cli)
+            logger.debug(f"Using CLI objects: {self.pipeline.data_objects_from_cli}, table_stmt: {table_stmt}")
         
-        elif self.pipeline.data_attributes.get('data_objects_spec_mode') in ("ignore","prefer"):
+        # Check if load_all_from_schema is true (load all tables from schema)
+        elif self.pipeline.load_all_from_schema:
+            # load_all_from_schema=true: load all tables from schema
             table_stmt = ''
+            logger.debug("load_all_from_schema=true: loading all tables from schema")
             
+        # load_all_from_schema is false - load only objects in data_objects_spec[]
         else:
-        # it means data_objects_spec_mode is set to "only" and data_objects_spec: [] should has at least one object specification
-        
             if len(self.pipeline.data_objects)==0:
-                logger.warning(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If data_objects_spec_mode is set to \"only\" the data_objects_spec: [] should has at least one object specification")
+                logger.error(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If load_all_from_schema is set to false, the data_objects_spec[] should have at least one object specification")
                 sys.exit()
 			
             table_stmt = get_table_stmt(self.pipeline.data_objects)
+            logger.debug(f"load_all_from_schema=false: loading only specified objects: {self.pipeline.data_objects}, table_stmt: {table_stmt}")
 
         source_schema = self.pipeline.source_attr.get('database_schema')
 

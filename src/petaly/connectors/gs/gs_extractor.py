@@ -25,8 +25,9 @@ class GSExtractor(FExtractor):
         self.gs_connector = GSConnector()
 
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.source_attr.get('gcp_bucket_name')
+        self.cloud_bucket_name = self.pipeline.source_attr.get('bucket_name')
         self.cloud_project_id = self.pipeline.source_attr.get('gcp_project_id')
+        # bucket_name is optional for GCS extractor (can extract from local folder)
         self.cloud_region = self.pipeline.source_attr.get('gcp_region')
         self.file_format = 'csv'
         self.f_handler = FileHandler()

@@ -26,8 +26,13 @@ class S3Loader(FLoader):
         self.f_handler = FileHandler()
 
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.target_attr.get('aws_bucket_name')
-        self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name + '/'
+        self.cloud_bucket_name = self.pipeline.target_attr.get('bucket_name')
+        # bucket_name is required for S3
+        if self.cloud_bucket_name:
+            self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name + '/'
+        else:
+            logger.error(f"bucket_name is required for S3 target but was not found in target_attributes")
+            raise ValueError("bucket_name is required in target_attributes for S3 connector")
 
     def load_data(self):
         super().load_data(file_to_gzip=True)

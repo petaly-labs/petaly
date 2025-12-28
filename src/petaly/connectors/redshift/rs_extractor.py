@@ -38,8 +38,13 @@ class RSExtractor(DBExtractor):
             sys.exit()
 
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.source_attr.get('aws_bucket_name')
-        self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name
+        self.cloud_bucket_name = self.pipeline.source_attr.get('bucket_name')
+        # bucket_name is required for Redshift extractor (used for staging)
+        if self.cloud_bucket_name:
+            self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name
+        else:
+            logger.error(f"bucket_name is required for Redshift source but was not found in source_attributes")
+            raise ValueError("bucket_name is required in source_attributes for Redshift connector")
         self.aws_iam_role = self.pipeline.source_attr.get('aws_iam_role')
 
     def extract_data(self):

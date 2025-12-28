@@ -204,7 +204,10 @@ class RSConnectorTCP():
             conn.autocommit = True
 
         except (Exception, redshift_connector.DatabaseError) as error:
-            logger.debug(connection_params)
+            # Sanitize connection params before logging to avoid exposing passwords
+            from petaly.utils.utils import sanitize_sensitive_data
+            sanitized_params = sanitize_sensitive_data(connection_params)
+            logger.debug(sanitized_params)
             logger.error(error)
             sys.exit()
 

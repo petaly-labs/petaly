@@ -26,7 +26,11 @@ class S3Extractor(FExtractor):
     def __init__(self, pipeline):
         self.s3_connector = S3Connector(pipeline.source_attr, aws_session=None)
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.source_attr.get('aws_bucket_name')
+        self.cloud_bucket_name = self.pipeline.source_attr.get('bucket_name')
+        # bucket_name is required for S3 extractor
+        if not self.cloud_bucket_name:
+            logger.error(f"bucket_name is required for S3 source but was not found in source_attributes")
+            raise ValueError("bucket_name is required in source_attributes for S3 connector")
         self.file_format = 'csv'
         self.f_handler = FileHandler()
 

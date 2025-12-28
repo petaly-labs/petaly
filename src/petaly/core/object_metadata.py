@@ -144,10 +144,27 @@ class ObjectMetadata():
         
         The method processes each object's metadata and saves it to files.
         If the meta query result is empty, it raises a SystemExit error.
+        
+        Note: When load_all_from_schema=false, only objects specified in data_objects_spec[]
+        should be processed. The query should already filter this, but we also filter here
+        as a safety measure.
         """
         object_list = []
         if meta_query_result is not None:
-            for meta_table in self.compose_objects_meta_from_query(meta_query_result):
+            # Get all objects from query results
+            all_objects_from_query = self.compose_objects_meta_from_query(meta_query_result)
+            
+            # If load_all_from_schema is false, filter to only specified objects
+            if not self.pipeline.load_all_from_schema and len(self.pipeline.data_objects) > 0:
+                # Filter to only process objects that are in data_objects_spec[]
+                filtered_objects = [
+                    meta_table for meta_table in all_objects_from_query
+                    if meta_table.get('source_object_name') in self.pipeline.data_objects
+                ]
+                logger.debug(f"Filtered objects from {len(all_objects_from_query)} to {len(filtered_objects)} based on data_objects_spec[]")
+                all_objects_from_query = filtered_objects
+            
+            for meta_table in all_objects_from_query:
                 object_name = meta_table.get('source_object_name')
                 object_list.append(object_name)
                 self.save_table_metadata(meta_table)

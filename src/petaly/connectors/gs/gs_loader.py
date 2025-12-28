@@ -26,9 +26,14 @@ class GSLoader(FLoader):
         self.f_handler = FileHandler()
 
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.target_attr.get('gcp_bucket_name')
-        self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
-        self.load_from_bucket = False if self.cloud_bucket_name is None else True
+        self.cloud_bucket_name = self.pipeline.target_attr.get('bucket_name')
+        # Handle bucket_name being None (optional for GCS - can load from local folder)
+        if self.cloud_bucket_name:
+            self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
+            self.load_from_bucket = True
+        else:
+            self.cloud_bucket_path = None
+            self.load_from_bucket = False
         self.cloud_region = self.pipeline.target_attr.get('gcp_region')
         self.cloud_project_id = self.pipeline.target_attr.get('gcp_project_id')
 

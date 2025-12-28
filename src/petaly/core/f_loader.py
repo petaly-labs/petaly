@@ -66,7 +66,7 @@ class FLoader(ABC):
         logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
         start_total_time = time.time()
 
-        if self.pipeline.data_attributes.get("data_objects_spec_mode") == 'only':
+        if not self.pipeline.load_all_from_schema:
             object_list = self.pipeline.data_objects
         else:
             #object_list = self.f_handler.get_all_dir_names(self.pipeline.output_pipeline_dpath)

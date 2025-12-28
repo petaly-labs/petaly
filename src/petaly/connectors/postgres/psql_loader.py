@@ -47,8 +47,14 @@ class PsqlLoader(DBLoader):
 
         self.create_table(loader_obj_conf)
 
-        # collect all csv file
-        file_list = self.f_handler.get_specific_files(output_data_object_dir,'*.csv')
+        # For loading: files can have any extension, content is determined by delimiter in object_default_settings
+        # Collect all files (regardless of extension) - delimiter will determine how to parse them
+        import glob
+        import os
+        all_files = []
+        for pattern in ['*', '*.gz', '*.csv', '*.tsv', '*.txt']:
+            all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+        file_list = list(set([f for f in all_files if os.path.isfile(f)]))
 
         for path_to_data_file in file_list:
             logger.debug(f"Source file: {path_to_data_file}")

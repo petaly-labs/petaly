@@ -20,6 +20,7 @@ import sys
 from typing import Dict, List, Any, Optional
 
 from petaly.utils.file_handler import FileHandler
+from petaly.core.connections import Connections
 
 class Pipeline:
     """
@@ -45,11 +46,23 @@ class Pipeline:
         self.pipeline_dpath = os.path.join(self.m_conf.pipeline_base_dpath, pipeline_name)
         
         # Set pipeline file extension based on configured format
-        pipeline_format = self.m_conf.global_settings.get('pipeline_format', 'yaml')
+        pipeline_format = self.m_conf.global_settings.get('pipeline_file_format', 'yaml')
         self.pipeline_fname = f'pipeline.{pipeline_format}'
         self.pipeline_fpath = os.path.join(self.pipeline_dpath, self.pipeline_fname)
+        
+        # Set connections file path (stored at pipeline_base_dpath level, shared across pipelines)
+        # Use connections_file_format from config, fallback to pipeline_file_format for backward compatibility
+        connection_format = self.m_conf.global_settings.get('connections_file_format', pipeline_format)
+        self.connections_fname = f'connections.{connection_format}'
+        self.connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, self.connections_fname)
+        
+        # Initialize connections handler
+        self.connections = Connections(self.connections_fpath)
+        
+        # Initialize file handler early (needed for creating pipeline from skeleton)
+        self.f_handler = FileHandler()
 
-        # Check if pipeline file exists, if not try the other format
+        # Check if pipeline file exists, if not try the other format or create it
         if not os.path.exists(self.pipeline_fpath):
             alt_format = 'json' if pipeline_format == 'yaml' else 'yaml'
             alt_fname = f'pipeline.{alt_format}'
@@ -58,8 +71,9 @@ class Pipeline:
                 self.pipeline_fname = alt_fname
                 self.pipeline_fpath = alt_fpath
             else:
-                logger.warning(f"Pipeline file not found at {self.pipeline_fpath} or {alt_fpath}")
-                return
+                # Pipeline file doesn't exist - create it from skeleton
+                logger.info(f"Pipeline file not found at {self.pipeline_fpath}. Creating from skeleton...")
+                self._create_pipeline_from_skeleton(pipeline_name, pipeline_format)
 
         
         logger.info(f"Pipeline file: {self.pipeline_fpath}")
@@ -82,7 +96,6 @@ class Pipeline:
         self.pipeline_name = pipeline_name
 
         logger.debug("Load Pipeline config")
-        self.f_handler = FileHandler()
 
         # Initialize attributes with default values
         self.source_attr = {}
@@ -94,7 +107,7 @@ class Pipeline:
         self.is_enabled = False
         self.source_connector_id = None
         self.target_connector_id = None
-        self.data_objects_spec_mode = None
+        self.load_all_from_schema = None
         self.object_default_settings = {}
 
         try:
@@ -117,8 +130,22 @@ class Pipeline:
                 return
 
             pipeline_attr = pipeline_dict.get('pipeline', {}).get('pipeline_attributes', {})
-            self.source_attr = pipeline_dict.get('pipeline', {}).get('source_attributes', {})
-            self.target_attr = pipeline_dict.get('pipeline', {}).get('target_attributes', {})
+            
+            # Get source and target attributes sections
+            source_attributes_section = pipeline_dict.get('pipeline', {}).get('source_attributes', {})
+            target_attributes_section = pipeline_dict.get('pipeline', {}).get('target_attributes', {})
+            
+            # Resolve source attributes (may contain connection reference)
+            self.source_attr = self.connections.resolve_attributes(source_attributes_section, 'source')
+            if not self.source_attr:
+                logger.error(f"Could not resolve source attributes")
+                return
+            
+            # Resolve target attributes (may contain connection reference)
+            self.target_attr = self.connections.resolve_attributes(target_attributes_section, 'target')
+            if not self.target_attr:
+                logger.error(f"Could not resolve target attributes")
+                return
 
             # Only check outdated arguments if attributes exist
             if self.source_attr:
@@ -140,7 +167,32 @@ class Pipeline:
             self.target_connector_id = self.target_attr.get('connector_type')
 
             self.data_attributes = pipeline_dict.get('pipeline', {}).get('data_attributes', {})
-            self.data_objects_spec_mode = self.data_attributes.get('data_objects_spec_mode')
+            
+            # Get load_all_from_schema, with backward compatibility for old parameter names
+            self.load_all_from_schema = self.data_attributes.get('load_all_from_schema', False)
+            
+            # Backward compatibility: check for old parameter names
+            if self.load_all_from_schema is None or self.load_all_from_schema == False:
+                # Check for old load_data_objects_spec_only parameter
+                old_load_spec_only = self.data_attributes.get('load_data_objects_spec_only')
+                if old_load_spec_only is not None:
+                    # Invert: old load_data_objects_spec_only=true means load_all_from_schema=false
+                    if isinstance(old_load_spec_only, str):
+                        old_load_spec_only = old_load_spec_only.lower() == 'true'
+                    self.load_all_from_schema = not old_load_spec_only
+                else:
+                    # Check for even older apply_data_objects_spec parameter
+                    old_apply_spec = self.data_attributes.get('apply_data_objects_spec')
+                    if old_apply_spec is not None:
+                        # Old apply_data_objects_spec=true means prefer (load all), which is load_all_from_schema=true
+                        if isinstance(old_apply_spec, str):
+                            old_apply_spec = old_apply_spec.lower() == 'true'
+                        self.load_all_from_schema = old_apply_spec
+            
+            # Convert string to boolean if needed
+            if isinstance(self.load_all_from_schema, str):
+                self.load_all_from_schema = self.load_all_from_schema.lower() == 'true'
+            
             self.object_default_settings = self.get_object_default_settings()
 
             # Set data objects spec
@@ -150,6 +202,14 @@ class Pipeline:
                 for obj in self.data_objects_spec:
                     if obj is not None:
                         self.data_objects.append(obj.get('object_spec', {}).get('object_name'))
+            
+            # Warning: if load_all_from_schema=false and data_objects_spec[] is empty, no objects will be loaded
+            if not self.load_all_from_schema and len(self.data_objects) == 0:
+                logger.warning(
+                    f"Pipeline {pipeline_name}: load_all_from_schema=false and data_objects_spec[] is empty. "
+                    f"No objects will be loaded. Either set load_all_from_schema=true to load all objects from schema, "
+                    f"or add objects to data_objects_spec[] to load specific objects."
+                )
 
         except Exception as e:
             logger.error(f"Error initializing pipeline: {e}", exc_info=True)
@@ -284,6 +344,7 @@ class Pipeline:
                 if item_value.get('action').lower() == 'exit':
                     sys.exit()
 
+
     def get_config(self) -> Dict[str, Any]:
         """
         Gets the complete pipeline configuration.
@@ -304,3 +365,84 @@ class Pipeline:
         except Exception as e:
             logger.error(f"Error getting pipeline config: {e}", exc_info=True)
             return None
+    
+    def get_consolidated_config(self) -> Dict[str, Any]:
+        """
+        Gets the consolidated pipeline configuration with resolved connections.
+        This combines pipeline.yaml and connections.yaml into a single configuration
+        with all connection references resolved to their full attributes.
+        
+        Logic:
+        1. Load the original pipeline configuration
+        2. Resolve connection references to full attributes
+        3. Return consolidated configuration ready for execution logging
+        
+        Returns:
+            Dictionary containing consolidated pipeline configuration with resolved connections
+        """
+        try:
+            # Get the original pipeline configuration
+            pipeline_all_obj = self.get_pipeline_entire_config()
+            if not pipeline_all_obj:
+                return None
+            
+            # Handle both YAML and JSON formats
+            if isinstance(pipeline_all_obj, list):
+                pipeline_dict = pipeline_all_obj[0]
+                data_objects_spec = pipeline_all_obj[1] if len(pipeline_all_obj) > 1 else {'data_objects_spec': []}
+            else:
+                pipeline_dict = {'pipeline': pipeline_all_obj.get('pipeline', {})}
+                data_objects_spec = {'data_objects_spec': pipeline_all_obj.get('data_objects_spec', [])}
+            
+            # Create consolidated config
+            consolidated_pipeline = pipeline_dict.get('pipeline', {}).copy()
+            
+            # Replace connection references with resolved attributes
+            source_attributes_section = consolidated_pipeline.get('source_attributes', {})
+            target_attributes_section = consolidated_pipeline.get('target_attributes', {})
+            
+            # Resolve source and target attributes (may contain connection references)
+            consolidated_pipeline['source_attributes'] = self.connections.resolve_attributes(source_attributes_section, 'source')
+            consolidated_pipeline['target_attributes'] = self.connections.resolve_attributes(target_attributes_section, 'target')
+            
+            return {
+                "pipeline": consolidated_pipeline,
+                "data_objects_spec": data_objects_spec.get('data_objects_spec', [])
+            }
+        except Exception as e:
+            logger.error(f"Error creating consolidated pipeline config: {e}", exc_info=True)
+            return None
+    
+    def _create_pipeline_from_skeleton(self, pipeline_name, pipeline_format):
+        """
+        Creates a pipeline.yaml/json file from skeleton if it doesn't exist.
+        
+        Args:
+            pipeline_name: Name of the pipeline
+            pipeline_format: Format of the pipeline file ('yaml' or 'json')
+        """
+        try:
+            # Ensure pipeline directory exists
+            if not os.path.exists(self.pipeline_dpath):
+                os.makedirs(self.pipeline_dpath)
+                logger.info(f"Created pipeline directory: {self.pipeline_dpath}")
+            
+            # Load skeleton
+            skeleton_fpath = self.m_conf.pipeline_skeleton_fpath
+            skeleton_config = self.f_handler.load_json(skeleton_fpath)
+            
+            # Set pipeline name in the skeleton
+            if 'pipeline' in skeleton_config and 'pipeline_attributes' in skeleton_config['pipeline']:
+                skeleton_config['pipeline']['pipeline_attributes']['pipeline_name'] = pipeline_name
+            
+            # Save to pipeline file
+            self.f_handler.save_dict_to_file(
+                self.pipeline_fpath,
+                skeleton_config,
+                file_format=pipeline_format
+            )
+            
+            logger.info(f"Created pipeline file from skeleton: {self.pipeline_fpath}")
+        except Exception as e:
+            logger.error(f"Error creating pipeline from skeleton: {e}", exc_info=True)
+            raise

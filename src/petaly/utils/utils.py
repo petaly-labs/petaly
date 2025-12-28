@@ -16,6 +16,59 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def sanitize_sensitive_data(data, sensitive_keys=None):
+    """
+    Recursively sanitizes sensitive fields in data structures by masking their values.
+    
+    This function masks sensitive fields like passwords, secrets, and API keys
+    to prevent them from being logged or exposed.
+    
+    Args:
+        data: Dictionary, list, or other data structure to sanitize
+        sensitive_keys: List of keys to mask (defaults to common sensitive fields)
+    
+    Returns:
+        Sanitized data structure with sensitive values masked as "***"
+    
+    Example:
+        >>> config = {'user': 'john', 'password': 'secret123'}
+        >>> sanitize_sensitive_data(config)
+        {'user': 'john', 'password': '***'}
+    """
+    if sensitive_keys is None:
+        sensitive_keys = [
+            'database_password',
+            'aws_access_key_id',
+            'aws_secret_access_key',
+            'password',
+            'secret',
+            'secret_key',
+            'access_key',
+            'api_key',
+            'token',
+            'credential'
+        ]
+    
+    if isinstance(data, dict):
+        sanitized = {}
+        for key, value in data.items():
+            # Check if key contains any sensitive keyword (case-insensitive)
+            key_lower = key.lower()
+            is_sensitive = any(sensitive_key.lower() in key_lower for sensitive_key in sensitive_keys)
+            
+            if is_sensitive:
+                sanitized[key] = "***"
+            elif isinstance(value, (dict, list)):
+                sanitized[key] = sanitize_sensitive_data(value, sensitive_keys)
+            else:
+                sanitized[key] = value
+        return sanitized
+    elif isinstance(data, list):
+        return [sanitize_sensitive_data(item, sensitive_keys) for item in data]
+    else:
+        return data
+
+
 def measure_time(func):
     """This decorator return the execution time for the decorated function."""
     import time

@@ -27,9 +27,10 @@ class BQExtractor(DBExtractor):
         self.gs_connector = GSConnector()
 
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.source_attr.get('gcp_bucket_name')
+        self.cloud_bucket_name = self.pipeline.source_attr.get('bucket_name')
         self.cloud_project_id = self.pipeline.source_attr.get('gcp_project_id')
         self.cloud_region = self.pipeline.source_attr.get('gcp_region')
+        # bucket_name is optional for BigQuery extractor (can extract to local folder)
         
     def extract_data(self):
         super().extract_data()
@@ -72,6 +73,7 @@ class BQExtractor(DBExtractor):
         dataset_id = extractor_obj_conf.get('source_schema_name')
         table_name = extractor_obj_conf.get('source_object_name')
 
+        # For extractors: always use .csv extension (extracts from database are always CSV)
         destination_blob_name = extractor_obj_conf.get('blob_prefix').strip('/') + '/' + object_name + '_*.csv'
 
         destination_uri = f"{self.gs_connector.bucket_prefix }{self.cloud_bucket_name}/{destination_blob_name}"

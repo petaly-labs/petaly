@@ -28,12 +28,17 @@ class BQLoader(DBLoader):
         self.gs_connector = GSConnector()
         self.f_handler = FileHandler()
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.target_attr.get('gcp_bucket_name')
+        self.cloud_bucket_name = self.pipeline.target_attr.get('bucket_name')
         self.cloud_project_id = self.pipeline.target_attr.get('gcp_project_id')
         self.cloud_region = self.pipeline.target_attr.get('gcp_region')
         
-        self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
-        self.load_from_bucket = False if self.cloud_bucket_name is None else True
+        # Handle bucket_name being None (optional for BigQuery - can load from local folder)
+        if self.cloud_bucket_name:
+            self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
+            self.load_from_bucket = True
+        else:
+            self.cloud_bucket_path = None
+            self.load_from_bucket = False
 
 
     #def execute_sql(self, create_table_stmt):
@@ -53,8 +58,17 @@ class BQLoader(DBLoader):
             self.drop_table(loader_obj_conf)
         self.create_table(loader_obj_conf)
 
+        # For loading: files can have any extension, content is determined by delimiter in object_default_settings
+        # Gzip all files (they will be parsed based on delimiter, not extension)
         self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
-        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv*')
+        
+        # Collect all files (regardless of extension) - delimiter will determine how to parse them
+        import glob
+        import os
+        all_files = []
+        for pattern in ['*', '*.gz', '*.csv', '*.tsv', '*.txt']:
+            all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+        file_list = list(set([f for f in all_files if os.path.isfile(f)]))
         if self.load_from_bucket == True:
             blob_prefix = loader_obj_conf.get('blob_prefix')
             self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)

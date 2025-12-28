@@ -60,10 +60,16 @@ class Composer:
 		object_dir_list = self.f_handler.get_all_dir_names(pipeline.output_pipeline_dpath)
 		pipeline_object_list = pipeline.data_objects
 
-		if pipeline.data_objects_spec_mode in ("ignore","prefer"):
+		# If load_all_from_schema is true, return all objects
+		if pipeline.load_all_from_schema:
 			return_list = object_dir_list
 		else:
-			return_list = self.get_data_objects_intersection(object_dir_list, pipeline_object_list)
+			# load_all_from_schema is false (only mode) - return intersection (only specified objects)
+			if len(pipeline_object_list) == 0:
+				# No objects specified - return empty list (no objects to load)
+				return_list = []
+			else:
+				return_list = self.get_data_objects_intersection(object_dir_list, pipeline_object_list)
 
 		return return_list
 	def get_data_objects_intersection(self, first_list, second_list):

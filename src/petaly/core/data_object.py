@@ -36,26 +36,27 @@ class DataObject:
         """
         data_objects = pipeline.data_objects_spec
         self.pipeline_data_object_dir = pipeline.output_object_data_dpath.format(object_name=object_name)
-        self.data_objects_spec_mode = pipeline.data_attributes.get('data_objects_spec_mode')
+        self.load_all_from_schema = pipeline.load_all_from_schema
         self.object_settings = self.format_object_default_settings(pipeline.object_default_settings)
         self.object_settings.update({'cleanup_linebreak_in_fields': False})
 
         data_object_spec = self.get_object_spec(data_objects, object_name)
         logger.debug(f"Data object spec: {data_object_spec}")
         if not data_object_spec:
-            if self.data_objects_spec_mode == 'only':
+            # If load_all_from_schema is false (only mode), spec is required
+            if not self.load_all_from_schema:
                 logger.info(
-                    f"For {pipeline.source_connector_id} extract the parameters data_objects_spec_mode=only and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
+                    f"For {pipeline.source_connector_id} extract the parameters load_all_from_schema=false and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
                 sys.exit()
 
-            elif self.data_objects_spec_mode in ('ignore', 'prefer'):
-                if pipeline.source_connector_id in ('csv'):
-                    logger.info(
-                        f"In case your source is csv, the parameters data_objects_spec_mode should be set to only and require the specification in the data_objects_spec[]."
-                        f"\ndata_objects_spec_mode=only"
-                        f"\nCheck pipeline under: {pipeline.pipeline_fpath}")
+            # If load_all_from_schema is true (load all) or spec is empty, check CSV requirement
+            if pipeline.source_connector_id in ('csv'):
+                logger.info(
+                    f"In case your source is csv, the parameters load_all_from_schema should be set to false and require the specification in the data_objects_spec[]."
+                    f"\nload_all_from_schema=false"
+                    f"\nCheck pipeline under: {pipeline.pipeline_fpath}")
 
-                    sys.exit()
+                sys.exit()
 
             return self.set_default_object_spec(pipeline, object_name)
 

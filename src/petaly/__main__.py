@@ -34,6 +34,10 @@ def main(main_config: Optional[MainConfig] = None):
         # Default to CLI mode
         cli = Cli(main_config)
         cli.start()
+    except KeyboardInterrupt:
+        # User interrupted with Ctrl+C - exit gracefully
+        print("\n\nProcess interrupted by user.")
+        sys.exit(0)
     except Exception as e:
         logger.error(f"Error running Petaly: {e}", exc_info=True)
         sys.exit(1)

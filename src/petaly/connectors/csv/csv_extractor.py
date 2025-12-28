@@ -83,4 +83,8 @@ class CsvExtractor(FExtractor):
         except Exception as e:
             logger.error(f"Error processing CSV file {input_fpath}: {e}")
             # Fallback to simple copy if processing fails
-            self.f_handler.cp_file(input_fpath, output_fpath)
+            # Extract directory and filename from output_fpath
+            import os
+            output_dir = os.path.dirname(output_fpath)
+            output_filename = os.path.basename(output_fpath)
+            self.f_handler.cp_file(input_fpath, output_dir, target_file_name=output_filename)

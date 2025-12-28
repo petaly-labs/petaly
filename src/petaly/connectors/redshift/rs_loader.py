@@ -31,18 +31,23 @@ class RSLoader(DBLoader):
 
         if pipeline.target_attr.get('connection_method') == 'iam':
             self.db_connector = RSConnectorIAM(pipeline.target_attr)
-            self.s3_connector = S3Connector(pipeline.source_attr, aws_session=self.db_connector.aws_session)
+            self.s3_connector = S3Connector(pipeline.target_attr, aws_session=self.db_connector.aws_session)
         elif pipeline.target_attr.get('connection_method') == 'tcp':
             self.db_connector = RSConnectorTCP(pipeline.target_attr)
-            self.s3_connector = S3Connector(pipeline.source_attr, aws_session=None)
+            self.s3_connector = S3Connector(pipeline.target_attr, aws_session=None)
         else:
             logger.error(f"The connection_method: {pipeline.source_attr.get('connection_method')} is not supported for AWS load.")
             sys.exit()
 
         super().__init__(pipeline)
 
-        self.cloud_bucket_name = self.pipeline.target_attr.get('aws_bucket_name')
-        self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name
+        self.cloud_bucket_name = self.pipeline.target_attr.get('bucket_name')
+        # bucket_name is required for Redshift (used for staging)
+        if self.cloud_bucket_name:
+            self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name
+        else:
+            logger.error(f"bucket_name is required for Redshift target but was not found in target_attributes")
+            raise ValueError("bucket_name is required in target_attributes for Redshift connector")
         self.aws_iam_role = self.pipeline.target_attr.get('aws_iam_role')
 
     def load_data(self):
@@ -76,9 +81,17 @@ class RSLoader(DBLoader):
         self.create_table(loader_obj_conf)
         output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
 
+        # For loading: files can have any extension, content is determined by delimiter in object_default_settings
+        # Gzip all files (they will be parsed based on delimiter, not extension)
         self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
-
-        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.csv*')
+        
+        # Collect all files (regardless of extension) - delimiter will determine how to parse them
+        import glob
+        import os
+        all_files = []
+        for pattern in ['*', '*.gz', '*.csv', '*.tsv', '*.txt']:
+            all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+        file_list = list(set([f for f in all_files if os.path.isfile(f)]))
 
         self.s3_connector.upload_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
 

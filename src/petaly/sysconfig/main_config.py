@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -315,7 +304,19 @@ class MainConfig:
         return platform_type_list
 
     def set_extractor_paths(self, connector_id):
-        connector_dpath = self.get_connector_dpath(connector_id)
+        connector_category = self.get_connector_category(connector_id)
+        if connector_category == 'file':
+            # File connectors share common config
+            connector_dpath = self.get_connector_dpath(connector_id)
+            # Replace the specific format (csv/parquet/json) with 'common'
+            connector_dpath_parts = connector_dpath.split(os.sep)
+            if 'file' in connector_dpath_parts:
+                file_index = connector_dpath_parts.index('file')
+                connector_dpath_parts[file_index + 1] = 'common'
+                connector_dpath = os.sep.join(connector_dpath_parts)
+        else:
+            connector_dpath = self.get_connector_dpath(connector_id)
+        
         self.connector_metadata_sql_fpath = os.path.join(connector_dpath, self.metadata_sql_fname)
         self.connector_extract_to_stmt_fpath = os.path.join(connector_dpath, 'config', self.extract_to_stmt_fname)
         return True
@@ -325,7 +326,19 @@ class MainConfig:
         return connector_type
 
     def set_loader_paths(self, connector_id):
-        connector_dpath = self.get_connector_dpath(connector_id)
+        connector_category = self.get_connector_category(connector_id)
+        if connector_category == 'file':
+            # File connectors share common config
+            connector_dpath = self.get_connector_dpath(connector_id)
+            # Replace the specific format (csv/parquet/json) with 'common'
+            connector_dpath_parts = connector_dpath.split(os.sep)
+            if 'file' in connector_dpath_parts:
+                file_index = connector_dpath_parts.index('file')
+                connector_dpath_parts[file_index + 1] = 'common'
+                connector_dpath = os.sep.join(connector_dpath_parts)
+        else:
+            connector_dpath = self.get_connector_dpath(connector_id)
+        
         self.connector_load_from_stmt_fpath = os.path.join(connector_dpath, 'config', self.load_from_stmt_fname)
         self.connector_create_table_stmt_fpath = os.path.join(connector_dpath, 'config', self.create_table_stmt_fname)
 
@@ -377,9 +390,23 @@ class MainConfig:
         
         Logic:
         1. Get connector directory path
-        2. Load attributes from connector_attributes.json
+        2. For file connectors (csv, parquet, json), use common/config
+        3. For other connectors, use connector-specific config
+        4. Load attributes from connector_attributes.json
         """
-        connector_dpath = self.get_connector_dpath(connector_id)
+        connector_category = self.get_connector_category(connector_id)
+        if connector_category == 'file':
+            # File connectors share common config
+            connector_dpath = self.get_connector_dpath(connector_id)
+            # Replace the specific format (csv/parquet/json) with 'common'
+            connector_dpath_parts = connector_dpath.split(os.sep)
+            if 'file' in connector_dpath_parts:
+                file_index = connector_dpath_parts.index('file')
+                connector_dpath_parts[file_index + 1] = 'common'
+                connector_dpath = os.sep.join(connector_dpath_parts)
+        else:
+            connector_dpath = self.get_connector_dpath(connector_id)
+        
         connector_attributes_fpath = os.path.join(connector_dpath, 'config', self.connector_attributes_fname)
 
         return self.f_handler.load_json(connector_attributes_fpath)
@@ -389,7 +416,9 @@ class MainConfig:
         type_mapping_fpath = self.get_type_mapping_path(connector_id)
         connector_category = self.get_connector_category(source_connector_id)
         if connector_category in ('storage','file'):
-            type_mapping_fpath = type_mapping_fpath.format(source_connector_id=source_file_format)
+            # For file connectors (csv, parquet, json) and storage connectors (gcs, s3),
+            # use 'file' as the source_connector_id to point to common type_mapping
+            type_mapping_fpath = type_mapping_fpath.format(source_connector_id='file')
         else:
             type_mapping_fpath = type_mapping_fpath.format(source_connector_id=source_connector_id)
 
@@ -402,8 +431,26 @@ class MainConfig:
         return type_mapping_fpath
 
     def get_extractor_type_transformer_fpath(self, connector_id):
-
-        connector_dpath = self.get_connector_dpath(connector_id)
+        """
+        Gets the extractor type transformer file path for a connector.
+        
+        Logic:
+        1. For file connectors (csv, parquet, json), use common/config
+        2. For other connectors, use connector-specific config
+        """
+        connector_category = self.get_connector_category(connector_id)
+        if connector_category == 'file':
+            # File connectors share common config
+            connector_dpath = self.get_connector_dpath(connector_id)
+            # Replace the specific format (csv/parquet/json) with 'common'
+            connector_dpath_parts = connector_dpath.split(os.sep)
+            if 'file' in connector_dpath_parts:
+                file_index = connector_dpath_parts.index('file')
+                connector_dpath_parts[file_index + 1] = 'common'
+                connector_dpath = os.sep.join(connector_dpath_parts)
+        else:
+            connector_dpath = self.get_connector_dpath(connector_id)
+        
         return os.path.join(connector_dpath, 'config', self.extractor_type_transformer_fname)
 
     def get_extractor_class(self, connector_id):

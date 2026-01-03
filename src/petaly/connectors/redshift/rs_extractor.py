@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -80,6 +69,41 @@ class RSExtractor(DBExtractor):
         object_name = extractor_obj_conf.get('object_name')
 
         extract_to_fpath = self.cloud_bucket_path + '/' + extractor_obj_conf.get('blob_prefix').strip('/')  + '/' + object_name + '_'
+
+        # Determine format based on target connector
+        # Redshift UNLOAD supports PARQUET and JSON formats
+        target_connector_id = self.pipeline.target_connector_id
+        target_category = self.m_conf.get_connector_category(target_connector_id)
+        
+        if target_category == 'file' and target_connector_id in ('parquet', 'json'):
+            # Redshift UNLOAD format: FORMAT PARQUET or FORMAT JSON
+            format_clause = f"FORMAT AS {target_connector_id.upper()}"
+            # Update the SQL template to use the target format instead of CSV
+            # Replace "FORMAT AS CSV" with the target format
+            if 'FORMAT AS CSV' in extract_to_stmt:
+                extract_to_stmt = extract_to_stmt.replace('FORMAT AS CSV', format_clause)
+            elif 'FORMAT AS' not in extract_to_stmt:
+                # If no format clause exists, add it before GZIP
+                if 'GZIP' in extract_to_stmt:
+                    extract_to_stmt = extract_to_stmt.replace('GZIP', f'{format_clause}\nGZIP')
+                else:
+                    # Add format clause before the options
+                    extract_to_stmt = extract_to_stmt.replace('{extract_to_options}', f'{format_clause}\n{{extract_to_options}}')
+            
+            # Update extension for Parquet/JSON
+            # Note: Redshift UNLOAD with GZIP will create .parquet.gz or .json.gz files
+            if target_connector_id == 'parquet':
+                if "EXTENSION 'csv.gz'" in extract_to_stmt:
+                    extract_to_stmt = extract_to_stmt.replace("EXTENSION 'csv.gz'", "EXTENSION 'parquet'")
+                elif "EXTENSION 'csv'" in extract_to_stmt:
+                    extract_to_stmt = extract_to_stmt.replace("EXTENSION 'csv'", "EXTENSION 'parquet'")
+            elif target_connector_id == 'json':
+                if "EXTENSION 'csv.gz'" in extract_to_stmt:
+                    extract_to_stmt = extract_to_stmt.replace("EXTENSION 'csv.gz'", "EXTENSION 'json.gz'")
+                elif "EXTENSION 'csv'" in extract_to_stmt:
+                    extract_to_stmt = extract_to_stmt.replace("EXTENSION 'csv'", "EXTENSION 'json.gz'")
+            
+            logger.info(f"Redshift will export directly to {target_connector_id} format (target connector: {target_connector_id})")
 
         extract_to_stmt = extract_to_stmt.format_map(
         					FormatDict( column_list=extractor_obj_conf.get('column_list'),

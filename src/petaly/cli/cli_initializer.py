@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import os
 import sys
@@ -101,31 +90,46 @@ class CliInitializer():
 		output_pipeline_dpath = os.path.join(self.m_conf.output_base_dpath, pipeline_name)
 
 		# check pipeline directory and pipeline.yaml
-		if self.f_handler.is_file(pipeline_fpath):
-			self.console.print (f"Pipeline with the path {pipeline_dpath} already exists.")
+		pipeline_exists = self.f_handler.is_file(pipeline_fpath)
+		output_dir_exists = self.f_handler.is_dir(output_pipeline_dpath)
+		
+		# Check if both pipeline and output directory exist, merge questions if both exist
+		if pipeline_exists and output_dir_exists:
+			self.console.print(f"Pipeline with the path {pipeline_dpath} already exists.")
+			self.console.print(f"Output directory with the path {output_pipeline_dpath} already exists.")
+			process_continue = self.cli_menu.prompt.Confirm.ask(
+				f"\nDo you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration and output directory?\n"
+				f"All files in the output directory will be deleted and a backup of {self.m_conf.pipeline_fname} will be created."
+			)
+			
+			if process_continue:
+				self.console.print(f"Backup with the name {self.m_conf.pipeline_fname}.buckup_<timestamp> from pipeline.yaml will be created.")
+				self.f_handler.cleanup_dir(output_pipeline_dpath)
+				self.f_handler.make_dirs(output_pipeline_dpath)
+			else:
+				sys.exit()
+		elif pipeline_exists:
+			self.console.print(f"Pipeline with the path {pipeline_dpath} already exists.")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"\nDo you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration?")
 
 			if process_continue:
 				self.console.print(f"Backup with the name {self.m_conf.pipeline_fname}.buckup_<timestamp> from pipeline.yaml will be created.")
 			else:
 				sys.exit()
-
-		elif self.f_handler.is_dir(pipeline_dpath):
-			pass
-		else:
-			self.f_handler.make_dirs(pipeline_dpath)
-
-		# check output folder and ask for confirmation
-		if self.f_handler.is_dir(output_pipeline_dpath):
-			self.console.print (f"\nOutput directory with the path {output_pipeline_dpath} already exists.")
+		elif output_dir_exists:
+			self.console.print(f"Output directory with the path {output_pipeline_dpath} already exists.")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"\nDo you want to continue and overwrite the existing output directory? All files inside will be deleted.")
 			if process_continue is True:
 				self.f_handler.cleanup_dir(output_pipeline_dpath)
 				self.f_handler.make_dirs(output_pipeline_dpath)
 			else:
 				sys.exit()
-
-		else:
+		
+		# Create directories if they don't exist
+		if not self.f_handler.is_dir(pipeline_dpath):
+			self.f_handler.make_dirs(pipeline_dpath)
+		
+		if not self.f_handler.is_dir(output_pipeline_dpath):
 			self.f_handler.make_dirs(output_pipeline_dpath)
 
 		# Compose pipeline using CliMenu's CliPipeline
@@ -153,39 +157,58 @@ class CliInitializer():
 		self.console.print(f"\nCheck pipeline {pipeline_name} under: {pipeline_fpath}")
 		self.console.print(f"Check output directory under: {output_pipeline_dpath}")
 
-		load_all_from_schema = composed_config['pipeline']['data_attributes'].get('load_all_from_schema', False)
-		# Backward compatibility: check for old parameter names
-		if load_all_from_schema is None or load_all_from_schema == False:
-			# Check for old load_data_objects_spec_only parameter
-			old_load_spec_only = composed_config['pipeline']['data_attributes'].get('load_data_objects_spec_only')
-			if old_load_spec_only is not None:
-				# Invert: old load_data_objects_spec_only=true means load_all_from_schema=false
-				if isinstance(old_load_spec_only, str):
-					old_load_spec_only = old_load_spec_only.lower() == 'true'
-				load_all_from_schema = not old_load_spec_only
-			else:
-				# Check for even older apply_data_objects_spec parameter
-				old_apply_spec = composed_config['pipeline']['data_attributes'].get('apply_data_objects_spec')
-				if old_apply_spec is not None:
-					# Old apply_data_objects_spec=true means prefer (load all), which is load_all_from_schema=true
-					if isinstance(old_apply_spec, str):
-						old_apply_spec = old_apply_spec.lower() == 'true'
-					load_all_from_schema = old_apply_spec
+		include_data_objects = composed_config['pipeline']['data_attributes'].get('include_data_objects', 'spec')
 		
-		# Convert string to boolean if needed
-		if isinstance(load_all_from_schema, str):
-			load_all_from_schema = load_all_from_schema.lower() == 'true'
+		# Backward compatibility: check for old parameter names
+		if include_data_objects is None or include_data_objects not in ('all', 'spec'):
+			# Check for old load_data_objects parameter
+			old_load_data_objects = composed_config['pipeline']['data_attributes'].get('load_data_objects')
+			if old_load_data_objects is not None:
+				# Convert old load_data_objects to new include_data_objects
+				if isinstance(old_load_data_objects, str):
+					old_load_data_objects = old_load_data_objects.lower()
+				include_data_objects = old_load_data_objects if old_load_data_objects in ('all', 'spec') else 'spec'
+			else:
+				# Check for old load_all_from_schema parameter (boolean)
+				old_load_all = composed_config['pipeline']['data_attributes'].get('load_all_from_schema')
+				if old_load_all is not None:
+					# Convert old boolean to new string format
+					if isinstance(old_load_all, str):
+						old_load_all = old_load_all.lower() == 'true'
+					include_data_objects = 'all' if old_load_all else 'spec'
+				else:
+					# Check for old load_data_objects_spec_only parameter
+					old_load_spec_only = composed_config['pipeline']['data_attributes'].get('load_data_objects_spec_only')
+					if old_load_spec_only is not None:
+						# Invert: old load_data_objects_spec_only=true means include_data_objects=spec
+						if isinstance(old_load_spec_only, str):
+							old_load_spec_only = old_load_spec_only.lower() == 'true'
+						include_data_objects = 'spec' if old_load_spec_only else 'all'
+					else:
+						# Check for even older apply_data_objects_spec parameter
+						old_apply_spec = composed_config['pipeline']['data_attributes'].get('apply_data_objects_spec')
+						if old_apply_spec is not None:
+							# Old apply_data_objects_spec=true means prefer (load all), which is include_data_objects=all
+							if isinstance(old_apply_spec, str):
+								old_apply_spec = old_apply_spec.lower() == 'true'
+							include_data_objects = 'all' if old_apply_spec else 'spec'
+		
+		# Normalize to lowercase string
+		if isinstance(include_data_objects, str):
+			include_data_objects = include_data_objects.lower()
+			if include_data_objects not in ('all', 'spec'):
+				include_data_objects = 'spec'
 		
 		data_objects_spec = composed_config.get('data_objects_spec', [])
 		
 		process_continue = True
-		# Check if load_all_from_schema=false and data_objects_spec is empty
-		if not load_all_from_schema and len(data_objects_spec) == 0:
-			self.console.print(f"\n[bold yellow]Warning:[/bold yellow] load_all_from_schema=false and data_objects_spec[] is empty. No objects will be loaded.")
-			self.console.print(f"Either set load_all_from_schema=true to load all objects from schema, or add objects to data_objects_spec[].")
+		# Check if include_data_objects='spec' and data_objects_spec is empty
+		if include_data_objects == 'spec' and len(data_objects_spec) == 0:
+			self.console.print(f"\n[bold yellow]Warning:[/bold yellow] include_data_objects='spec' and data_objects_spec[] is empty. No objects will be loaded.")
+			self.console.print(f"Either set include_data_objects='all' to load all objects from schema, or add objects to data_objects_spec[].")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
-		elif load_all_from_schema and len(data_objects_spec) == 0:
-			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (load_all_from_schema=true)")
+		elif include_data_objects == 'all' and len(data_objects_spec) == 0:
+			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (include_data_objects='all')")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
 
 		if process_continue:
@@ -194,7 +217,9 @@ class CliInitializer():
 			self.init_data_objects(pipeline_name, object_names=None)
 
 		else:
-			self.console.print("Review the pipeline.yaml file and modify manually if necessary.")
+			# Pipeline configuration was already saved earlier in init_pipeline
+			# Just exit with message
+			self.console.print("Pipeline configuration saved. Review the pipeline.yaml file and modify manually if necessary.")
 
 	def init_data_objects(self, pipeline_name, object_names):
 
@@ -208,7 +233,8 @@ class CliInitializer():
 		object_name_key_comment = data_objects_spec_meta.get('object_name').get("key_comment")
 		data_objects_spec_list = []
 
-		use_pipeline_wizard = prompt.Confirm.ask("Use data object specifications wizard")
+		# Use wizard mode by default when continuing from init_pipeline
+		use_pipeline_wizard = True
 		ask_for_next_object = True
 		# 1. first handle list in array
 		if object_names is not None and type(object_names) == str:

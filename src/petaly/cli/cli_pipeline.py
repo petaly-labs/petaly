@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import os
 import logging
@@ -63,7 +52,8 @@ class CliPipeline:
         Args:
             pipeline_name: Name of the pipeline to compose
         """
-        self.compose_pipeline_attributes(pipeline_name)
+        # Set pipeline_name directly (no longer using pipeline_attributes section)
+        self.composed_pipeline_config['pipeline']['pipeline_name'] = pipeline_name
         
         # Check if connections.yaml exists
         connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
@@ -109,25 +99,17 @@ class CliPipeline:
                 existing_connection_names = list(connections_dict.keys())
             
             if existing_connection_names:
-                # Ask once if user wants to use existing connections
-                use_existing = prompt.Confirm.ask("Do you want to use an existing connections?", default=True)
+                # Show list of existing connections directly
+                self.console.print(f"\nExisting connections:")
+                self.console.print(f"  0. [bold cyan]Create new connection[/bold cyan]")
+                for idx, connection_name in enumerate(existing_connection_names, 1):
+                    self.console.print(f"  {idx}. {connection_name}")
                 
-                if use_existing:
-                    # Show list once
-                    self.console.print(f"\nExisting connections:")
-                    self.console.print(f"  0. [bold cyan]Create new connection[/bold cyan]")
-                    for idx, connection_name in enumerate(existing_connection_names, 1):
-                        self.console.print(f"  {idx}. {connection_name}")
-                    
-                    # Select source connection
-                    source_connection_name = self.cli_menu._select_connection_from_list('source', existing_connection_names, len(existing_connection_names), connections_fpath)
-                    
-                    # Select target connection (don't show list again)
-                    target_connection_name = self.cli_menu._select_connection_from_list('target', existing_connection_names, len(existing_connection_names), connections_fpath)
-                else:
-                    # User wants to create new connections
-                    source_connection_name = self.cli_menu.select_or_create_connection('source', connections_fpath, skip_list=True)
-                    target_connection_name = self.cli_menu.select_or_create_connection('target', connections_fpath, skip_list=True)
+                # Select source connection
+                source_connection_name = self.cli_menu._select_connection_from_list('source', existing_connection_names, len(existing_connection_names), connections_fpath)
+                
+                # Select target connection (don't show list again)
+                target_connection_name = self.cli_menu._select_connection_from_list('target', existing_connection_names, len(existing_connection_names), connections_fpath)
             else:
                 # No existing connections, create new ones
                 source_connection_name = self.cli_menu.select_or_create_connection('source', connections_fpath, skip_list=True)
@@ -156,21 +138,23 @@ class CliPipeline:
             self.compose_connection_attributes('source_attributes')
             self.compose_connection_attributes('target_attributes')
             
-            # Prompt for CSV-specific attributes if connector is CSV (for inline attributes)
+            # Prompt for file connector-specific attributes if connector is CSV, Parquet, or JSON (for inline attributes)
             source_connector_type = self.composed_pipeline_config['pipeline']['source_attributes'].get('connector_type')
             target_connector_type = self.composed_pipeline_config['pipeline']['target_attributes'].get('connector_type')
             
-            if source_connector_type == 'csv':
-                self.console.print(f"\n[bold]Configure CSV Source Directory[/bold]")
+            if source_connector_type in ('csv', 'parquet', 'json'):
+                connector_name = source_connector_type.upper()
+                self.console.print(f"\n[bold]Configure {connector_name} Source Directory[/bold]")
                 source_dir = prompt.Prompt.ask(
-                    f"Enter [bold yellow]source_dir[/bold yellow] (absolute path to source CSV files directory)",
+                    f"Enter [bold yellow]source_dir[/bold yellow] (absolute path to source {connector_name} files directory)",
                     default=None
                 )
                 if source_dir:
                     self.composed_pipeline_config['pipeline']['source_attributes']['source_dir'] = source_dir
             
-            if target_connector_type == 'csv':
-                self.console.print(f"\n[bold]Configure CSV Target Directory[/bold]")
+            if target_connector_type in ('csv', 'parquet', 'json'):
+                connector_name = target_connector_type.upper()
+                self.console.print(f"\n[bold]Configure {connector_name} Target Directory[/bold]")
                 destination_dir = prompt.Prompt.ask(
                     f"Enter [bold yellow]destination_dir[/bold yellow] (absolute path to destination directory)",
                     default=None
@@ -184,19 +168,6 @@ class CliPipeline:
         
         self.compose_data_attributes()
     
-    def compose_pipeline_attributes(self, pipeline_name):
-        """
-        Composes pipeline attributes (name, enabled status, etc.).
-        
-        Args:
-            pipeline_name: Name of the pipeline
-        """
-        self.cli_menu.use_pipeline_wizard = prompt.Confirm.ask("\nUse Pipeline wizard")
-
-        predefined_values = {'pipeline_name': pipeline_name}
-        pipeline_attributes = self.pipeline_meta_config.get("pipeline_attributes")
-        assigned_attributes = self.cli_menu.assign_attributes(pipeline_attributes, predefined_values=predefined_values)
-        self.composed_pipeline_config['pipeline']['pipeline_attributes'].update(assigned_attributes)
 
     def compose_connection_attributes(self, connection_attributes_name):
         """
@@ -266,7 +237,8 @@ class CliPipeline:
     def _prompt_for_schema_if_needed(self, connection_attributes_name, connection_name):
         """
         Prompts for database_schema/dataset if the connector supports it.
-        Schema/dataset are pipeline-specific and should be configured in pipeline.yaml,
+        Also prompts for file connector-specific attributes (source_dir/destination_dir).
+        Schema/dataset and file directories are pipeline-specific and should be configured in pipeline.yaml,
         not in connections.yaml.
         
         Args:
@@ -298,7 +270,33 @@ class CliPipeline:
         if not connector_type:
             return
         
-        # Check if connector supports database_schema
+        # Prompt for file connector-specific attributes if connector is CSV, Parquet, or JSON
+        # This should be done BEFORE checking for database_schema, as file connectors don't have schema
+        if connector_type in ('csv', 'parquet', 'json'):
+            self.console.print(f"\n[bold]Configure {connection_attributes_name.replace('_', ' ').title()}[/bold]")
+            if connection_attributes_name == 'source_attributes':
+                # Prompt for source_dir when file connector is source
+                connector_name = connector_type.upper()
+                self.console.print(f"\n[bold]Configure {connector_name} Source Directory[/bold]")
+                source_dir = prompt.Prompt.ask(
+                    f"Enter [bold yellow]source_dir[/bold yellow] (absolute path to source {connector_name} files directory)",
+                    default=None
+                )
+                if source_dir:
+                    self.composed_pipeline_config['pipeline'][connection_attributes_name]['source_dir'] = source_dir
+            elif connection_attributes_name == 'target_attributes':
+                # Prompt for destination_dir when file connector is target
+                connector_name = connector_type.upper()
+                self.console.print(f"\n[bold]Configure {connector_name} Target Directory[/bold]")
+                destination_dir = prompt.Prompt.ask(
+                    f"Enter [bold yellow]destination_dir[/bold yellow] (absolute path to destination directory)",
+                    default=None
+                )
+                if destination_dir:
+                    self.composed_pipeline_config['pipeline'][connection_attributes_name]['destination_dir'] = destination_dir
+            return  # File connectors don't have database_schema, so return after prompting for directories
+        
+        # Check if connector supports database_schema (for database connectors)
         connector_attributes = self.m_conf.get_connector_attributes(connector_type)
         if 'database_schema' not in connector_attributes:
             # Connector doesn't support schema (e.g., MySQL)
@@ -323,27 +321,6 @@ class CliPipeline:
         
         if schema:
             self.composed_pipeline_config['pipeline'][connection_attributes_name]['database_schema'] = schema
-        
-        # Prompt for CSV-specific attributes if connector is CSV
-        if connector_type == 'csv':
-            if connection_attributes_name == 'source_attributes':
-                # Prompt for source_dir when CSV is source
-                self.console.print(f"\n[bold]Configure CSV Source Directory[/bold]")
-                source_dir = prompt.Prompt.ask(
-                    f"Enter [bold yellow]source_dir[/bold yellow] (absolute path to source CSV files directory)",
-                    default=None
-                )
-                if source_dir:
-                    self.composed_pipeline_config['pipeline'][connection_attributes_name]['source_dir'] = source_dir
-            elif connection_attributes_name == 'target_attributes':
-                # Prompt for destination_dir when CSV is target
-                self.console.print(f"\n[bold]Configure CSV Target Directory[/bold]")
-                destination_dir = prompt.Prompt.ask(
-                    f"Enter [bold yellow]destination_dir[/bold yellow] (absolute path to destination directory)",
-                    default=None
-                )
-                if destination_dir:
-                    self.composed_pipeline_config['pipeline'][connection_attributes_name]['destination_dir'] = destination_dir
     
     def _prompt_for_bucket_prefix_if_needed(self, connection_attributes_name, connection_name, pipeline_name):
         """
@@ -422,9 +399,9 @@ class CliPipeline:
         self.console.print(f"\n[bold]{self.break_line}[/bold]")
         self.console.print(f"[bold]Specify default object settings[/bold]")
 
-        object_default_settings = data_attributes.get('object_default_settings')
-        assigned_object_default_settings = self.cli_menu.assign_attributes(object_default_settings, predefined_values=None)
-        self.composed_pipeline_config['pipeline']['data_attributes'].update({"object_default_settings": assigned_object_default_settings})
+        csv_default_settings = data_attributes.get('csv_default_settings')
+        assigned_csv_default_settings = self.cli_menu.assign_attributes(csv_default_settings, predefined_values=None)
+        self.composed_pipeline_config['pipeline']['data_attributes'].update({"csv_default_settings": assigned_csv_default_settings})
 
         self.console.print(f"\n[bold]{self.break_line}[/bold]")
         self.console.print(f"[bold]Specify data object attributes[/bold]")

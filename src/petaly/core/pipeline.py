@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -104,11 +93,10 @@ class Pipeline:
         self.data_objects_spec = []
         self.data_objects = []
         self.data_objects_from_cli = []
-        self.is_enabled = False
         self.source_connector_id = None
         self.target_connector_id = None
-        self.load_all_from_schema = None
-        self.object_default_settings = {}
+        self.include_data_objects = None
+        self.csv_default_settings = {}
 
         try:
             pipeline_all_obj = self.get_pipeline_entire_config()
@@ -129,11 +117,13 @@ class Pipeline:
                 logger.warning(f"The pipeline: {pipeline_name} does not exist under: {self.pipeline_fpath}")
                 return
 
-            pipeline_attr = pipeline_dict.get('pipeline', {}).get('pipeline_attributes', {})
+            # Get pipeline_name directly from pipeline (no longer nested in pipeline_attributes)
+            pipeline_dict_data = pipeline_dict.get('pipeline', {})
+            pipeline_name_from_config = pipeline_dict_data.get('pipeline_name')
             
             # Get source and target attributes sections
-            source_attributes_section = pipeline_dict.get('pipeline', {}).get('source_attributes', {})
-            target_attributes_section = pipeline_dict.get('pipeline', {}).get('target_attributes', {})
+            source_attributes_section = pipeline_dict_data.get('source_attributes', {})
+            target_attributes_section = pipeline_dict_data.get('target_attributes', {})
             
             # Resolve source attributes (may contain connection reference)
             self.source_attr = self.connections.resolve_attributes(source_attributes_section, 'source')
@@ -153,47 +143,68 @@ class Pipeline:
             if self.target_attr:
                 self.check_pipeline_outdated_arguments(self.target_attr)
 
-            if pipeline_attr.get('pipeline_name') != pipeline_name:
-                logger.warning(f"The pass parameter for pipeline_name: {pipeline_name} does not match the pipeline_name {pipeline_attr.get('pipeline_name')} defined in the corresponding file: {self.pipeline_fpath}")
+            # Backward compatibility: check pipeline_attributes if pipeline_name not found directly
+            if not pipeline_name_from_config:
+                pipeline_attr = pipeline_dict_data.get('pipeline_attributes', {})
+                pipeline_name_from_config = pipeline_attr.get('pipeline_name')
+                if pipeline_name_from_config:
+                    logger.warning(f"Pipeline uses deprecated 'pipeline_attributes' section. Please move 'pipeline_name' directly under 'pipeline'.")
+
+            if pipeline_name_from_config and pipeline_name_from_config != pipeline_name:
+                logger.warning(f"The pass parameter for pipeline_name: {pipeline_name} does not match the pipeline_name {pipeline_name_from_config} defined in the corresponding file: {self.pipeline_fpath}")
                 return
 
             # PIPELINE ATTRIBUTE
-            self.is_enabled = True if str(pipeline_attr.get('is_enabled', 'false')).lower() == 'true' else False
-
-            if not self.is_enabled:
-                logger.warning(f"The pipeline: {pipeline_name} is disabled. To enable pipeline {self.pipeline_dpath} set the parameter is_enabled: true")
-
             self.source_connector_id = self.source_attr.get('connector_type')
             self.target_connector_id = self.target_attr.get('connector_type')
 
             self.data_attributes = pipeline_dict.get('pipeline', {}).get('data_attributes', {})
             
-            # Get load_all_from_schema, with backward compatibility for old parameter names
-            self.load_all_from_schema = self.data_attributes.get('load_all_from_schema', False)
+            # Get include_data_objects, with backward compatibility for old parameter names
+            self.include_data_objects = self.data_attributes.get('include_data_objects', 'spec')
             
             # Backward compatibility: check for old parameter names
-            if self.load_all_from_schema is None or self.load_all_from_schema == False:
-                # Check for old load_data_objects_spec_only parameter
-                old_load_spec_only = self.data_attributes.get('load_data_objects_spec_only')
-                if old_load_spec_only is not None:
-                    # Invert: old load_data_objects_spec_only=true means load_all_from_schema=false
-                    if isinstance(old_load_spec_only, str):
-                        old_load_spec_only = old_load_spec_only.lower() == 'true'
-                    self.load_all_from_schema = not old_load_spec_only
+            if self.include_data_objects is None or self.include_data_objects not in ('all', 'spec'):
+                # Check for old load_data_objects parameter
+                old_load_data_objects = self.data_attributes.get('load_data_objects')
+                if old_load_data_objects is not None:
+                    # Convert old load_data_objects to new include_data_objects
+                    if isinstance(old_load_data_objects, str):
+                        old_load_data_objects = old_load_data_objects.lower()
+                    self.include_data_objects = old_load_data_objects if old_load_data_objects in ('all', 'spec') else 'spec'
                 else:
-                    # Check for even older apply_data_objects_spec parameter
-                    old_apply_spec = self.data_attributes.get('apply_data_objects_spec')
-                    if old_apply_spec is not None:
-                        # Old apply_data_objects_spec=true means prefer (load all), which is load_all_from_schema=true
-                        if isinstance(old_apply_spec, str):
-                            old_apply_spec = old_apply_spec.lower() == 'true'
-                        self.load_all_from_schema = old_apply_spec
+                    # Check for old load_all_from_schema parameter (boolean)
+                    old_load_all = self.data_attributes.get('load_all_from_schema')
+                    if old_load_all is not None:
+                        # Convert old boolean to new string format
+                        if isinstance(old_load_all, str):
+                            old_load_all = old_load_all.lower() == 'true'
+                        self.include_data_objects = 'all' if old_load_all else 'spec'
+                    else:
+                        # Check for old load_data_objects_spec_only parameter
+                        old_load_spec_only = self.data_attributes.get('load_data_objects_spec_only')
+                        if old_load_spec_only is not None:
+                            # Invert: old load_data_objects_spec_only=true means include_data_objects=spec
+                            if isinstance(old_load_spec_only, str):
+                                old_load_spec_only = old_load_spec_only.lower() == 'true'
+                            self.include_data_objects = 'spec' if old_load_spec_only else 'all'
+                        else:
+                            # Check for even older apply_data_objects_spec parameter
+                            old_apply_spec = self.data_attributes.get('apply_data_objects_spec')
+                            if old_apply_spec is not None:
+                                # Old apply_data_objects_spec=true means prefer (load all), which is include_data_objects=all
+                                if isinstance(old_apply_spec, str):
+                                    old_apply_spec = old_apply_spec.lower() == 'true'
+                                self.include_data_objects = 'all' if old_apply_spec else 'spec'
             
-            # Convert string to boolean if needed
-            if isinstance(self.load_all_from_schema, str):
-                self.load_all_from_schema = self.load_all_from_schema.lower() == 'true'
+            # Normalize to lowercase string
+            if isinstance(self.include_data_objects, str):
+                self.include_data_objects = self.include_data_objects.lower()
+                if self.include_data_objects not in ('all', 'spec'):
+                    logger.warning(f"Invalid value for include_data_objects: {self.include_data_objects}. Expected 'all' or 'spec'. Defaulting to 'spec'.")
+                    self.include_data_objects = 'spec'
             
-            self.object_default_settings = self.get_object_default_settings()
+            self.csv_default_settings = self.get_csv_default_settings()
 
             # Set data objects spec
             self.data_objects_spec = data_objects_spec.get('data_objects_spec', [])
@@ -203,11 +214,11 @@ class Pipeline:
                     if obj is not None:
                         self.data_objects.append(obj.get('object_spec', {}).get('object_name'))
             
-            # Warning: if load_all_from_schema=false and data_objects_spec[] is empty, no objects will be loaded
-            if not self.load_all_from_schema and len(self.data_objects) == 0:
+            # Warning: if include_data_objects=spec and data_objects_spec[] is empty, no objects will be loaded
+            if self.include_data_objects == 'spec' and len(self.data_objects) == 0:
                 logger.warning(
-                    f"Pipeline {pipeline_name}: load_all_from_schema=false and data_objects_spec[] is empty. "
-                    f"No objects will be loaded. Either set load_all_from_schema=true to load all objects from schema, "
+                    f"Pipeline {pipeline_name}: include_data_objects='spec' and data_objects_spec[] is empty. "
+                    f"No objects will be loaded. Either set include_data_objects='all' to load all objects from schema, "
                     f"or add objects to data_objects_spec[] to load specific objects."
                 )
 
@@ -271,7 +282,7 @@ class Pipeline:
             logger.error(f"Error loading pipeline configuration from {self.pipeline_fpath}: {e}")
             return None
 
-    def get_object_default_settings(self):
+    def get_csv_default_settings(self):
         """
         Gets default settings for data objects.
         
@@ -283,25 +294,35 @@ class Pipeline:
         5. Process column quote settings
         """
 
-        object_default_settings = self.data_attributes.get('object_default_settings').copy()
-        self.check_pipeline_outdated_arguments(object_default_settings)
+        # Backward compatibility: check for old 'object_default_settings' name
+        csv_default_settings = self.data_attributes.get('csv_default_settings') or self.data_attributes.get('object_default_settings')
+        if csv_default_settings is None:
+            logger.error("Missing 'csv_default_settings' in data_attributes")
+            return {}
+        csv_default_settings = csv_default_settings.copy()
+        
+        # Warn if old name was used
+        if 'object_default_settings' in self.data_attributes and 'csv_default_settings' not in self.data_attributes:
+            logger.warning("Pipeline uses deprecated 'object_default_settings'. Please rename to 'csv_default_settings'.")
+        
+        self.check_pipeline_outdated_arguments(csv_default_settings)
 
-        columns_delimiter = object_default_settings.get('columns_delimiter')
-        object_default_settings.update({'columns_delimiter': columns_delimiter})
+        columns_delimiter = csv_default_settings.get('columns_delimiter')
+        csv_default_settings.update({'columns_delimiter': columns_delimiter})
         
         # Remove the problematic conversion that was causing PyArrow to fail
         # The delimiter should remain as a single character for PyArrow compatibility
         #if columns_delimiter == "\t":
-        #    object_default_settings.update({'columns_delimiter': '\\t'})
+        #    csv_default_settings.update({'columns_delimiter': '\\t'})
 
-        header = object_default_settings.get('header')
+        header = csv_default_settings.get('header')
         if header is not True:
             header = False
 
-        object_default_settings.update({'header': header})
+        csv_default_settings.update({'header': header})
 
         # 3. OPTIONALLY ENCLOSED BY
-        columns_quote = object_default_settings.get('columns_quote')
+        columns_quote = csv_default_settings.get('columns_quote')
 
         if columns_quote in ('double', 'double-quote'):
             columns_quote = 'double'
@@ -310,9 +331,18 @@ class Pipeline:
         else:
             columns_quote = 'none'
 
-        object_default_settings.update({'columns_quote': columns_quote})
+        csv_default_settings.update({'columns_quote': columns_quote})
 
-        return object_default_settings
+        # 4. TYPE AUTODETECTION (for CSV/TSV/TXT sources)
+        type_autodetection = csv_default_settings.get('type_autodetection', True)
+        # Convert string to boolean if needed (for backward compatibility)
+        if isinstance(type_autodetection, str):
+            type_autodetection = type_autodetection.lower() in ('true', '1', 'yes', 'on')
+        elif type_autodetection is None:
+            type_autodetection = True  # Default to true if not specified
+        csv_default_settings.update({'type_autodetection': bool(type_autodetection)})
+
+        return csv_default_settings
 
     def check_pipeline_outdated_arguments(self, dict_to_check):
         """
@@ -432,8 +462,8 @@ class Pipeline:
             skeleton_config = self.f_handler.load_json(skeleton_fpath)
             
             # Set pipeline name in the skeleton
-            if 'pipeline' in skeleton_config and 'pipeline_attributes' in skeleton_config['pipeline']:
-                skeleton_config['pipeline']['pipeline_attributes']['pipeline_name'] = pipeline_name
+            if 'pipeline' in skeleton_config:
+                skeleton_config['pipeline']['pipeline_name'] = pipeline_name
             
             # Save to pipeline file
             self.f_handler.save_dict_to_file(

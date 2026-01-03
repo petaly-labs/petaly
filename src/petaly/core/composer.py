@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 import sys
 
 from petaly.utils.file_handler import FileHandler
@@ -54,22 +43,21 @@ class Composer:
 		
 		Logic:
 		1. Get object directories from output path
-		2. Compare with pipeline object list
-		3. Return appropriate list based on spec mode
+		2. If data_objects_spec has objects, use those (regardless of include_data_objects)
+		3. If data_objects_spec is empty, check include_data_objects
 		"""
 		object_dir_list = self.f_handler.get_all_dir_names(pipeline.output_pipeline_dpath)
 		pipeline_object_list = pipeline.data_objects
 
-		# If load_all_from_schema is true, return all objects
-		if pipeline.load_all_from_schema:
+		# If data_objects_spec has objects, use those (regardless of include_data_objects)
+		if len(pipeline_object_list) > 0:
+			return_list = self.get_data_objects_intersection(object_dir_list, pipeline_object_list)
+		# If data_objects_spec is empty and include_data_objects is 'all', return all objects
+		elif pipeline.include_data_objects == 'all':
 			return_list = object_dir_list
+		# If data_objects_spec is empty and include_data_objects is 'spec', return empty list
 		else:
-			# load_all_from_schema is false (only mode) - return intersection (only specified objects)
-			if len(pipeline_object_list) == 0:
-				# No objects specified - return empty list (no objects to load)
-				return_list = []
-			else:
-				return_list = self.get_data_objects_intersection(object_dir_list, pipeline_object_list)
+			return_list = []
 
 		return return_list
 	def get_data_objects_intersection(self, first_list, second_list):

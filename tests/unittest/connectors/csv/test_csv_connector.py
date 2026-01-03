@@ -3,9 +3,9 @@ import os
 import tempfile
 import pandas as pd
 from unittest.mock import Mock, patch
-from petaly.connectors.csv.csv_connector import CsvConnector
-from petaly.connectors.csv.csv_extractor import CsvExtractor
-from petaly.connectors.csv.csv_loader import CsvLoader
+from petaly.connectors.file.csv.csv_connector import CsvConnector
+from petaly.connectors.file.csv.csv_extractor import CsvExtractor
+from petaly.connectors.file.csv.csv_loader import CsvLoader
 
 class TestCsvConnector:
     def test_connector_initialization(self):
@@ -48,16 +48,17 @@ class TestCsvExtractor:
         }
         pipeline.source_attr = {
             'connector_type': 'csv',
-            'path': 'test.csv'
+            'path': 'test.csv',
+            'source_dir': '/tmp/test_source'  # Add source_dir to avoid validation error
         }
         pipeline.data_attributes = {
-            'data_objects_spec_mode': 'only',
-            'object_default_settings': {
+            'include_data_objects': 'spec',
+            'csv_default_settings': {
                 'header': True,
                 'columns_delimiter': ','
             }
         }
-        pipeline.object_default_settings = {
+        pipeline.csv_default_settings = {
             'header': True,
             'columns_delimiter': ','
         }
@@ -77,6 +78,7 @@ class TestCsvExtractor:
         pipeline.output_pipeline_dpath = output_dir
         pipeline.output_object_data_dpath = os.path.join(output_dir, '{object_name}')
         pipeline.output_object_metadata_dpath = os.path.join(output_dir, '{object_name}', 'metadata')
+        pipeline.pipeline_fpath = '/tmp/test_pipeline.yaml'  # Add pipeline_fpath for error messages
         return pipeline
     
     def test_extractor_initialization(self, pipeline_mock):
@@ -95,6 +97,8 @@ class TestCsvExtractor:
         mock_is_file.return_value = True
         mock_cp_file.return_value = None
         mock_cleanup.return_value = None
+        # Make pandas.read_csv raise an exception to test fallback path that calls cp_file
+        mock_read_csv.side_effect = Exception("Test exception")
         pipeline_mock.source['path'] = sample_csv
         pipeline_mock.source_attr['path'] = sample_csv
         
@@ -108,7 +112,7 @@ class TestCsvExtractor:
         
         # Verify the mocks were called
         mock_is_file.assert_called_once()
-        mock_cp_file.assert_called_once()
+        mock_cp_file.assert_called_once()  # Called in fallback path when pandas.read_csv fails
         assert mock_cleanup.call_count == 2  # Called in both extract_data() and get_extractor_obj_conf()
 
 class TestCsvLoader:
@@ -148,13 +152,13 @@ class TestCsvLoader:
         }
         pipeline.pipeline_name = 'test_pipeline'
         pipeline.data_attributes = {
-            'data_objects_spec_mode': 'only',
-            'object_default_settings': {
+            'include_data_objects': 'spec',
+            'csv_default_settings': {
                 'header': True,
                 'columns_delimiter': ','
             }
         }
-        pipeline.object_default_settings = {
+        pipeline.csv_default_settings = {
             'header': True,
             'columns_delimiter': ','
         }

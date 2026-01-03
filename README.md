@@ -1,7 +1,3 @@
-![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_logo_transparent.png)
-
-![](https://raw.githubusercontent.com/petaly-labs/petaly/main/docs/tutorial/recording/petaly_run_pipe.gif)
-
 ## Overview
 
 Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by and for data professionals! Our mission is to simplify data movement across different platforms with a tool that truly understands the needs of the data community.
@@ -16,26 +12,24 @@ Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by a
   - Google Cloud Storage (GCS Bucket)
   - S3 Bucket
   - Local CSV files
+  - Parquet files
+  - JSON files
 
 - **Features**:
   - Source to target schema evaluation and mapping
-  - CSV file load with column-type recognition
+  - CSV/Parquet/JSON file load with column-type recognition
   - Target table structure generation
   - Configurable type mapping between different databases
-  - Full table unload/load in CSV format
+  - Full table unload/load in CSV, Parquet, or JSON format
+  - Direct format conversion (CSV ↔ Parquet ↔ JSON)
+  - Direct export/import for BigQuery and Redshift (Parquet/JSON)
 
 - **User-Friendly**: No programming knowledge required
 - **YAML/JSON Configuration**: Easy pipeline setup
 - **Cloud Ready**: Full support for AWS and GCP
 
 
-**[EXPERIMENTAL]**:
 
-Petaly went agentic!<br>
-The AI Agent can create and run pipeline using natural language prompts.<br>
-If you're interested in exploring, check out the experimental branch: [petaly-ai-agent](https://github.com/petaly-labs/petaly/tree/petaly-ai-agent)<br>
-
-Feedback is welcome! 
 
 ## Quick Start
 
@@ -218,9 +212,7 @@ python3 -m petaly run -p csv_to_postgres
 ### Example Configuration
 ```yaml
 pipeline:
-  pipeline_attributes:
-    pipeline_name: csv_to_postgres
-    is_enabled: true
+  pipeline_name: csv_to_postgres
   source_attributes:
     connector_type: csv
   target_attributes:
@@ -232,8 +224,8 @@ pipeline:
     database_name: petalydb
     database_schema: petaly_tutorial
   data_attributes:
-    use_data_objects_spec: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ","
       columns_quote: none

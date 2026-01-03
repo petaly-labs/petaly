@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import rich.prompt as prompt
 from rich.console import Console
@@ -133,8 +122,14 @@ class CliMenu():
                         assigned_value = [None]
                 else:
                     if self.use_pipeline_wizard:
-                        assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", choices=preassigned_values,
-                                                           default=default_value, show_default=False)
+                        # For String types, only pass choices if preassigned_values is not None
+                        # If preassigned_values is None, prompt without choices (free text input)
+                        if preassigned_values is not None:
+                            assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", choices=preassigned_values,
+                                                               default=default_value, show_default=False)
+                        else:
+                            assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]",
+                                                               default=default_value, show_default=False)
 
                     if value.get('key_type') == 'Boolean':
                         assigned_value = True if assigned_value == 'true' else False

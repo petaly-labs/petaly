@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import sys
 import logging
@@ -36,24 +25,24 @@ class DataObject:
         """
         data_objects = pipeline.data_objects_spec
         self.pipeline_data_object_dir = pipeline.output_object_data_dpath.format(object_name=object_name)
-        self.load_all_from_schema = pipeline.load_all_from_schema
-        self.object_settings = self.format_object_default_settings(pipeline.object_default_settings)
+        self.include_data_objects = pipeline.include_data_objects
+        self.object_settings = self.format_csv_default_settings(pipeline.csv_default_settings)
         self.object_settings.update({'cleanup_linebreak_in_fields': False})
 
         data_object_spec = self.get_object_spec(data_objects, object_name)
         logger.debug(f"Data object spec: {data_object_spec}")
         if not data_object_spec:
-            # If load_all_from_schema is false (only mode), spec is required
-            if not self.load_all_from_schema:
+            # If include_data_objects is 'spec' (only mode), spec is required
+            if self.include_data_objects == 'spec':
                 logger.info(
-                    f"For {pipeline.source_connector_id} extract the parameters load_all_from_schema=false and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
+                    f"For {pipeline.source_connector_id} extract the parameters include_data_objects='spec' and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
                 sys.exit()
 
-            # If load_all_from_schema is true (load all) or spec is empty, check CSV requirement
-            if pipeline.source_connector_id in ('csv'):
+            # If include_data_objects is 'all' (load all) or spec is empty, check file connector requirement
+            if pipeline.source_connector_id in ('csv', 'parquet', 'json'):
                 logger.info(
-                    f"In case your source is csv, the parameters load_all_from_schema should be set to false and require the specification in the data_objects_spec[]."
-                    f"\nload_all_from_schema=false"
+                    f"In case your source is a file connector ({pipeline.source_connector_id}), the parameters include_data_objects should be set to 'spec' and require the specification in the data_objects_spec[]."
+                    f"\ninclude_data_objects='spec'"
                     f"\nCheck pipeline under: {pipeline.pipeline_fpath}")
 
                 sys.exit()
@@ -111,7 +100,7 @@ class DataObject:
         self.object_source_dir = None
         self.file_names = [None]
 
-    def format_object_default_settings(self, object_default_settings):
+    def format_csv_default_settings(self, csv_default_settings):
         """
         Formats default settings for a data object.
         
@@ -120,7 +109,7 @@ class DataObject:
         2. Process header settings
         3. Process column delimiter settings
         """
-        object_settings = object_default_settings.copy()
+        object_settings = csv_default_settings.copy()
         # 1. Header
 
         header = True if object_settings.get('header') is True else False

@@ -2,6 +2,52 @@
 
 This guide provides detailed configuration options for each endpoint in Petaly, specifying their usage as source, target, or both.
 
+## Connection Configuration Methods
+
+Petaly supports two methods for configuring source and target connections:
+
+### Method 1: Using connections.yaml (Recommended)
+
+Define reusable connections in `connections.yaml` and reference them in pipelines.
+
+**Template File:** See [connections.yaml-template](connections.yaml-template) for a complete example with all connector types.
+
+**In connections.yaml:**
+```yaml
+connections:
+  my_postgres_conn:
+    connector_type: postgres
+    database_user: user
+    database_password: password
+    database_host: localhost
+    database_port: 5432
+    database_name: mydb
+```
+
+**In pipeline.yaml:**
+```yaml
+source_attributes:
+  connection_name: my_postgres_conn  # Reference to connection
+  database_schema: public            # Pipeline-specific override
+```
+
+### Method 2: Inline Attributes
+
+Define all attributes directly in the pipeline configuration:
+
+```yaml
+source_attributes:
+  connector_type: postgres
+  database_user: user
+  database_password: password
+  database_host: localhost
+  database_port: 5432
+  database_name: mydb
+  database_schema: public
+```
+
+**Note:** When using `connection_name`, pipeline-specific attributes (like `database_schema`, `bucket_pipeline_prefix`) can override connection defaults. All other attributes from the connection are inherited.
+
 ## PostgreSQL
 
 Can be used as both source and target. The configuration parameters are identical for both source and target.

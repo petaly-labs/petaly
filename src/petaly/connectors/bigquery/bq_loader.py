@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -58,17 +47,36 @@ class BQLoader(DBLoader):
             self.drop_table(loader_obj_conf)
         self.create_table(loader_obj_conf)
 
-        # For loading: files can have any extension, content is determined by delimiter in object_default_settings
-        # Gzip all files (they will be parsed based on delimiter, not extension)
-        self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
-        
-        # Collect all files (regardless of extension) - delimiter will determine how to parse them
+        # Detect file format in output directory
+        # BigQuery can load Parquet and JSON directly without conversion
         import glob
         import os
-        all_files = []
-        for pattern in ['*', '*.gz', '*.csv', '*.tsv', '*.txt']:
-            all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
-        file_list = list(set([f for f in all_files if os.path.isfile(f)]))
+        
+        # Check for Parquet files first (BigQuery supports direct Parquet loading)
+        parquet_files = glob.glob(os.path.join(output_data_object_dir, '*.parquet'))
+        parquet_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.parquet.gz')))
+        
+        # Check for JSON files (BigQuery supports direct JSON loading)
+        json_files = glob.glob(os.path.join(output_data_object_dir, '*.json'))
+        json_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.json.gz')))
+        
+        # If Parquet or JSON files exist, use them directly (no CSV conversion needed)
+        if parquet_files:
+            file_list = list(set([f for f in parquet_files if os.path.isfile(f)]))
+            logger.info(f"BigQuery will load Parquet files directly (no CSV conversion needed): {len(file_list)} files")
+        elif json_files:
+            file_list = list(set([f for f in json_files if os.path.isfile(f)]))
+            logger.info(f"BigQuery will load JSON files directly (no CSV conversion needed): {len(file_list)} files")
+        else:
+            # No Parquet/JSON files found, fall back to CSV
+            # Gzip all CSV files (they will be parsed based on delimiter, not extension)
+            self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
+            
+            # Collect all files (regardless of extension) - delimiter will determine how to parse them
+            all_files = []
+            for pattern in ['*', '*.gz', '*.csv', '*.tsv', '*.txt']:
+                all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+            file_list = list(set([f for f in all_files if os.path.isfile(f)]))
         if self.load_from_bucket == True:
             blob_prefix = loader_obj_conf.get('blob_prefix')
             self.gs_connector.delete_object_in_bucket(self.cloud_bucket_name, blob_prefix)
@@ -144,21 +152,60 @@ class BQLoader(DBLoader):
 
     def compose_load_from_stmt(self, data_object, loader_obj_conf):
         """ Its compose a copy from statement """
+        # Detect source file format to determine if we can load Parquet/JSON directly
+        output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
+        import glob
+        import os
+        
+        # Check for Parquet or JSON files
+        parquet_files = glob.glob(os.path.join(output_data_object_dir, '*.parquet'))
+        parquet_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.parquet.gz')))
+        json_files = glob.glob(os.path.join(output_data_object_dir, '*.json'))
+        json_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.json.gz')))
+        
+        # Determine source format
+        # Import bigquery here to avoid circular imports
+        from google.cloud import bigquery
+        
+        if parquet_files:
+            source_format = bigquery.SourceFormat.PARQUET
+            logger.info(f"BigQuery will load Parquet format directly (no CSV conversion needed)")
+        elif json_files:
+            source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+            logger.info(f"BigQuery will load JSON format directly (no CSV conversion needed)")
+        else:
+            # Default to CSV
+            source_format = bigquery.SourceFormat.CSV
+        
         load_data_options = self.compose_from_options(loader_obj_conf)
         bq_load_from_stmt_fpath = self.f_handler.replace_file_extension(self.connector_load_from_stmt_fpath,'.json')
         load_from_stmt = self.f_handler.load_json(bq_load_from_stmt_fpath)
 
         #column_list = loader_obj_conf.get('table_ddl_dict').get('column_list')
         max_bad_records = 0
-        skip_leading_rows = 1 if load_data_options.get("header") is True else 0
-        field_delimiter = load_data_options.get("delimiter")
-        quote_char=load_data_options.get("quote_char")
-        load_from_stmt.update({"source_format": self.db_connector.bq_source_format})
-        load_from_stmt.update({"skip_leading_rows": skip_leading_rows})
-        load_from_stmt.update({'autodetect': False})
-        load_from_stmt.update({'max_bad_records': max_bad_records})
-        load_from_stmt.update({'field_delimiter': field_delimiter})
-        load_from_stmt.update({'quote_character': quote_char})
+        
+        # For Parquet and JSON formats, skip CSV-specific options
+        if source_format == bigquery.SourceFormat.PARQUET:
+            # Parquet format - no delimiter, header, or quote options needed
+            load_from_stmt.update({"source_format": source_format})
+            load_from_stmt.update({'autodetect': False})
+            load_from_stmt.update({'max_bad_records': max_bad_records})
+        elif source_format == bigquery.SourceFormat.NEWLINE_DELIMITED_JSON:
+            # JSON format - no delimiter, header, or quote options needed
+            load_from_stmt.update({"source_format": source_format})
+            load_from_stmt.update({'autodetect': False})
+            load_from_stmt.update({'max_bad_records': max_bad_records})
+        else:
+            # CSV format - include delimiter, header, and quote options
+            skip_leading_rows = 1 if load_data_options.get("header") is True else 0
+            field_delimiter = load_data_options.get("delimiter")
+            quote_char = load_data_options.get("quote_char")
+            load_from_stmt.update({"source_format": source_format})
+            load_from_stmt.update({"skip_leading_rows": skip_leading_rows})
+            load_from_stmt.update({'autodetect': False})
+            load_from_stmt.update({'max_bad_records': max_bad_records})
+            load_from_stmt.update({'field_delimiter': field_delimiter})
+            load_from_stmt.update({'quote_character': quote_char})
 
         load_from_file_fpath = loader_obj_conf.get('load_from_stmt_fpath')
         load_from_file_fpath = self.f_handler.replace_file_extension(load_from_file_fpath, '.json')

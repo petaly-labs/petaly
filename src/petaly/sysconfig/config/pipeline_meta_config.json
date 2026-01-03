@@ -1,16 +1,12 @@
 {
-  "pipeline_attributes":
-    {
-      "pipeline_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "The name of the pipeline must be unique. "},
-      "is_enabled": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean",  "key_comment": "If true the pipeline is enabled. "}
-    },
-    "data_attributes": {
-      "load_all_from_schema": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "Controls which objects to load from the schema:\nIf [bold blue]true[/bold blue]: Load all objects from the database_schema. Use object specifications from data_objects_spec[] if they exist, otherwise use default specs from data_attributes.\nIf [bold blue]false[/bold blue]: Load only objects specified in data_objects_spec[]. If any objects are specified in data_objects_spec[], their configurations will be used. [bold red]Warning:[/bold red] If load_all_from_schema=false and data_objects_spec[] is empty, no objects will be loaded.\n"},
-      "object_default_settings":
+  "data_attributes": {
+      "include_data_objects": {"in_use":true, "preassigned_values": ["all", "spec"], "default_value":"spec", "key_type": "String", "key_comment": "Controls which objects to load from the schema:\nIf [bold blue]all[/bold blue]: Load all objects from the database_schema. Use object specifications from data_objects_spec[] if they exist, otherwise use default specs from data_attributes.\nIf [bold blue]spec[/bold blue]: Load only objects specified in data_objects_spec[]. If any objects are specified in data_objects_spec[], their configurations will be used. [bold red]Warning:[/bold red] If include_data_objects='spec' and data_objects_spec[] is empty, no objects will be loaded.\n"},
+      "csv_default_settings":
                 {
                   "header": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean", "key_comment": "Specifies whether the file contains a header line with the names of each column in the file. "},
-                  "columns_delimiter": {"in_use":true, "preassigned_values": [null], "default_value":",", "key_type": "String", "key_comment": "The character delimiting individual cells in the CSV data. "},
+                  "columns_delimiter": {"in_use":true, "preassigned_values": [null], "default_value":",", "key_type": "String", "key_comment": "The character delimiting individual cells in delimited data files (CSV/TSV/TXT). Common values: ',' for CSV, '\\t' for TSV, '|' for pipe-delimited, ';' for semicolon-delimited. File format is determined by this delimiter, not by file extension. "},
                   "columns_quote": {"in_use":true, "preassigned_values": ["double","single","none"], "default_value":"double", "key_type": "String", "key_comment": "Choose the quote character for CSV columns: double (\"\"), single ('), or none. The default is double quote. "},
+                  "type_autodetection": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "Boolean", "key_comment": "Controls automatic data type detection when CSV/TSV/TXT is used as source. If true, PyArrow will automatically infer column types (int, float, date, etc.) from the data. If false, all columns will be read as strings. Default is true. "},
                   "preferred_load_mode": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String",  "key_comment": "Only full load supported yet. "},
                   "data_transition_format": {"in_use":false, "preassigned_values": ["csv"], "default_value":"csv", "key_type": "String", "key_comment": "Only csv format supported yet. "}
                 }
@@ -21,7 +17,7 @@
       "recreate_destination_object": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "If this parameter is true, the destination object (or table) will be rebuilt. If false, the object/table will be created if it does not exists. "},
       "cleanup_linebreak_in_fields": {"in_use":true, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "Boolean", "key_comment": "Setting this parameter to true will clean up a line break in all fields. This works, currently for MySQL extraction, the idea is to extend it to other sources in the future. "},
       "exclude_columns": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "Array", "key_comment": "Specifies a comma-separated list of columns to exclude. Leave empty to include all columns. "},
-      "object_source_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Relevant to files upload only, e.g. csv as a source. Specify path to files source directory. "},
+      "object_source_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Relevant to files upload only, e.g. csv/parquet/json as a source. Complementary to source_dir parameter. Logic: If source_dir is empty, object_source_dir must be an absolute path. If source_dir is set and object_source_dir is set, final path = source_dir + / + object_source_dir. If object_source_dir is not set but source_dir is, final path = source_dir + / + object_name. "},
       "file_names": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "Array", "key_comment": "Relevant to files upload only, e.g. csv as a source. Specifies a comma-separated list of file names to upload or leave blank for all files inside object_source_dir "},
       "load_mode": {"in_use":false, "preassigned_values": ["full"], "default_value":"full", "key_type": "String", "key_comment": "Only full load supported yet. "},
       "load_batch_size": {"in_use":false, "preassigned_values": [10000], "default_value":10000, "key_type": "Integer", "key_comment": "Specifies batch size for incremental load. It's not supported yet. "},

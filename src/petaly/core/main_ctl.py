@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 import json
@@ -45,24 +34,21 @@ class MainCtl():
         """
         pipeline_name = pipeline.pipeline_name
         
-        if pipeline.is_enabled is True:
-            logger.info(f"[Start] Pipeline {pipeline_name}")
+        logger.info(f"[Start] Pipeline {pipeline_name}")
 
-            # Log consolidated pipeline configuration (debug mode)
-            self.save_execution_config(pipeline)
+        # Log consolidated pipeline configuration (debug mode)
+        self.save_execution_config(pipeline)
 
-            if object_name_list is not None:
-                pipeline.data_objects_from_cli = object_name_list.split(',')
+        if object_name_list is not None:
+            pipeline.data_objects_from_cli = object_name_list.split(',')
 
-            if run_endpoint is None or run_endpoint == 'source':
-                self.run_source(pipeline)
+        if run_endpoint is None or run_endpoint == 'source':
+            self.run_source(pipeline)
 
-            if run_endpoint is None or run_endpoint == 'target':
-                self.run_target(pipeline)
+        if run_endpoint is None or run_endpoint == 'target':
+            self.run_target(pipeline)
 
-            logger.info(f"[End] Pipeline {pipeline_name}")
-        else:
-            logger.info(f"The pipeline {pipeline_name} is disabled. Check the parameter is_enabled in pipeline.yaml file")
+        logger.info(f"[End] Pipeline {pipeline_name}")
     
     def save_execution_config(self, pipeline):
         """

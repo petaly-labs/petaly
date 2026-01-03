@@ -41,37 +41,35 @@ class TestS3Connector:
             # Verify
             assert connector.aws_session == mock_aws_session
 
-    @patch('boto3.resource')
-    def test_delete_object_in_bucket(self, mock_resource, connector):
-        # Setup
+    def test_delete_object_in_bucket(self, connector):
+        # Setup - mock the aws_session.resource method
         mock_bucket = MagicMock()
-        mock_resource.return_value.Bucket.return_value = mock_bucket
         mock_objects = MagicMock()
         mock_bucket.objects.filter.return_value = [mock_objects]
+        connector.aws_session.resource = MagicMock(return_value=MagicMock(Bucket=MagicMock(return_value=mock_bucket)))
         
         # Execute
         connector.delete_object_in_bucket('test-bucket', 'test/prefix')
         
         # Verify
-        mock_resource.assert_called_once_with('s3')
+        connector.aws_session.resource.assert_called_once_with('s3')
         mock_bucket.objects.filter.assert_called_once_with(Prefix='test/prefix')
         mock_objects.delete.assert_called_once()
 
-    @patch('boto3.resource')
-    def test_get_bucket_file_list(self, mock_resource, connector):
-        # Setup
+    def test_get_bucket_file_list(self, connector):
+        # Setup - mock the aws_session.resource method
         mock_bucket = MagicMock()
-        mock_resource.return_value.Bucket.return_value = mock_bucket
         mock_objects = MagicMock()
         mock_objects.key = 'test/file.txt'
         mock_bucket.objects.filter.return_value = [mock_objects]
+        connector.aws_session.resource = MagicMock(return_value=MagicMock(Bucket=MagicMock(return_value=mock_bucket)))
         
         # Execute
         result = connector.get_bucket_file_list('test-bucket', 'test/')
         
         # Verify
         assert result == ['test/file.txt']
-        mock_resource.assert_called_once_with('s3')
+        connector.aws_session.resource.assert_called_once_with('s3')
         mock_bucket.objects.filter.assert_called_once_with(Prefix='test/')
 
     def test_download_files_from_bucket(self, connector):
@@ -94,13 +92,12 @@ class TestS3Connector:
                 mock_client_factory.assert_called_once_with(service_name='s3')
                 assert mock_client.download_file.call_count == 2
 
-    @patch('boto3.client')
-    def test_upload_files_to_bucket(self, mock_client, connector):
-        # Setup
+    def test_upload_files_to_bucket(self, connector):
+        # Setup - mock the get_s3_client method
+        mock_client = MagicMock()
+        connector.get_s3_client = MagicMock(return_value=mock_client)
+        
         with tempfile.NamedTemporaryFile() as temp_file:
-            mock_client.return_value = MagicMock()
-            mock_client.return_value.upload_file.return_value = None
-            
             # Execute
             connector.upload_files_to_bucket(
                 bucket_name='test-bucket',
@@ -109,22 +106,25 @@ class TestS3Connector:
             )
             
             # Verify
-            mock_client.assert_called_once_with('s3')
-            mock_client.return_value.upload_file.assert_called_once()
+            connector.get_s3_client.assert_called_once()
+            mock_client.upload_file.assert_called_once()
 
 
 class TestS3Extractor:
     @pytest.fixture
     def pipeline_mock(self):
         pipeline = MagicMock(spec=Pipeline)
+        pipeline.m_conf = MagicMock()
+        pipeline.m_conf.connector_metadata_sql_fpath = "mock_sql_path"
         pipeline.source_attr = {
             'aws_bucket_name': 'test-bucket',
+            'bucket_name': 'test-bucket',  # Add bucket_name (required by S3Extractor)
             'aws_access_key_id': 'test_key',
             'aws_secret_access_key': 'test_secret',
             'aws_region': 'us-east-1'
         }
         pipeline.data_attributes = {
-            'object_default_settings': {}
+            'csv_default_settings': {}
         }
         return pipeline
 
@@ -171,6 +171,7 @@ class TestS3Loader:
         pipeline = MagicMock(spec=Pipeline)
         pipeline.target_attr = {
             'aws_bucket_name': 'test-bucket',
+            'bucket_name': 'test-bucket',  # Add bucket_name (required by S3Loader)
             'aws_access_key_id': 'test_key',
             'aws_secret_access_key': 'test_secret',
             'aws_region': 'us-east-1'

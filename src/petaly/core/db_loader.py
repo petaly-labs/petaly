@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -109,13 +98,13 @@ class DBLoader(ABC):
                 # Track if destination object was recreated
                 destination_object_recreated = loader_obj_conf.get('recreate_destination_object', False)
 
-                # 2. Count rows from CSV files in output directory (before loading)
-                # This gives us the exact number of rows that will be loaded
+                # 2. load data into table (this may convert Parquet/JSON to CSV first)
+                self.load_from(loader_obj_conf)
+                
+                # 3. Count rows from CSV files in output directory (after conversion, before summary)
+                # This gives us the exact number of rows that were loaded
                 output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
                 rows_loaded = self.count_rows_in_csv_files(output_data_object_dir, loader_obj_conf)
-
-                # 3. load data into table
-                self.load_from(loader_obj_conf)
 
                 end_time = time.time()
                 duration_sec = round(end_time - start_time, 2)
@@ -352,11 +341,12 @@ class DBLoader(ABC):
     
     def count_rows_in_csv_files(self, output_data_object_dir, loader_obj_conf):
         """
-        Counts the total number of rows in CSV files in the output directory.
+        Counts the total number of rows in files in the output directory.
+        Supports CSV/TSV files and Parquet/JSON files (which will be converted to CSV).
         This gives the exact number of rows that were extracted and will be loaded.
         
         Args:
-            output_data_object_dir: Directory containing CSV files
+            output_data_object_dir: Directory containing files
             loader_obj_conf: Loader configuration containing object settings
             
         Returns:
@@ -364,44 +354,74 @@ class DBLoader(ABC):
         """
         try:
             import gzip
+            import glob
+            import os
             
             # Get object settings to check if header is present
             object_settings = loader_obj_conf.get('object_settings', {})
             has_header = object_settings.get('header', True)
             
-            # For loading files to database: files can have any extension (.csv, .tsv, .txt, etc.)
-            # The delimiter in object_default_settings determines how to parse the file content
-            # Get all files in the directory (regardless of extension)
-            import glob
-            import os
+            # Get all files in the directory
             all_files = []
-            # Try common patterns first, then fall back to all files
-            for pattern in ['*.csv*', '*.tsv*', '*.txt*', '*']:
-                pattern_path = os.path.join(output_data_object_dir, pattern)
-                matched = glob.glob(pattern_path)
-                all_files.extend(matched)
+            # Check for CSV/TSV files first (already converted)
+            for pattern in ['*.csv', '*.tsv', '*.txt', '*.csv.gz', '*.tsv.gz', '*.txt.gz']:
+                all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+            
+            # If no CSV files found, check for Parquet/JSON files (before conversion)
+            if not all_files:
+                for pattern in ['*.parquet', '*.parq', '*.json']:
+                    all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
             
             # Remove duplicates and filter to only files (not directories), exclude hidden files
-            delimited_files = list(set([f for f in all_files if os.path.isfile(f) and not os.path.basename(f).startswith('.')]))
+            files_to_count = list(set([f for f in all_files if os.path.isfile(f) and not os.path.basename(f).startswith('.')]))
             
-            if not delimited_files:
+            if not files_to_count:
                 logger.debug(f"No files found in {output_data_object_dir}")
                 return 0
             
             total_rows = 0
             
-            for delimited_file in delimited_files:
+            for file_path in files_to_count:
                 try:
-                    # Check if file is gzipped
-                    is_gzipped = delimited_file.endswith('.gz')
+                    # Handle Parquet files
+                    if file_path.endswith(('.parquet', '.parq')):
+                        import pyarrow.parquet as pq
+                        parquet_file = pq.ParquetFile(file_path)
+                        row_count = parquet_file.metadata.num_rows
+                        total_rows += row_count
+                        logger.debug(f"File {file_path}: {row_count} rows (Parquet)")
+                        continue
+                    
+                    # Handle JSON files
+                    if file_path.endswith('.json'):
+                        import json
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            # Try reading as array of objects first
+                            try:
+                                data = json.load(f)
+                                if isinstance(data, list):
+                                    row_count = len(data)
+                                else:
+                                    # Single object, count as 1
+                                    row_count = 1
+                            except json.JSONDecodeError:
+                                # Try newline-delimited JSON
+                                row_count = sum(1 for _ in f)
+                                f.seek(0)  # Reset for actual reading
+                        total_rows += row_count
+                        logger.debug(f"File {file_path}: {row_count} rows (JSON)")
+                        continue
+                    
+                    # Handle CSV/TSV files (text-based)
+                    is_gzipped = file_path.endswith('.gz')
                     
                     if is_gzipped:
                         # Count lines in gzipped file
-                        with gzip.open(delimited_file, 'rt', encoding='utf-8') as f:
+                        with gzip.open(file_path, 'rt', encoding='utf-8') as f:
                             line_count = sum(1 for _ in f)
                     else:
                         # Count lines in regular delimited file
-                        with open(delimited_file, 'r', encoding='utf-8') as f:
+                        with open(file_path, 'r', encoding='utf-8') as f:
                             line_count = sum(1 for _ in f)
                     
                     # Subtract header if present
@@ -409,16 +429,16 @@ class DBLoader(ABC):
                         line_count -= 1
                     
                     total_rows += line_count
-                    logger.debug(f"File {delimited_file}: {line_count} rows")
+                    logger.debug(f"File {file_path}: {line_count} rows")
                     
                 except Exception as e:
-                    logger.debug(f"Error counting rows in {delimited_file}: {e}")
+                    logger.debug(f"Error counting rows in {file_path}: {e}")
                     continue
             
             return total_rows
             
         except Exception as e:
-            logger.debug(f"Error counting rows in {file_format.upper()} files from {output_data_object_dir}: {e}")
+            logger.debug(f"Error counting rows in files from {output_data_object_dir}: {e}")
             return None
     
     def get_table_row_count(self, schema_table_name):

@@ -21,40 +21,69 @@ The pipeline: {pipeline_name} does not exist under: {pipeline_fpath}
 **Cause**: The pipeline configuration is invalid or missing required sections.
 **Solution**:
 - Verify the pipeline configuration structure
-- Check for required sections: pipeline_attributes, source_attributes, target_attributes
+- Check for required sections: pipeline_name, source_attributes, target_attributes
 - Ensure all required parameters are present
+
+### Connection Resolution Errors
+
+#### Connection Not Found
+```
+Connection 'connection_name' not found in connections
+```
+**Cause**: The pipeline references a connection that doesn't exist in `connections.yaml`.
+**Solution**:
+- Verify the connection name in `connection_name` matches exactly with a connection in `connections.yaml`
+- Check that `connections.yaml` exists in the workspace directory
+- Create the connection if it doesn't exist:
+  ```bash
+  python3 -m petaly init -e connection_name
+  ```
+
+#### Missing connections.yaml
+```
+Could not resolve source/target connection. The connection does not exist in connections.yaml.
+```
+**Cause**: Pipeline uses `connection_name` but `connections.yaml` file doesn't exist or is empty.
+**Solution**:
+- Create `connections.yaml` file in your workspace directory
+- Or switch to inline attributes in the pipeline configuration
+- Initialize connections file:
+  ```bash
+  python3 -m petaly init --workspace
+  ```
 
 ### Pipeline Disabled
 ```
 The pipeline: {pipeline_name} is disabled. To enable pipeline {pipeline_dpath} set the parameter is_enabled: true
 ```
-**Cause**: The pipeline is explicitly disabled in the configuration.
+**Cause**: This error is deprecated. Pipelines are now always enabled by default.
 **Solution**:
-- Set `is_enabled: true` in the pipeline_attributes section
-- Review the pipeline configuration to ensure it's ready for execution
+- The `is_enabled` parameter has been removed. Pipelines are always enabled.
+- If you see this error, update your pipeline configuration to remove the `is_enabled` parameter.
 
 ## Data Objects Specification Errors
 
 ### Missing Object Specification
 ```
-For {connector_type} extract the parameters data_objects_spec_mode=only and specification in the data_objects_spec[] are required.
+For {connector_type} extract the parameters include_data_objects=spec and specification in the data_objects_spec[] are required.
 ```
-**Cause**: Required object specifications are missing when using `data_objects_spec_mode=only`.
+**Cause**: Required object specifications are missing when using `include_data_objects: "spec"`.
 **Solution**:
 - Add object specifications to the data_objects_spec section
 - Use the command: `python -m petaly init -p {pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini`
+- Or change `include_data_objects` to `"all"` to load all objects from the schema
 
 ### CSV Source Configuration Error
 ```
-In case your source is csv, the parameters data_objects_spec_mode should be set to only and require the specification in the data_objects_spec[].
+In case your source is csv, the parameters include_data_objects should be set to spec and require the specification in the data_objects_spec[].
 ```
 **Cause**: CSV sources require explicit object specifications.
 **Solution**:
-- Set `data_objects_spec_mode: only`
+- Set `include_data_objects: "spec"`
 - Add required object specifications including:
   - object_name
-  - object_source_dir
-  - file_names
+  - object_source_dir (or source_dir in source_attributes)
+  - file_names (optional, if not specified all files in directory will be processed)
 
 ### Missing Source Directory
 ```

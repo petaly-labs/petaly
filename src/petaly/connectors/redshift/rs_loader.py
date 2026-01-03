@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -81,17 +70,36 @@ class RSLoader(DBLoader):
         self.create_table(loader_obj_conf)
         output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
 
-        # For loading: files can have any extension, content is determined by delimiter in object_default_settings
-        # Gzip all files (they will be parsed based on delimiter, not extension)
-        self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
-        
-        # Collect all files (regardless of extension) - delimiter will determine how to parse them
+        # Detect file format in output directory
+        # Redshift can load Parquet and JSON directly without conversion
         import glob
         import os
-        all_files = []
-        for pattern in ['*', '*.gz', '*.csv', '*.tsv', '*.txt']:
-            all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
-        file_list = list(set([f for f in all_files if os.path.isfile(f)]))
+        
+        # Check for Parquet files first (Redshift supports direct Parquet loading)
+        parquet_files = glob.glob(os.path.join(output_data_object_dir, '*.parquet'))
+        parquet_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.parquet.gz')))
+        
+        # Check for JSON files (Redshift supports direct JSON loading)
+        json_files = glob.glob(os.path.join(output_data_object_dir, '*.json'))
+        json_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.json.gz')))
+        
+        # If Parquet or JSON files exist, use them directly (no CSV conversion needed)
+        if parquet_files:
+            file_list = list(set([f for f in parquet_files if os.path.isfile(f)]))
+            logger.info(f"Redshift will load Parquet files directly (no CSV conversion needed): {len(file_list)} files")
+        elif json_files:
+            file_list = list(set([f for f in json_files if os.path.isfile(f)]))
+            logger.info(f"Redshift will load JSON files directly (no CSV conversion needed): {len(file_list)} files")
+        else:
+            # No Parquet/JSON files found, fall back to CSV
+            # Gzip all CSV files (they will be parsed based on delimiter, not extension)
+            self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
+            
+            # Collect all files (regardless of extension) - delimiter will determine how to parse them
+            all_files = []
+            for pattern in ['*', '*.gz', '*.csv', '*.tsv', '*.txt']:
+                all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+            file_list = list(set([f for f in all_files if os.path.isfile(f)]))
 
         self.s3_connector.upload_files_to_bucket(self.cloud_bucket_name, blob_prefix, file_list)
 
@@ -127,22 +135,51 @@ class RSLoader(DBLoader):
         """
         load_options = ""
         object_settings = loader_obj_conf.get("object_settings")
-        load_options += "FORMAT AS CSV "
-
-        columns_delimiter = object_settings.get("columns_delimiter")
-
-        if columns_delimiter == '\t':
-            load_options += "DELIMITER '\\t' "
+        
+        # Detect source file format to determine if we can load Parquet/JSON directly
+        output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
+        import glob
+        import os
+        
+        # Check for Parquet or JSON files
+        parquet_files = glob.glob(os.path.join(output_data_object_dir, '*.parquet'))
+        parquet_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.parquet.gz')))
+        json_files = glob.glob(os.path.join(output_data_object_dir, '*.json'))
+        json_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.json.gz')))
+        
+        # Determine format
+        if parquet_files:
+            # Parquet format - Redshift COPY supports FORMAT AS PARQUET
+            load_options += "FORMAT AS PARQUET "
+            logger.info(f"Redshift will load Parquet format directly (no CSV conversion needed)")
+        elif json_files:
+            # JSON format - Redshift COPY supports FORMAT AS JSON
+            load_options += "FORMAT AS JSON "
+            logger.info(f"Redshift will load JSON format directly (no CSV conversion needed)")
         else:
-            load_options += f"DELIMITER '{columns_delimiter}' "
+            # CSV format - include delimiter, header, and quote options
+            load_options += "FORMAT AS CSV "
+            columns_delimiter = object_settings.get("columns_delimiter")
 
+            if columns_delimiter == '\t':
+                load_options += "DELIMITER '\\t' "
+            else:
+                load_options += f"DELIMITER '{columns_delimiter}' "
+
+            skip_leading_rows = 1 if object_settings.get("header") is None or True else 0
+            load_options += f"IGNOREHEADER {skip_leading_rows} "
+
+            columns_quote = object_settings.get("columns_quote")
+            if columns_quote not in ('double','single'):
+                load_options += "REMOVEQUOTES "
+
+            # Add NULL handling for \N (common null representation in TSV/CSV files)
+            # Redshift COPY recognizes \N as NULL by default, but EMPTYASNULL ensures empty strings are also treated as NULL
+            # This provides consistent NULL handling across all column types
+            load_options += "EMPTYASNULL "
+
+        # GZIP compression is supported for all formats
         load_options += "GZIP "
-        skip_leading_rows = 1 if object_settings.get("header") is None or True else 0
-        load_options += f"IGNOREHEADER {skip_leading_rows} "
-
-        columns_quote = object_settings.get("columns_quote")
-        if columns_quote not in ('double','single'):
-            load_options += "REMOVEQUOTES "
 
         return load_options
 

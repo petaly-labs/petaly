@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 
 import logging
@@ -61,18 +50,16 @@ class CsvLoader(FLoader):
 
             file_list = loader_obj_conf.get('file_list')
 
+            # For loading: files can have any extension, content is determined by delimiter in csv_default_settings
+            # Process all files (regardless of extension) - delimiter will determine how to parse them
             for file_path in file_list:
-                if '.csv' in self.f_handler.get_file_extensions(file_path):
-                    file_name = os.path.basename(file_path)
-                    # Rename file if destination_object_name is different from object_name
+                file_name = os.path.basename(file_path)
+                # Rename file if destination_object_name is different from object_name
 
-                    dest_file_name = file_name.replace(object_name, dest_object_name)
+                dest_file_name = file_name.replace(object_name, dest_object_name)
 
-                    self.f_handler.cp_file(file_path, dest_file_dpath, target_file_name=dest_file_name)
-                    logger.debug(f"Load: File {file_path} from output directory is copied to: {os.path.join(dest_file_dpath, dest_file_name)}")
-                else:
-                    logger.warning(
-                        f"Load: The file: {file_path}  was not moved to the destination directory {dest_file_dpath}. Reason: the extension .csv is missing.")
+                self.f_handler.cp_file(file_path, dest_file_dpath, target_file_name=dest_file_name)
+                logger.debug(f"Load: File {file_path} from output directory is copied to: {os.path.join(dest_file_dpath, dest_file_name)}")
 
         else:
             logger.error(f"Load object {object_name} failed. Check the source and pipeline.yaml configuration. "

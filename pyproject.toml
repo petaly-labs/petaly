@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "petaly"
-version = "0.1.0"
+version = "1.0.1"
 license = "Apache-2.0"
 license-files = ["LICENSE.md"]
 description = "Python ETL and Data Pipeline Tool"
@@ -32,7 +32,8 @@ dependencies = [
         "psycopg",
         "psycopg-binary",
         "mysql-connector-python",
-        "jsonschema"
+        "jsonschema",
+        "pandas"
 ]
 
 [project.optional-dependencies]

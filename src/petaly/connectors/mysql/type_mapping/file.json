@@ -1,0 +1,11 @@
+{
+    "string": "TEXT",
+    "int32": "INT",
+    "int64": "BIGINT",
+    "date32[day]": "TIMESTAMP",
+    "timestamp": "timestamp",
+    "timestamp[ns]": "timestamp",
+    "timestamp[ns, tz=UTC]": "timestamp",
+    "double": "DOUBLE",
+    "null": "TEXT"
+  }

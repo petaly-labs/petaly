@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -59,7 +48,7 @@ class S3Connector():
     def delete_object_in_bucket(self, bucket_name, blob_prefix):
         """
         """
-        s3_resource = boto3.resource('s3')
+        s3_resource = self.aws_session.resource('s3')
         bucket = s3_resource.Bucket(bucket_name)
 
         for object_summary in bucket.objects.filter(Prefix=blob_prefix):
@@ -97,7 +86,7 @@ class S3Connector():
 
     def get_bucket_file_list(self, bucket_name, blob_prefix):
         try:
-            s3_resource = boto3.resource('s3')
+            s3_resource = self.aws_session.resource('s3')
             bucket = s3_resource.Bucket(bucket_name)
 
             object_list = []
@@ -113,13 +102,13 @@ class S3Connector():
     def upload_files_to_bucket(self, bucket_name, blob_prefix, object_file_list):
 
         try:
-            s3_client = boto3.client('s3')
+            s3_client = self.get_s3_client()
             for object_fpath in object_file_list:
                 bucket_fpath = blob_prefix + self.bucket_path_delimiter + os.path.basename(object_fpath)
 
                 s3_client.upload_file(object_fpath, bucket_name, bucket_fpath)
                 logger.debug(f"Upload file {object_fpath} to destination s3://{bucket_name}/{bucket_fpath}")
 
-        except (Exception, s3_client.exceptions, S3UploadFailedError) as error:
-            logger.debug(f"Upload failed for: s3://{bucket_name}/{bucket_fpath} ; object_files", object_file_list)
+        except (Exception, S3UploadFailedError) as error:
+            logger.debug(f"Upload failed for: s3://{bucket_name}/{blob_prefix} ; object_files: {object_file_list}")
             logger.error(error)

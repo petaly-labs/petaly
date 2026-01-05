@@ -2,10 +2,26 @@
   "connectors": {
           "csv": {
               "connector_category": "file",
-              "connector_dpath": "petaly.connectors.csv",
+              "connector_dpath": "petaly.connectors.file.csv",
               "extractor": {"module_path": "csv_extractor", "class_name": "CsvExtractor"},
               "loader": {"module_path": "csv_loader", "class_name": "CsvLoader"},
-              "type_mapping": "petaly.connectors.csv.type_mapping",
+              "type_mapping": "petaly.connectors.file.common.type_mapping",
+              "supported_platforms": ["local"]
+              },
+          "parquet": {
+              "connector_category": "file",
+              "connector_dpath": "petaly.connectors.file.parquet",
+              "extractor": {"module_path": "parquet_extractor", "class_name": "ParquetExtractor"},
+              "loader": {"module_path": "parquet_loader", "class_name": "ParquetLoader"},
+              "type_mapping": "petaly.connectors.file.common.type_mapping",
+              "supported_platforms": ["local"]
+              },
+          "json": {
+              "connector_category": "file",
+              "connector_dpath": "petaly.connectors.file.json",
+              "extractor": {"module_path": "json_extractor", "class_name": "JsonExtractor"},
+              "loader": {"module_path": "json_loader", "class_name": "JsonLoader"},
+              "type_mapping": "petaly.connectors.file.common.type_mapping",
               "supported_platforms": ["local"]
               },
           "postgres": {
@@ -37,7 +53,7 @@
             "connector_dpath": "petaly.connectors.gs",
             "extractor": {"module_path": "gs_extractor", "class_name": "GSExtractor"},
             "loader": {"module_path": "gs_loader", "class_name": "GSLoader"},
-            "type_mapping": "petaly.connectors.csv.type_mapping",
+            "type_mapping": "petaly.connectors.file.common.type_mapping",
             "supported_platforms": ["gcp"]
           },
           "redshift": {
@@ -53,7 +69,7 @@
             "connector_dpath": "petaly.connectors.s3",
             "extractor": {"module_path": "s3_extractor", "class_name": "S3Extractor"},
             "loader": {"module_path": "s3_loader", "class_name": "S3Loader"},
-            "type_mapping": "petaly.connectors.csv.type_mapping",
+            "type_mapping": "petaly.connectors.file.common.type_mapping",
             "supported_platforms": ["aws"]
           }
     },
@@ -61,14 +77,10 @@
         "local": {},
         "gcp": {
                 "gcp_project_id": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify the GCP project ID."},
-                "gcp_region": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] Specify the GCP region or location."},
-                "gcp_bucket_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify the GCP bucket name without the gs:// prefix. Leave it empty if loading from a local folder is preferred."},
-                "bucket_pipeline_prefix": {"in_use":true, "preassigned_values": [null], "default_value":"petaly/{pipeline_name}", "key_type": "String", "key_comment": "[Optional] It defines the path prefix to your objects in the bucket. Don't use here the bucket name. Use a forward slash (/) to separate folders. \nBy default, the string petaly/{pipeline_name} will be added as the prefix. The pattern {pipeline_name} will be automatically replaced with the pipeline name during runtime. \nIf not needed, you can remove it manually after the pipeline is created."}
+                "gcp_region": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] Specify the GCP region or location."}
         },
         "aws": {
-                "aws_bucket_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify the AWS Bucket Name, without prefix s3://"},
-                "bucket_pipeline_prefix": {"in_use":true, "preassigned_values": [null], "default_value":"petaly/{pipeline_name}", "key_type": "String", "key_comment": "[Optional] It defines the path prefix to your objects in the bucket. Don't use here the bucket name. Use a forward slash (/) to separate folders. \nBy default, the string petaly/{pipeline_name} will be added as the prefix. The pattern {pipeline_name} will be automatically replaced with the pipeline name during runtime. \nIf not needed, you can remove it manually after the pipeline is created."},
-                "aws_iam_role": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify the AWS IAM role. This role should have the ability to access the S3 bucket defined in aws_bucket_name from the Redshift site."},
+                "aws_iam_role": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify the AWS IAM role ARN (e.g., arn:aws:iam::123456789012:role/YourRole). This role should have the ability to access the S3 bucket defined in bucket_name from the Redshift site."},
                 "aws_profile_name": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "Specify the AWS profile_name if it is defined in the .aws/config file after installing the AWS SDK. If you use this method, leave the following options aws_access_key_id and aws_secret_access_key empty."},
                 "aws_access_key_id": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] If aws_profile_name is empty specify the aws-access-key-id. You can ignore this if the aws-access-key-id is already defined in .aws/config and the aws_profile_name parameter is properly specified."},
                 "aws_secret_access_key": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "key_comment": "[Optional] If aws_profile_name is empty specify the aws-secret-access-key. You can ignore this if the aws-secret-access-key is already defined in .aws/config and the aws_profile_name parameter is properly specified."},

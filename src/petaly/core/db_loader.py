@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -23,6 +12,7 @@ from petaly.utils.file_handler import FileHandler
 from petaly.core.type_mapping import TypeMapping
 from petaly.core.object_metadata import ObjectMetadata
 from petaly.core.data_object import DataObject
+from petaly.core.load_summary import LoadSummary
 
 
 class DBLoader(ABC):
@@ -72,6 +62,7 @@ class DBLoader(ABC):
            - Composes loader configuration
            - Loads data into table
         3. Handles timing and logging
+        4. Displays summary of loaded tables
         
         The method supports table recreation if specified in configuration.
         """
@@ -80,23 +71,107 @@ class DBLoader(ABC):
         start_total_time = time.time()
         # 1. get and run all objects
         object_list = self.composer.get_object_list_from_output_dir(self.pipeline)
+        
+        # Initialize load summary tracker
+        load_summary = LoadSummary()
 
         for object_name in object_list:
 
             logger.info(f"Load object: {object_name} started...")
             start_time = time.time()
+            load_status = 'success'
+            rows_loaded = None
 
-            # 1. compose loader_obj_conf
-            loader_obj_conf = self.get_loader_obj_conf(object_name)
+            try:
+                # 1. compose loader_obj_conf
+                loader_obj_conf = self.get_loader_obj_conf(object_name)
+                
+                # Get schema_table_name for summary
+                table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
+                schema_name = table_ddl_dict.get('schema_name')
+                table_name = table_ddl_dict.get('table_name')
+                if schema_name:
+                    schema_table_name = f"{schema_name}.{table_name}"
+                else:
+                    schema_table_name = table_name
+                
+                # Track if destination object was recreated
+                destination_object_recreated = loader_obj_conf.get('recreate_destination_object', False)
 
-            # 2. load data into table
-            self.load_from(loader_obj_conf)
+                # 2. load data into table (this may convert Parquet/JSON to CSV first)
+                self.load_from(loader_obj_conf)
+                
+                # 3. Count rows from CSV files in output directory (after conversion, before summary)
+                # This gives us the exact number of rows that were loaded
+                output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
+                rows_loaded = self.count_rows_in_csv_files(output_data_object_dir, loader_obj_conf)
 
-            end_time = time.time()
-            logger.info(f"Load object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+                end_time = time.time()
+                duration_sec = round(end_time - start_time, 2)
+                logger.info(f"Load object: {object_name} completed | time: {duration_sec}s")
+                
+            except Exception as e:
+                # Load failed - capture error details
+                end_time = time.time()
+                duration_sec = round(end_time - start_time, 2)
+                load_status = 'failed'
+                logger.error(f"Load object: {object_name} failed | time: {duration_sec}s | error: {str(e)}", exc_info=True)
+                
+                # Try to get schema_table_name even if load failed (for summary display)
+                try:
+                    if 'schema_table_name' not in locals():
+                        loader_obj_conf = self.get_loader_obj_conf(object_name)
+                        table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
+                        schema_name = table_ddl_dict.get('schema_name')
+                        table_name = table_ddl_dict.get('table_name')
+                        if schema_name:
+                            schema_table_name = f"{schema_name}.{table_name}"
+                        else:
+                            schema_table_name = table_name
+                        destination_object_recreated = loader_obj_conf.get('recreate_destination_object', False)
+                    else:
+                        # schema_table_name already defined
+                        pass
+                except Exception:
+                    # If we can't even get the schema_table_name, use object_name as fallback
+                    schema_table_name = object_name
+                    destination_object_recreated = False
+            
+            # Get source and target connection names
+            # Use connection_name if available (from connections.yaml), otherwise show 'inline' for inline attributes
+            source_connection_name = self.pipeline.source_attr.get('connection_name')
+            if not source_connection_name:
+                source_connection_name = 'inline'
+            
+            target_connection_name = self.pipeline.target_attr.get('connection_name')
+            if not target_connection_name:
+                target_connection_name = 'inline'
+            
+            # Source object name is the object_name (extracted from source)
+            source_object_name = object_name
+            
+            # Target object name is the schema_table_name
+            target_object_name = schema_table_name if 'schema_table_name' in locals() else object_name
+            
+            # Add to summary (whether success or failure)
+            load_summary.add_entry(
+                source_connection=source_connection_name,
+                source_object=source_object_name,
+                target_connection=target_connection_name,
+                target_object=target_object_name,
+                recreated=destination_object_recreated if 'destination_object_recreated' in locals() else False,
+                rows_loaded=rows_loaded,
+                duration_sec=duration_sec if 'duration_sec' in locals() else 0,
+                status=load_status,
+                start_time=start_time if 'start_time' in locals() else None,
+                end_time=end_time if 'end_time' in locals() else None
+            )
 
         end_total_time = time.time()
         logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
+        
+        # Display summary
+        load_summary.display()
 
     def get_loader_obj_conf(self, object_name) ->dict:
         """Gets the configuration for loading a specific object.
@@ -207,6 +282,8 @@ class DBLoader(ABC):
                               f"column: {column_name}, data-type: {column_meta.get('data_type')}, "
                               f"target_connector_id {self.pipeline.target_connector_id}."
                               )
+                # Skip this column if type mapping is not found to avoid concatenation error
+                continue
 
             column_datatype_list += " " + column_type
             mode = ' NOT NULL' if column_meta.get('is_nullable') == 'NO' else ''
@@ -261,4 +338,169 @@ class DBLoader(ABC):
 
         columns_list = columns_list.rstrip(',')
         return columns_list
+    
+    def count_rows_in_csv_files(self, output_data_object_dir, loader_obj_conf):
+        """
+        Counts the total number of rows in files in the output directory.
+        Supports CSV/TSV files and Parquet/JSON files (which will be converted to CSV).
+        This gives the exact number of rows that were extracted and will be loaded.
+        
+        Args:
+            output_data_object_dir: Directory containing files
+            loader_obj_conf: Loader configuration containing object settings
+            
+        Returns:
+            Total number of data rows (excluding headers if header=true)
+        """
+        try:
+            import gzip
+            import glob
+            import os
+            
+            # Get object settings to check if header is present
+            object_settings = loader_obj_conf.get('object_settings', {})
+            has_header = object_settings.get('header', True)
+            
+            # Get all files in the directory
+            all_files = []
+            # Check for CSV/TSV files first (already converted)
+            for pattern in ['*.csv', '*.tsv', '*.txt', '*.csv.gz', '*.tsv.gz', '*.txt.gz']:
+                all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+            
+            # If no CSV files found, check for Parquet/JSON files (before conversion)
+            if not all_files:
+                for pattern in ['*.parquet', '*.parq', '*.json']:
+                    all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+            
+            # Remove duplicates and filter to only files (not directories), exclude hidden files
+            files_to_count = list(set([f for f in all_files if os.path.isfile(f) and not os.path.basename(f).startswith('.')]))
+            
+            if not files_to_count:
+                logger.debug(f"No files found in {output_data_object_dir}")
+                return 0
+            
+            total_rows = 0
+            
+            for file_path in files_to_count:
+                try:
+                    # Handle Parquet files
+                    if file_path.endswith(('.parquet', '.parq')):
+                        import pyarrow.parquet as pq
+                        parquet_file = pq.ParquetFile(file_path)
+                        row_count = parquet_file.metadata.num_rows
+                        total_rows += row_count
+                        logger.debug(f"File {file_path}: {row_count} rows (Parquet)")
+                        continue
+                    
+                    # Handle JSON files
+                    if file_path.endswith('.json'):
+                        import json
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            # Try reading as array of objects first
+                            try:
+                                data = json.load(f)
+                                if isinstance(data, list):
+                                    row_count = len(data)
+                                else:
+                                    # Single object, count as 1
+                                    row_count = 1
+                            except json.JSONDecodeError:
+                                # Try newline-delimited JSON
+                                row_count = sum(1 for _ in f)
+                                f.seek(0)  # Reset for actual reading
+                        total_rows += row_count
+                        logger.debug(f"File {file_path}: {row_count} rows (JSON)")
+                        continue
+                    
+                    # Handle CSV/TSV files (text-based)
+                    is_gzipped = file_path.endswith('.gz')
+                    
+                    if is_gzipped:
+                        # Count lines in gzipped file
+                        with gzip.open(file_path, 'rt', encoding='utf-8') as f:
+                            line_count = sum(1 for _ in f)
+                    else:
+                        # Count lines in regular delimited file
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            line_count = sum(1 for _ in f)
+                    
+                    # Subtract header if present
+                    if has_header and line_count > 0:
+                        line_count -= 1
+                    
+                    total_rows += line_count
+                    logger.debug(f"File {file_path}: {line_count} rows")
+                    
+                except Exception as e:
+                    logger.debug(f"Error counting rows in {file_path}: {e}")
+                    continue
+            
+            return total_rows
+            
+        except Exception as e:
+            logger.debug(f"Error counting rows in files from {output_data_object_dir}: {e}")
+            return None
+    
+    def get_table_row_count(self, schema_table_name):
+        """
+        Gets the total row count from a table.
+        Used to calculate incremental rows loaded (after - before).
+        
+        Args:
+            schema_table_name: Full table name including schema (e.g., 'schema.table')
+            
+        Returns:
+            Number of rows in the table, or None if table doesn't exist or unable to determine
+        """
+        try:
+            # BigQuery uses get_metadata_result instead of get_query_result
+            if self.pipeline.target_connector_id == 'bigquery':
+                count_query = f"SELECT COUNT(*) as row_count FROM `{schema_table_name}`"
+                result = self.db_connector.get_metadata_result(count_query)
+                if result and len(result) > 0:
+                    row_count = result[0].get('row_count')
+                    return int(row_count) if row_count is not None else None
+                return None
+            # Redshift IAM connector uses execute_sql which returns (result_data, request_id)
+            elif self.pipeline.target_connector_id == 'redshift' and hasattr(self.db_connector, 'execute_sql') and hasattr(self.db_connector, 'is_serverless'):
+                count_query = f"SELECT COUNT(*) as row_count FROM {schema_table_name}"
+                result_data, request_id = self.db_connector.execute_sql(count_query, sleep_sec=1)
+                if result_data and result_data.get('Records'):
+                    # Redshift IAM returns result_data with Records array
+                    # Each record is a list of dicts with 'stringValue' or other value types
+                    records = result_data.get('Records', [])
+                    if records and len(records) > 0:
+                        first_record = records[0]
+                        if first_record and len(first_record) > 0:
+                            # Get the first value from the first record
+                            value_dict = first_record[0]
+                            # Value can be in 'stringValue', 'longValue', 'doubleValue', etc.
+                            row_count = value_dict.get('longValue') or value_dict.get('stringValue') or value_dict.get('doubleValue')
+                            if row_count is not None:
+                                return int(row_count)
+                return None
+            else:
+                # For other connectors (PostgreSQL, MySQL, Redshift TCP), use get_query_result
+                count_query = f"SELECT COUNT(*) as row_count FROM {schema_table_name}"
+                result = self.db_connector.get_query_result(count_query)
+                
+                if result and len(result) > 0:
+                    # Handle different result formats from different connectors
+                    first_row = result[0]
+                    if isinstance(first_row, dict):
+                        # Redshift TCP returns dicts
+                        row_count = first_row.get('row_count')
+                    elif isinstance(first_row, (list, tuple)):
+                        # PostgreSQL, MySQL return tuples
+                        row_count = first_row[0]
+                    else:
+                        row_count = first_row
+                    
+                    return int(row_count) if row_count is not None else None
+                return None
+        except Exception as e:
+            # Table might not exist yet (for before count) - this is expected
+            logger.debug(f"Could not get row count for {schema_table_name}: {e}")
+            return None
+    
 

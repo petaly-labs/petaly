@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -26,9 +15,14 @@ class GSLoader(FLoader):
         self.f_handler = FileHandler()
 
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.target_attr.get('gcp_bucket_name')
-        self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
-        self.load_from_bucket = False if self.cloud_bucket_name is None else True
+        self.cloud_bucket_name = self.pipeline.target_attr.get('bucket_name')
+        # Handle bucket_name being None (optional for GCS - can load from local folder)
+        if self.cloud_bucket_name:
+            self.cloud_bucket_path = self.gs_connector.bucket_prefix + self.cloud_bucket_name + '/'
+            self.load_from_bucket = True
+        else:
+            self.cloud_bucket_path = None
+            self.load_from_bucket = False
         self.cloud_region = self.pipeline.target_attr.get('gcp_region')
         self.cloud_project_id = self.pipeline.target_attr.get('gcp_project_id')
 

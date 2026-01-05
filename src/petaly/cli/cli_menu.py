@@ -1,20 +1,10 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import rich.prompt as prompt
 from rich.console import Console
 import logging
+import os
 
 from petaly.utils.file_handler import FileHandler
 from collections import Counter, OrderedDict
@@ -31,6 +21,16 @@ class OrderedCounter(Counter, OrderedDict):
         return self.__class__, (OrderedDict(self),)
 
 class CliMenu():
+    """
+    CLI Composer/Controller - orchestrates pipeline and connection CLI operations.
+    
+    Acts as a facade that composes and coordinates:
+    - CliPipeline: Pipeline configuration composition
+    - CliConnections: Connection management
+    - Common utilities: Value assignment, attribute assignment, dependency checking
+    
+    This class serves as the main entry point for CLI composition operations.
+    """
 
     def __init__(self, main_config):
         self.use_pipeline_wizard = True
@@ -39,24 +39,13 @@ class CliMenu():
         self.m_conf = main_config
         self.f_handler = FileHandler()
         self.break_line = '------------------------------------------------------------------'
-
-        self.pipeline_meta_config = self.f_handler.load_json(self.m_conf.pipeline_meta_config_fpath)
-
-        self.composed_pipeline_config_depreated = {
-                                            'pipeline':
-                                                 {'pipeline_attributes': {},
-                                                  'source_attributes': {},
-                                                  'target_attributes': {},
-                                                  'data_attributes': {
-                                                      'data_objects_spec_mode':{}
-                                                    }
-                                                  }
-                                            ,
-                                            
-                                              'data_objects_spec': []
-                                            
-                                        }
-        self.composed_pipeline_config = self.f_handler.load_json(self.m_conf.pipeline_skeleton_fpath)
+        
+        # Compose CLI components
+        from petaly.cli.cli_pipeline import CliPipeline
+        from petaly.cli.cli_connections import CliConnections
+        
+        self.cli_pipeline = CliPipeline(main_config, self)
+        self.cli_connections = CliConnections(main_config, self)
         
     def force_assign_value(self, key, message):
         while True:
@@ -67,119 +56,6 @@ class CliMenu():
 
                 break
         return value
-
-    def compose_pipeline(self, pipeline_name):
-
-
-        self.compose_pipeline_attributes(pipeline_name)
-        self.compose_endpoint_attributes('source_attributes')
-        self.compose_endpoint_attributes('target_attributes')
-        self.compose_data_attributes()
-
-    def compose_pipeline_attributes(self, pipeline_name):
-        """
-        """
-        self.use_pipeline_wizard = prompt.Confirm.ask("\nUse Pipeline wizard")
-
-        predefined_values = {'pipeline_name': pipeline_name}
-        pipeline_attributes = self.pipeline_meta_config.get("pipeline_attributes")
-        assigned_attributes = self.assign_attributes(pipeline_attributes, predefined_values=predefined_values)
-        self.composed_pipeline_config['pipeline']['pipeline_attributes'].update(assigned_attributes)
-
-    def compose_endpoint_attributes(self, endpoint_attributes_name):
-        self.console.print(f"\n[bold]{self.break_line}[/bold]")
-        self.console.print(f"Specify [bold]{endpoint_attributes_name}[/bold]\n")
-
-        endpoint_attributes_dict = {}
-        predefined_values = {}
-
-        # step 1. specify endpoint type
-        available_connectors = self.m_conf.get_available_connectors()
-        connector_type = prompt.Prompt.ask(f"Specify [bold yellow]{endpoint_attributes_name}[/bold yellow] connector type", choices=available_connectors)
-        predefined_values.update({'connector_type': connector_type})
-
-        assigned_endpoint_attributes = self.assign_attributes(endpoint_attributes_dict, predefined_values=predefined_values)
-        self.composed_pipeline_config['pipeline'][endpoint_attributes_name].update(assigned_endpoint_attributes)
-
-        # step 2. get connector category
-        connector_category = self.m_conf.get_connector_class_config(connector_type).get('connector_category')
-
-        # step 3. based on connector category define database or file parameters
-        connector_attributes = self.m_conf.get_connector_attributes(connector_type)
-
-        exclude_key_list = [None]
-        if connector_category in ('file','storage') and endpoint_attributes_name == 'source_attributes':
-            exclude_key_list = ['destination_dir','bucket_pipeline_prefix']
-
-        assigned_connector_attributes = self.assign_attributes(connector_attributes, exclude_key_list=exclude_key_list, predefined_values=None)
-        self.composed_pipeline_config['pipeline'][endpoint_attributes_name].update(assigned_connector_attributes)
-
-        # step 4. get and define platform type
-        platform_type_list = self.m_conf.get_supported_platforms(connector_type)
-
-        if len(platform_type_list) == 1:
-            platform_type = platform_type_list[0]
-        else:
-            platform_type = prompt.Prompt.ask(f"Specify [bold green]platform_type[/bold green]",
-                                              choices=platform_type_list)
-
-        # step 5. assign platform type and platform attributes
-        if platform_type != 'local':
-            predefined_values.update({'platform_type': platform_type})
-            platform_attributes = self.m_conf.get_platform_attributes(platform_id=platform_type)
-            assigned_platform_attributes = self.assign_attributes(platform_attributes, predefined_values=predefined_values, exclude_key_list=['connector_type'])
-            self.composed_pipeline_config['pipeline'][endpoint_attributes_name].update(assigned_platform_attributes)
-
-    def compose_data_attributes(self):
-
-        data_attributes = self.pipeline_meta_config.get('data_attributes')
-
-        self.console.print(f"\n[bold]{self.break_line}[/bold]")
-        self.console.print(f"[bold]Specify default object settings[/bold]")
-
-        object_default_settings = data_attributes.get('object_default_settings')
-        assigned_object_default_settings = self.assign_attributes(object_default_settings, predefined_values=None)
-        self.composed_pipeline_config['pipeline']['data_attributes'].update({"object_default_settings": assigned_object_default_settings})
-
-        self.console.print(f"\n[bold]{self.break_line}[/bold]")
-        self.console.print(f"[bold]Specify data object attributes[/bold]")
-
-        assigned_data_attributes = self.assign_attributes(data_attributes, predefined_values=None, exclude_key_list=[None])
-        self.composed_pipeline_config['pipeline']['data_attributes'].update(assigned_data_attributes)
-
-    def compose_object_spec(self, pipeline, object_name, use_pipeline_wizard):
-        self.use_pipeline_wizard = use_pipeline_wizard
-        data_objects_spec = self.pipeline_meta_config.get('data_objects_spec')
-        exclude_key_list = []
-        
-        # Get source connector type and category
-        source_connector_type = pipeline.source_attr.get('connector_type')
-        if not source_connector_type:
-            logger.warning("Source connector type is not specified in the pipeline")
-            return None
-            
-        connector_category = self.m_conf.get_connector_category(source_connector_type)
-        if not connector_category:
-            logger.warning(f"Could not determine connector category for source connector type: {source_connector_type}")
-            return None
-
-        # exclude params for file load (csv, etc..)
-        if connector_category == 'database':
-            exclude_key_list.append('object_source_dir')
-            exclude_key_list.append('file_names')
-
-        if object_name is None:
-            object_name = self.force_assign_value(key='object_name',
-                                                  message=data_objects_spec.get('object_name').get('key_comment'))
-
-        exclude_key_list.append('object_name')
-        predefined_values = {'object_name': object_name}
-
-        assigned_attributes = self.assign_attributes(data_objects_spec, predefined_values=predefined_values, exclude_key_list=exclude_key_list)
-        tmp_assigned_attributes = {}
-        tmp_assigned_attributes.update({'object_spec': assigned_attributes})
-
-        return tmp_assigned_attributes
 
     def assign_attributes(self, spec_attributes, predefined_values=None, exclude_key_list=None) -> dict:
         assigned_attributes = {}
@@ -246,8 +122,14 @@ class CliMenu():
                         assigned_value = [None]
                 else:
                     if self.use_pipeline_wizard:
-                        assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", choices=preassigned_values,
-                                                           default=default_value, show_default=False)
+                        # For String types, only pass choices if preassigned_values is not None
+                        # If preassigned_values is None, prompt without choices (free text input)
+                        if preassigned_values is not None:
+                            assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", choices=preassigned_values,
+                                                               default=default_value, show_default=False)
+                        else:
+                            assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]",
+                                                               default=default_value, show_default=False)
 
                     if value.get('key_type') == 'Boolean':
                         assigned_value = True if assigned_value == 'true' else False
@@ -269,3 +151,233 @@ class CliMenu():
                 return False
 
         return include
+    
+    def _select_connection_from_list(self, connection_type, existing_connection_names, max_num, connections_fpath):
+        """
+        Selects an connection from the already-displayed list.
+        
+        Args:
+            connection_type: 'source' or 'target'
+            existing_connection_names: List of existing connection names
+            max_num: Maximum number in the list
+            connections_fpath: Path to connections.yaml/json file
+        
+        Returns:
+            Name of the selected/created connection
+        """
+        # Allow selection by number or name (without showing list again)
+        while True:
+            selection = prompt.Prompt.ask(
+                f"\nSelect connection for {connection_type} (enter number 0-{max_num} or connection name)"
+            )
+            
+            # Check for option 0 (create new connection)
+            if selection == '0':
+                # Create new connection
+                connection_name = self.force_assign_value(
+                    key=f'{connection_type}_connection_name',
+                    message=f"Enter a unique name for the {connection_type} connection"
+                )
+                
+                # Compose connection attributes
+                connection_attributes = self.compose_connection_attributes_dict()
+                                # Save connection to connections.yaml
+                self.save_connection_to_file(connections_fpath, connection_name, connection_attributes)
+                
+                return connection_name
+            
+            # Try to parse as number
+            try:
+                num = int(selection)
+                if 1 <= num <= max_num:
+                    connection_name = existing_connection_names[num - 1]
+                    return connection_name
+                else:
+                    self.console.print(f"[red]Invalid number. Please enter a number between 0 and {max_num}[/red]")
+            except ValueError:
+                # Not a number, try as connection name
+                if selection in existing_connection_names:
+                    return selection
+                else:
+                    self.console.print(f"[red]connection '{selection}' not found. Please enter a valid number or connection name.[/red]")
+    
+    def select_or_create_connection(self, connection_type, connections_fpath, skip_list=False):
+        """
+        Allows user to select an existing connection or create a new one.
+        
+        Args:
+            connection_type: 'source' or 'target'
+            connections_fpath: Path to connections.yaml/json file
+            skip_list: If True, skip showing the list (used when list was already shown)
+        
+        Returns:
+            Name of the selected/created connection
+        """
+        # Load existing connections
+        connections_config = self.f_handler.load_json(self.m_conf.connections_skeleton_fpath)
+        if self.f_handler.is_file(connections_fpath):
+            file_extension = os.path.splitext(connections_fpath)[1].lower()
+            if file_extension == '.yaml':
+                existing_connections = self.f_handler.load_yaml(connections_fpath)
+            else:
+                existing_connections = self.f_handler.load_json(connections_fpath)
+            
+            if existing_connections:
+                connections_config = existing_connections
+        
+        # Get all existing connections (flat structure)
+        if 'connections' in connections_config:
+            connections_dict = connections_config['connections']
+        else:
+            connections_dict = connections_config
+        existing_connection_names = list(connections_dict.keys())
+        
+        self.console.print(f"\n[bold]{self.break_line}[/bold]")
+        self.console.print(f"Configure [bold]{connection_type}[/bold] connection\n")
+        
+        # First ask if user wants to use an existing connection
+        if existing_connection_names:
+            use_existing = prompt.Confirm.ask(f"Do you want to use an existing connection for {connection_type}?", default=True)
+            
+            if use_existing:
+                # Show all existing connections (one per line) with option 0 to create new
+                self.console.print(f"\nExisting connections:")
+                self.console.print(f"  0. [bold cyan]Create new connection[/bold cyan]")
+                for idx, connection_name in enumerate(existing_connection_names, 1):
+                    self.console.print(f"  {idx}. {connection_name}")
+                
+                # Allow selection by number or name (without showing all choices in one line)
+                while True:
+                    selection = prompt.Prompt.ask(
+                        f"\nSelect connection for {connection_type} (enter number 0-{len(existing_connection_names)} or connection name)"
+                    )
+                    
+                    # Check for option 0 (create new connection)
+                    if selection == '0':
+                        # Break out to create new connection
+                        break
+                    
+                    # Try to parse as number
+                    try:
+                        num = int(selection)
+                        if 1 <= num <= len(existing_connection_names):
+                            connection_name = existing_connection_names[num - 1]
+                            return connection_name
+                        else:
+                            self.console.print(f"[red]Invalid number. Please enter a number between 0 and {len(existing_connection_names)}[/red]")
+                    except ValueError:
+                        # Not a number, try as connection name
+                        if selection in existing_connection_names:
+                            return selection
+                        else:
+                            self.console.print(f"[red]connection '{selection}' not found. Please enter a valid number or connection name.[/red]")
+        
+        # User wants to create a new connection (or no existing connections, or selected 0)
+        if existing_connection_names:
+            self.console.print(f"\nCreating new {connection_type} connection...")
+        else:
+            self.console.print(f"\nNo existing connections found. Creating new {connection_type} connection...")
+        
+        connection_name = self.force_assign_value(
+            key=f'{connection_type}_connection_name',
+            message=f"Enter a unique name for the {connection_type} connection"
+        )
+        
+        # Compose connection attributes (similar to compose_connection_attributes but return dict)
+        connection_attributes = self.compose_connection_attributes_dict()
+        
+        # Save connection to connections.yaml
+        self.save_connection_to_file(connections_fpath, connection_name, connection_attributes)
+        
+        return connection_name
+    
+    def compose_connection_attributes_dict(self):
+        """
+        Composes connection attributes and returns as dictionary (for saving to connections.yaml).
+        connections are generic and can be used as both source and target.
+        Similar to compose_connection_attributes but returns dict instead of updating pipeline config.
+        """
+        connection_attributes_dict = {}
+        predefined_values = {}
+        
+        # step 1. specify connector type
+        available_connectors = self.m_conf.get_available_connectors()
+        connector_type = prompt.Prompt.ask(
+            f"Specify [bold yellow]connector type[/bold yellow]",
+            choices=available_connectors
+        )
+        predefined_values.update({'connector_type': connector_type})
+        
+        # step 2. get connector category
+        connector_category = self.m_conf.get_connector_class_config(connector_type).get('connector_category')
+        
+        # step 3. based on connector category define database or file parameters
+        connector_attributes = self.m_conf.get_connector_attributes(connector_type)
+        
+        # Exclude pipeline-specific attributes from connections
+        # connections should only contain connection details, not schema/dataset names, CSV directories, or bucket pipeline prefix
+        # Schema/dataset, CSV source_dir/destination_dir, and bucket_pipeline_prefix are pipeline-specific and will be configured in pipeline.yaml
+        # bucket_name stays in connections as it's part of the connection configuration
+        exclude_key_list = ['database_schema', 'source_dir', 'destination_dir', 'bucket_pipeline_prefix']  # These belong to pipeline, not connection
+        
+        assigned_connector_attributes = self.assign_attributes(
+            connector_attributes,
+            exclude_key_list=exclude_key_list,
+            predefined_values=predefined_values
+        )
+        connection_attributes_dict.update(assigned_connector_attributes)
+        
+        # step 4. get and define platform type
+        platform_type_list = self.m_conf.get_supported_platforms(connector_type)
+        
+        if len(platform_type_list) == 1:
+            platform_type = platform_type_list[0]
+        else:
+            platform_type = prompt.Prompt.ask(
+                f"Specify [bold green]platform_type[/bold green]",
+                choices=platform_type_list
+            )
+        
+        # step 5. assign platform type and platform attributes
+        if platform_type != 'local':
+            connection_attributes_dict.update({'platform_type': platform_type})
+            platform_attributes = self.m_conf.get_platform_attributes(platform_id=platform_type)
+            assigned_platform_attributes = self.assign_attributes(
+                platform_attributes,
+                predefined_values={'platform_type': platform_type},
+                exclude_key_list=['connector_type']
+            )
+            connection_attributes_dict.update(assigned_platform_attributes)
+        
+        return connection_attributes_dict
+    
+    def save_connection_to_file(self, connections_fpath, connection_name, connection_attributes):
+        """
+        Saves an connection to the connections.yaml/json file.
+        """
+        # Load existing connections or create new structure
+        connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
+        
+        if self.f_handler.is_file(connections_fpath):
+            file_extension = os.path.splitext(connections_fpath)[1].lower()
+            if file_extension == '.yaml':
+                connections_config = self.f_handler.load_yaml(connections_fpath)
+            else:
+                connections_config = self.f_handler.load_json(connections_fpath)
+        else:
+            connections_config = self.f_handler.load_json(self.m_conf.connections_skeleton_fpath)
+        
+        # Ensure connections structure exists
+        if 'connections' not in connections_config:
+            connections_config = {'connections': connections_config}
+        
+        # Initialize connections dict if it doesn't exist
+        if not isinstance(connections_config['connections'], dict):
+            connections_config['connections'] = {}
+        
+        # Add or update connection (flat structure)
+        connections_config['connections'][connection_name] = connection_attributes
+        
+        # Save back to file
+        self.f_handler.save_dict_to_file(connections_fpath, connections_config, file_format=connection_format)
+        self.console.print(f"\nConnection '{connection_name}' saved to {connections_fpath}")

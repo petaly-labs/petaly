@@ -36,9 +36,18 @@ output_dir_path=
 # - DEBUG: Detailed logging for troubleshooting
 logging_mode=INFO
 
-# Pipeline Format
+# File Format
 # -------------
-# Specifies the format for pipeline configuration files:
+# Specifies the format for pipeline/connection configuration files:
 # - yaml: YAML format (default)
 # - json: JSON format
-pipeline_format=yaml
+pipeline_file_format=yaml
+connections_file_format=yaml
+
+# CSV Analysis Configuration
+# --------------------------
+# Maximum file size (in MB) to analyze for metadata extraction when processing CSV files.
+# Files larger than this limit will only have the first portion analyzed.
+# Default: 10 (MB)
+# Set to 0 to analyze entire file regardless of size (not recommended for very large files)
+csv_analysis_max_size_mb=10

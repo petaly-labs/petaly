@@ -1,0 +1,118 @@
+# Petaly Connections Configuration Template
+#
+# This is a template file for connections.yaml.
+# Copy this file to your workspace directory and customize it with your actual connection details.
+#
+# Documentation: https://github.com/petaly-labs/petaly/blob/main/docs/source_target_attributes.md
+#
+# Location: Place this file at {pipeline_base_dpath}/connections.yaml
+#          (same directory level as your pipeline directories)
+#
+# Security Note: Replace all placeholder values (password, access_key, etc.) with your actual credentials.
+#                Consider using environment variables for sensitive values.
+
+connections:
+  # CSV File Connector
+  csv_local:
+    connector_type: csv
+    
+  # Parquet File Connector
+  parquet_local:
+    connector_type: parquet
+  
+  # JSON File Connector
+  json_local:
+    connector_type: json
+    
+  # PostgreSQL Database Connection
+  my_postgres:
+    connector_type: postgres
+    database_user: postgres
+    database_password: password  # Replace with your actual password
+    database_host: localhost
+    database_port: '5432'  # Default PostgreSQL port
+    database_name: your_database_name  # Replace with your database name
+  
+  # MySQL Database Connection
+  my_mysql:
+    connector_type: mysql
+    database_user: root
+    database_password: password  # Replace with your actual password
+    database_host: localhost
+    database_port: 3306  # Default MySQL port
+    database_name: your_database_name  # Replace with your database name
+  
+  # AWS Redshift Serverless (IAM Authentication)
+  redshift_serverless_iam:
+    connector_type: redshift
+    connection_method: iam
+    is_serverless: true
+    cluster_identifier: default-workgroup
+    database_user: your_redshift_user  # Replace with your Redshift username
+    database_name: dev
+    database_schema: your_schema_name  # Replace with your schema name
+    workgroup_name: default-workgroup
+    platform_type: aws
+    aws_region: us-east-1  # Replace with your AWS region
+    bucket_name: your-s3-bucket-name  # Replace with your S3 bucket name
+    aws_iam_role: arn:aws:iam::YOUR_ACCOUNT_ID:role/YourRedshiftRole  # Replace with your IAM role ARN
+    aws_profile_name: your-aws-profile  # Replace with your AWS profile name
+    aws_access_key_id:  # Optional: Leave empty if using IAM role/profile
+    aws_secret_access_key:  # Optional: Leave empty if using IAM role/profile
+  
+  # AWS Redshift Cluster (TCP Authentication)
+  redshift_tcp_dev:
+    connector_type: redshift
+    connection_method: tcp
+    database_user: your_redshift_user  # Replace with your Redshift username
+    database_password: password  # Replace with your actual password
+    database_host: your-cluster.xxxxx.region.redshift.amazonaws.com  # Replace with your Redshift host
+    database_port: 5439  # Default Redshift port
+    database_name: dev
+    database_schema: your_schema_name  # Replace with your schema name
+    platform_type: aws
+    bucket_name: your-s3-bucket-name  # Replace with your S3 bucket name
+    aws_iam_role: arn:aws:iam::YOUR_ACCOUNT_ID:role/YourRedshiftRole  # Replace with your IAM role ARN
+    aws_profile_name: your-aws-profile  # Replace with your AWS profile name
+    aws_access_key_id:  # Optional: Leave empty if using IAM role/profile
+    aws_secret_access_key:  # Optional: Leave empty if using IAM role/profile
+    aws_region: us-east-1  # Replace with your AWS region
+  
+  # AWS S3 Bucket Connection
+  s3:
+    connector_type: s3
+    platform_type: aws
+    bucket_name: your-s3-bucket-name  # Replace with your S3 bucket name
+    bucket_pipeline_prefix: petaly/{pipeline_name}  # Optional: Custom prefix pattern
+    aws_iam_role: arn:aws:iam::YOUR_ACCOUNT_ID:role/YourS3AccessRole  # Replace with your IAM role ARN
+    aws_profile_name: your-aws-profile  # Replace with your AWS profile name
+    aws_access_key_id:  # Optional: Leave empty if using IAM role/profile
+    aws_secret_access_key:  # Optional: Leave empty if using IAM role/profile
+    aws_region: us-east-1  # Replace with your AWS region
+  
+  # Google BigQuery Connection
+  bigquery_myproject:
+    connector_type: bigquery
+    database_schema: your_dataset_name  # Replace with your BigQuery dataset name
+    platform_type: gcp
+    gcp_project_id: your-gcp-project-id  # Replace with your GCP project ID
+    gcp_region: US  # Replace with your GCP region (US, EU, etc.)
+    bucket_name: your-gcs-bucket-name  # Replace with your GCS bucket name
+  
+  # Google Cloud Storage (GCS) Bucket Connection
+  gcs_myproject:
+    connector_type: gcs
+    platform_type: gcp
+    gcp_project_id: your-gcp-project-id  # Replace with your GCP project ID
+    gcp_region: US  # Replace with your GCP region (US, EU, etc.)
+    bucket_name: your-gcs-bucket-name  # Replace with your GCS bucket name
+  
+  # BigQuery Connection (Alternative)
+  my_bigquery:
+    connector_type: bigquery
+    bucket_name: your-gcs-bucket-name  # Replace with your GCS bucket name
+    platform_type: gcp
+    gcp_project_id: your-gcp-project-id  # Replace with your GCP project ID
+    gcp_region: US  # Replace with your GCP region
+
+

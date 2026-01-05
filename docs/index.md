@@ -5,6 +5,7 @@ Welcome to the Petaly documentation! This guide will help you understand and use
 ## Quick Links
 
 - [Installation Guide](installation.md)
+- [CLI Reference](cli_reference.md)
 - [Configuration Guide](petaly_ini.md)
 - [Pipeline Examples](pipeline_examples.md)
 - [Troubleshooting Guide](troubleshooting.md)
@@ -16,7 +17,9 @@ Welcome to the Petaly documentation! This guide will help you understand and use
 - [Video Tutorials](recording/) - Video demonstrations
 
 ### Configuration
+- [CLI Reference](cli_reference.md) - Command-line interface commands and usage
 - [Pipeline Configuration](pipeline_examples.md) - Pipeline setup and examples
+- [Source and Target Attributes](source_target_attributes.md) - Connection configuration (connections.yaml and inline attributes)
 - [Data Objects](data_objects_spec.md) - Data object specification
 - [Cloud Platforms](cloud_platforms.md) - Cloud platform integration
 

@@ -38,6 +38,40 @@ logs_dir_path=/absolute/path/to/logs
 output_dir_path=/absolute/path/to/output
 ```
 
+### connections.yaml Issues
+
+#### Connection Not Found
+**Issue**: "Connection 'my_connection' not found in connections.yaml"
+**Solutions**:
+1. Verify the connection exists in `connections.yaml`:
+   ```bash
+   # Check connections file location
+   ls $PETALY_CONFIG_DIR/pipelines/connections.yaml
+   ```
+2. Verify connection name spelling matches exactly
+3. Create the connection if it doesn't exist:
+   ```bash
+   python3 -m petaly init -e my_connection
+   ```
+
+#### Missing connections.yaml File
+**Issue**: "No connections.yaml file found"
+**Solutions**:
+1. Create connections.yaml during pipeline initialization (recommended)
+2. Or use inline attributes in pipeline.yaml for backward compatibility
+3. Initialize connections file manually:
+   ```bash
+   python3 -m petaly init --workspace
+   ```
+
+#### Connection Resolution Errors
+**Issue**: "Could not resolve source/target connection"
+**Solutions**:
+1. Check that `connection_name` in pipeline matches a connection in `connections.yaml`
+2. Verify connections.yaml file format (YAML or JSON)
+3. Ensure connections.yaml is in the correct location (`pipeline_base_dpath/connections.yaml`)
+4. Check file permissions and accessibility
+
 ## Pipeline Issues
 
 ### Connection Problems

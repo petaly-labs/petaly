@@ -269,8 +269,11 @@ class TestRSExtractor:
             'aws_region': 'us-west-2',
             'database_name': 'test_db',
             'aws_bucket_name': 'test-bucket',
+            'bucket_name': 'test-bucket',  # Add bucket_name (required by RSExtractor)
             'aws_iam_role': 'arn:aws:iam::123456789012:role/test-role'
         }
+        pipeline.m_conf = MagicMock()
+        pipeline.m_conf.connector_metadata_sql_fpath = "mock_sql_path"
         pipeline.m_conf.connector_metadata_sql_fpath = "mock_sql_path"
         return pipeline
     
@@ -332,9 +335,12 @@ class TestRSLoader:
             'aws_region': 'us-west-2',
             'database_name': 'test_db',
             'aws_bucket_name': 'test-bucket',
+            'bucket_name': 'test-bucket',  # Add bucket_name (required by RSLoader)
             'aws_iam_role': 'arn:aws:iam::123456789012:role/test-role'
         }
         pipeline.source_attr = pipeline.target_attr.copy()
+        pipeline.m_conf = MagicMock()
+        pipeline.m_conf.connector_metadata_sql_fpath = "mock_sql_path"
         return pipeline
     
     @patch('boto3.session.Session')
@@ -361,6 +367,7 @@ class TestRSLoader:
         # Create loader and test
         loader = RSLoader(pipeline_mock)
         loader_obj_conf = {
+            'output_data_object_dir': '/tmp/test_output',  # Add output_data_object_dir (required by compose_from_options)
             'object_settings': {
                 'header': True,
                 'columns_delimiter': ',',

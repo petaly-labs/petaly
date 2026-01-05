@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -144,10 +133,27 @@ class ObjectMetadata():
         
         The method processes each object's metadata and saves it to files.
         If the meta query result is empty, it raises a SystemExit error.
+        
+        Note: When include_data_objects='spec', only objects specified in data_objects_spec[]
+        should be processed. The query should already filter this, but we also filter here
+        as a safety measure.
         """
         object_list = []
         if meta_query_result is not None:
-            for meta_table in self.compose_objects_meta_from_query(meta_query_result):
+            # Get all objects from query results
+            all_objects_from_query = self.compose_objects_meta_from_query(meta_query_result)
+            
+            # If include_data_objects is 'spec', filter to only specified objects
+            if self.pipeline.include_data_objects == 'spec' and len(self.pipeline.data_objects) > 0:
+                # Filter to only process objects that are in data_objects_spec[]
+                filtered_objects = [
+                    meta_table for meta_table in all_objects_from_query
+                    if meta_table.get('source_object_name') in self.pipeline.data_objects
+                ]
+                logger.debug(f"Filtered objects from {len(all_objects_from_query)} to {len(filtered_objects)} based on data_objects_spec[]")
+                all_objects_from_query = filtered_objects
+            
+            for meta_table in all_objects_from_query:
                 object_name = meta_table.get('source_object_name')
                 object_list.append(object_name)
                 self.save_table_metadata(meta_table)

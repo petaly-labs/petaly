@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -25,13 +14,28 @@ class BQConnector():
         self.metaquery_quote = ''
         self.bq_source_format = 'bigquery.SourceFormat.CSV'
 
-    def extract_to(self, table_ref, destination_uri, region):
+    def extract_to(self, table_ref, destination_uri, region, destination_format=None):
 
         logger.debug(f"Extract table {table_ref} to {destination_uri} started")
         try:
             bq_client = bigquery.Client()
             job_config = bigquery.job.ExtractJobConfig()
             job_config.compression = bigquery.Compression.GZIP
+            
+            # Set destination format if specified (CSV, PARQUET, or NEWLINE_DELIMITED_JSON)
+            if destination_format:
+                if destination_format.upper() == 'PARQUET':
+                    job_config.destination_format = bigquery.DestinationFormat.PARQUET
+                elif destination_format.upper() == 'JSON':
+                    job_config.destination_format = bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+                elif destination_format.upper() == 'CSV':
+                    job_config.destination_format = bigquery.DestinationFormat.CSV
+                else:
+                    logger.warning(f"Unknown destination format {destination_format}, defaulting to CSV")
+                    job_config.destination_format = bigquery.DestinationFormat.CSV
+            else:
+                # Default to CSV if not specified
+                job_config.destination_format = bigquery.DestinationFormat.CSV
 
             extract_job = bq_client.extract_table(
                 table_ref,
@@ -41,7 +45,7 @@ class BQConnector():
             )
 
             result = extract_job.result()  # Waits for job to complete.
-            logger.debug(f"Table {table_ref} was loaded to {destination_uri}. Result: {result}")
+            logger.debug(f"Table {table_ref} was loaded to {destination_uri} in format {destination_format or 'CSV'}. Result: {result}")
 
         except exceptions.GoogleCloudError as err:
             logger.error(err)
@@ -101,6 +105,8 @@ class BQConnector():
 
         try:
             bq_client = bigquery.Client()
+            # source_format should already be a SourceFormat enum from bq_loader
+            # LoadJobConfig will handle it correctly
             job_config = bigquery.LoadJobConfig(**bq_job_config)
             rows_start = bq_client.get_table(table_id).num_rows  # Make an API request.
 

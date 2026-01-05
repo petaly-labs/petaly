@@ -8,8 +8,7 @@ A Petaly pipeline configuration consists of two main sections: pipeline and data
 
 ```yaml
 pipeline:
-  pipeline_attributes:
-    ...
+  pipeline_name: my_pipeline
   source_attributes:
     ...
   target_attributes:
@@ -21,15 +20,100 @@ data_objects_spec: []
 
 ## Configuration Blocks
 
-### Pipeline Attributes
+### Pipeline Name
 ```yaml
-pipeline_attributes:
-  # Unique pipeline name
+pipeline:
+  # Unique pipeline name (directly under pipeline, no nested section)
   pipeline_name: my_pipeline
-  
-  # Enable/disable pipeline execution
-  is_enabled: true
 ```
+
+## Connection Configuration
+
+Petaly supports two ways to configure source and target connections:
+
+### 1. Using connections.yaml (Recommended)
+
+**Benefits:**
+- Reusable connection configurations across multiple pipelines
+- Centralized credential management
+- Easier maintenance and updates
+- Pipeline-specific attributes can override connection defaults
+
+**connections.yaml Structure:**
+
+For a complete template with examples of all connector types, see [connections.yaml-template](connections.yaml-template).
+
+**Basic Example:**
+```yaml
+connections:
+  postgres_prod:
+    connector_type: postgres
+    database_user: prod_user
+    database_password: ${DB_PASSWORD}
+    database_host: prod-db.example.com
+    database_port: 5432
+    database_name: production_db
+  
+  mysql_dev:
+    connector_type: mysql
+    database_user: dev_user
+    database_password: dev_password
+    database_host: localhost
+    database_port: 3306
+    database_name: dev_db
+  
+  bigquery_analytics:
+    connector_type: bigquery
+    platform_type: gcp
+    gcp_project_id: my-project-id
+    gcp_region: US
+```
+
+**Using Connections in Pipeline:**
+```yaml
+pipeline:
+  pipeline_name: my_pipeline
+  source_attributes:
+    connection_name: mysql_dev  # Reference to connection in connections.yaml
+    database_schema: my_schema   # Pipeline-specific override
+  
+  target_attributes:
+    connection_name: postgres_prod
+    database_schema: analytics    # Pipeline-specific override
+```
+
+**Key Points:**
+- `connection_name` references a connection defined in `connections.yaml`
+- Pipeline-specific attributes (like `database_schema`, `bucket_pipeline_prefix`) can be added to override connection defaults
+- Connections are stored at the workspace level (`pipeline_base_dpath/connections.yaml`)
+- The connections file format matches the pipeline format (YAML or JSON)
+
+### 2. Inline Attributes (Backward Compatible)
+
+You can still define all connection attributes directly in the pipeline:
+
+```yaml
+pipeline:
+  pipeline_name: my_pipeline
+  source_attributes:
+    connector_type: mysql
+    database_user: root
+    database_password: password
+    database_host: localhost
+    database_port: 3306
+    database_name: my_db
+```
+
+**When to Use Each Approach:**
+- **Use connections.yaml** when:
+  - You have multiple pipelines using the same connections
+  - You want centralized credential management
+  - You need to update connection details in one place
+  
+- **Use inline attributes** when:
+  - You have a one-off pipeline with unique connection requirements
+  - You prefer keeping everything in one file
+  - You're migrating from older Petaly versions
 
 ### Source Attributes
 Source configuration varies by connector type. Here are examples for common sources:
@@ -90,13 +174,14 @@ target_attributes:
 ```yaml
 data_attributes:
   # Mode for handling data objects
-  data_objects_spec_mode: only  # Options: only, prefer, ignore
+  include_data_objects: spec  # Options: "all" or "spec"
   
-  # Default settings for data processing
-  object_default_settings:
+  # Default settings for CSV/TSV/TXT file processing
+  csv_default_settings:
     header: true
     columns_delimiter: ","
     columns_quote: double  # Options: double, single, none
+    type_autodetection: true  # Automatically detect column types
 ```
 
 ## Data Objects Specification
@@ -146,11 +231,33 @@ target_attributes:
 ## Complete Examples
 
 ### CSV to PostgreSQL
+
+**Example 1: Using connections.yaml (Recommended)**
+```yaml
+# connections.yaml
+connections:
+  postgres_target:
+    connector_type: postgres
+    database_user: root
+    database_password: db-password
+    database_host: localhost
+    database_port: 5432
+    database_name: petalydb
+
+# pipeline.yaml
+pipeline:
+  pipeline_name: csv_to_postgres
+  source_attributes:
+    connector_type: csv
+  target_attributes:
+    connection_name: postgres_target
+    database_schema: petaly_tutorial  # Pipeline-specific override
+```
+
+**Example 2: Using inline attributes**
 ```yaml
 pipeline:
-  pipeline_attributes:
-    pipeline_name: csv_to_postgres
-    is_enabled: true
+  pipeline_name: csv_to_postgres
   source_attributes:
     connector_type: csv
   target_attributes:
@@ -162,8 +269,8 @@ pipeline:
     database_name: petalydb
     database_schema: petaly_tutorial
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ","
       columns_quote: none
@@ -188,9 +295,7 @@ data_objects_spec:
 ### MySQL to PostgreSQL
 ```yaml
 pipeline:
-  pipeline_attributes:
-    pipeline_name: mysql_to_postgres
-    is_enabled: true
+  pipeline_name: mysql_to_postgres
   source_attributes:
     connector_type: mysql
     database_user: root
@@ -207,7 +312,7 @@ pipeline:
     database_name: target_db
     database_schema: public
   data_attributes:
-    data_objects_spec_mode: only
+    include_data_objects: spec
 
 data_objects_spec:
 - object_spec:
@@ -265,9 +370,7 @@ The following example exports a table `stocks` from Mysql into PostgreSQL under 
 
 ```
 pipeline:
-  pipeline_attributes:
-    pipeline_name: mysql2psql
-    is_enabled: true
+  pipeline_name: mysql2psql
   source_attributes:
     connector_type: mysql
     database_user: root
@@ -284,8 +387,8 @@ pipeline:
     database_name: petalydb
     database_schema: petaly_tutorial
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ','
       columns_quote: double
@@ -307,9 +410,7 @@ The following example create a new table and load csv file stocks.csv into Mysql
 
 ```
 pipeline:
-  pipeline_attributes:
-    pipeline_name: csv2mysql
-    is_enabled: true
+  pipeline_name: csv2mysql
   source_attributes:
     connector_type: csv
   target_attributes:
@@ -320,8 +421,8 @@ pipeline:
     database_port: 3306
     database_name: petaly_tutorial
   data_attributes:
-    use_data_objects_spec: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ","
       columns_quote: none
@@ -359,9 +460,7 @@ It also exclude columns ***likebroadway***, ***likemusicals*** of table **users*
 
 ```
 pipeline:
-  pipeline_attributes:
-    pipeline_name: psql2csv
-    is_enabled: true
+  pipeline_name: psql2csv
   source_attributes:
     connector_type: postgres
     database_user: postgres
@@ -374,8 +473,8 @@ pipeline:
     connector_type: csv
     destination_dir: /your-path-to-destination-folder
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ","
       columns_quote: single
@@ -405,9 +504,7 @@ In this example, the pipeline bq2csv extracts the table osm_admin from BigQuery 
 
 ```
 pipeline:
-  pipeline_attributes:
-    pipeline_name: bq2csv
-    is_enabled: true
+  pipeline_name: bq2csv
   source_attributes:
     connector_type: bigquery
     database_schema: petaly_tutorial
@@ -420,8 +517,8 @@ pipeline:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data/
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ','
       columns_quote: single
@@ -441,9 +538,7 @@ data_objects_spec:
 
 ```
 pipeline:
-  pipeline_attributes:
-    pipeline_name: csv2bq
-    is_enabled: true
+  pipeline_name: csv2bq
   source_attributes:
     connector_type: csv
   target_attributes:
@@ -455,8 +550,8 @@ pipeline:
     gcp_bucket_name: 'bucket-name'
     bucket_pipeline_prefix: petaly/{pipeline_name}
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ','
       columns_quote: none
@@ -479,9 +574,7 @@ data_objects_spec:
 
 ```
 pipeline:
-  pipeline_attributes:
-    pipeline_name: csv2gcs
-    is_enabled: true
+  pipeline_name: csv2gcs
   source_attributes:
     connector_type: csv
   target_attributes:
@@ -492,8 +585,8 @@ pipeline:
     gcp_bucket_name: 'bucket-name'
     bucket_pipeline_prefix: petaly/{pipeline_name}
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ','
       columns_quote: none
@@ -518,9 +611,7 @@ data_objects_spec:
 #### CSV to Redshift Cluster over IAM
 ```
 pipeline:
-  pipeline_attributes:
-    pipeline_name: csv2rs_cluster_iam
-    is_enabled: true
+  pipeline_name: csv2rs_cluster_iam
   source_attributes:
     connector_type: csv
   target_attributes:
@@ -539,8 +630,8 @@ pipeline:
     aws_access_key_id:
     aws_secret_access_key:
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ','
       columns_quote: double
@@ -630,9 +721,7 @@ Target-Attribute
 
 ```
 pipeline:
-  pipeline_attributes:
-    pipeline_name: rs2csv
-    is_enabled: true
+  pipeline_name: rs2csv
   source_attributes:
     connector_type: redshift
     connection_method: 'iam'
@@ -654,8 +743,8 @@ pipeline:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: '\t'
       columns_quote: none

@@ -23,8 +23,8 @@
     "timestamp without time zone": "timestamp without time zone",
     "interval": "interval",
     "char": "char",
-    "character varying": "character varying",
-    "text": "text",
+    "character varying": "character varying(65535)",
+    "text": "character varying(65535)",
     "xml": "xml",
     "json": "json",
     "tsvector": "tsvector",
@@ -38,5 +38,5 @@
     "box": "box",
     "point": "point",
     "line": "line",
-    "null": "character varying"
+    "null": "character varying(65535)"
   }

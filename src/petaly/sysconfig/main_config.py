@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -47,6 +36,7 @@ class MainConfig:
         self.class_config_fname = 'class_config.json'
         self.pipeline_meta_config_fname = 'pipeline_meta_config.json'
         self.pipeline_skeleton_fname = 'pipeline_skeleton.json'
+        self.connections_skeleton_fname = 'connections_skeleton.json'
         self.extractor_type_transformer_fname = 'extractor_type_transformer.json'
         self.type_mapping_fname = '{source_connector_id}.json'
         self.metadata_sql_fname = 'metadata.sql'
@@ -71,6 +61,7 @@ class MainConfig:
         self.logging_config_fpath = os.path.join(self.sysconfig_config, self.logging_config_fname)
         self.pipeline_meta_config_fpath = os.path.join(self.sysconfig_config, self.pipeline_meta_config_fname)
         self.pipeline_skeleton_fpath = os.path.join(self.sysconfig_config, self.pipeline_skeleton_fname)
+        self.connections_skeleton_fpath = os.path.join(self.sysconfig_config, self.connections_skeleton_fname)
         self.class_sysconfig_fpath = os.path.join(self.sysconfig_config, self.class_config_fname)
         self.pipeline_outdated_arguments_fpath = os.path.join(self.sysconfig_config, self.pipeline_outdated_arguments_fname)
         
@@ -81,7 +72,9 @@ class MainConfig:
         }
         self.global_settings = {
             "logging_mode": "INFO",
-            "pipeline_format": "yaml"
+            "pipeline_file_format": "yaml",
+            "connections_file_format": "yaml",
+            "csv_analysis_max_size_mb": "10"
         }
 
 
@@ -203,6 +196,7 @@ class MainConfig:
         1. Load the workspace_config section
         2. Validate all paths are absolute
         3. Set pipeline, logs, and output directory paths
+        4. Setup logging to file once logs directory is known
         """
         section_name = 'workspace_config'
 
@@ -212,6 +206,11 @@ class MainConfig:
                 self.pipeline_base_dpath = conf_parser.get(section_name,'pipeline_dir_path')
                 self.logs_base_dpath = conf_parser.get(section_name,'logs_dir_path')
                 self.output_base_dpath = conf_parser.get(section_name,'output_dir_path')
+                
+                # Setup logging to file once logs directory is known
+                from petaly.sysconfig.logger import setup_logging
+                logging_mode = self.global_settings.get('logging_mode', 'INFO')
+                setup_logging(self.logging_config_fpath, self.logs_base_dpath, logging_mode)
         else:
             self.console.print(f"Check petaly config file: {self.main_config_fpath}")
             sys.exit()
@@ -223,7 +222,8 @@ class MainConfig:
         Logic:
         1. Load the global_settings section
         2. Validate logging_mode (INFO or DEBUG)
-        3. Validate pipeline_format (yaml or json)
+        3. Validate pipeline_file_format (yaml or json)
+        4. Validate connections_file_format (yaml or json)
         """
         section_name = 'global_settings'
         conf_parser = self.load_main_config_file()
@@ -237,13 +237,27 @@ class MainConfig:
                             self.global_settings['logging_mode'] = value.upper()
                         else:
                             self.console.print(f"The option logging_mode supports INFO or DEBUG mode only. Check logging_mode under section global_settings in petaly.ini.")
-                    elif key == 'pipeline_format':
+                    elif key == 'pipeline_file_format':
                         if value.lower() in ('yaml', 'json'):
-                            self.global_settings['pipeline_format'] = value.lower()
+                            self.global_settings['pipeline_file_format'] = value.lower()
                             # Update pipeline_fname based on the configured format
                             self.pipeline_fname = f"{self.pipeline_fname.split('.')[0]}.{value.lower()}"
                         else:
-                            self.console.print(f"The option pipeline_format supports yaml or json only. Check pipeline_format under section global_settings in petaly.ini.")
+                            self.console.print(f"The option pipeline_file_format supports yaml or json only. Check pipeline_file_format under section global_settings in petaly.ini.")
+                    elif key == 'connections_file_format':
+                        if value.lower() in ('yaml', 'json'):
+                            self.global_settings['connections_file_format'] = value.lower()
+                        else:
+                            self.console.print(f"The option connections_file_format supports yaml or json only. Check connections_file_format under section global_settings in petaly.ini.")
+                    elif key == 'csv_analysis_max_size_mb':
+                        try:
+                            size_mb = float(value)
+                            if size_mb < 0:
+                                self.console.print(f"The option csv_analysis_max_size_mb must be >= 0. Check csv_analysis_max_size_mb under section global_settings in petaly.ini.")
+                            else:
+                                self.global_settings['csv_analysis_max_size_mb'] = str(size_mb)
+                        except ValueError:
+                            self.console.print(f"The option csv_analysis_max_size_mb must be a valid number. Check csv_analysis_max_size_mb under section global_settings in petaly.ini.")
                 else:
                     self.console.print(f"The option {key} is not specified under section global_settings in petaly.ini.")
         else:
@@ -290,7 +304,19 @@ class MainConfig:
         return platform_type_list
 
     def set_extractor_paths(self, connector_id):
-        connector_dpath = self.get_connector_dpath(connector_id)
+        connector_category = self.get_connector_category(connector_id)
+        if connector_category == 'file':
+            # File connectors share common config
+            connector_dpath = self.get_connector_dpath(connector_id)
+            # Replace the specific format (csv/parquet/json) with 'common'
+            connector_dpath_parts = connector_dpath.split(os.sep)
+            if 'file' in connector_dpath_parts:
+                file_index = connector_dpath_parts.index('file')
+                connector_dpath_parts[file_index + 1] = 'common'
+                connector_dpath = os.sep.join(connector_dpath_parts)
+        else:
+            connector_dpath = self.get_connector_dpath(connector_id)
+        
         self.connector_metadata_sql_fpath = os.path.join(connector_dpath, self.metadata_sql_fname)
         self.connector_extract_to_stmt_fpath = os.path.join(connector_dpath, 'config', self.extract_to_stmt_fname)
         return True
@@ -300,7 +326,19 @@ class MainConfig:
         return connector_type
 
     def set_loader_paths(self, connector_id):
-        connector_dpath = self.get_connector_dpath(connector_id)
+        connector_category = self.get_connector_category(connector_id)
+        if connector_category == 'file':
+            # File connectors share common config
+            connector_dpath = self.get_connector_dpath(connector_id)
+            # Replace the specific format (csv/parquet/json) with 'common'
+            connector_dpath_parts = connector_dpath.split(os.sep)
+            if 'file' in connector_dpath_parts:
+                file_index = connector_dpath_parts.index('file')
+                connector_dpath_parts[file_index + 1] = 'common'
+                connector_dpath = os.sep.join(connector_dpath_parts)
+        else:
+            connector_dpath = self.get_connector_dpath(connector_id)
+        
         self.connector_load_from_stmt_fpath = os.path.join(connector_dpath, 'config', self.load_from_stmt_fname)
         self.connector_create_table_stmt_fpath = os.path.join(connector_dpath, 'config', self.create_table_stmt_fname)
 
@@ -352,9 +390,23 @@ class MainConfig:
         
         Logic:
         1. Get connector directory path
-        2. Load attributes from connector_attributes.json
+        2. For file connectors (csv, parquet, json), use common/config
+        3. For other connectors, use connector-specific config
+        4. Load attributes from connector_attributes.json
         """
-        connector_dpath = self.get_connector_dpath(connector_id)
+        connector_category = self.get_connector_category(connector_id)
+        if connector_category == 'file':
+            # File connectors share common config
+            connector_dpath = self.get_connector_dpath(connector_id)
+            # Replace the specific format (csv/parquet/json) with 'common'
+            connector_dpath_parts = connector_dpath.split(os.sep)
+            if 'file' in connector_dpath_parts:
+                file_index = connector_dpath_parts.index('file')
+                connector_dpath_parts[file_index + 1] = 'common'
+                connector_dpath = os.sep.join(connector_dpath_parts)
+        else:
+            connector_dpath = self.get_connector_dpath(connector_id)
+        
         connector_attributes_fpath = os.path.join(connector_dpath, 'config', self.connector_attributes_fname)
 
         return self.f_handler.load_json(connector_attributes_fpath)
@@ -364,7 +416,9 @@ class MainConfig:
         type_mapping_fpath = self.get_type_mapping_path(connector_id)
         connector_category = self.get_connector_category(source_connector_id)
         if connector_category in ('storage','file'):
-            type_mapping_fpath = type_mapping_fpath.format(source_connector_id=source_file_format)
+            # For file connectors (csv, parquet, json) and storage connectors (gcs, s3),
+            # use 'file' as the source_connector_id to point to common type_mapping
+            type_mapping_fpath = type_mapping_fpath.format(source_connector_id='file')
         else:
             type_mapping_fpath = type_mapping_fpath.format(source_connector_id=source_connector_id)
 
@@ -377,23 +431,54 @@ class MainConfig:
         return type_mapping_fpath
 
     def get_extractor_type_transformer_fpath(self, connector_id):
-
-        connector_dpath = self.get_connector_dpath(connector_id)
+        """
+        Gets the extractor type transformer file path for a connector.
+        
+        Logic:
+        1. For file connectors (csv, parquet, json), use common/config
+        2. For other connectors, use connector-specific config
+        """
+        connector_category = self.get_connector_category(connector_id)
+        if connector_category == 'file':
+            # File connectors share common config
+            connector_dpath = self.get_connector_dpath(connector_id)
+            # Replace the specific format (csv/parquet/json) with 'common'
+            connector_dpath_parts = connector_dpath.split(os.sep)
+            if 'file' in connector_dpath_parts:
+                file_index = connector_dpath_parts.index('file')
+                connector_dpath_parts[file_index + 1] = 'common'
+                connector_dpath = os.sep.join(connector_dpath_parts)
+        else:
+            connector_dpath = self.get_connector_dpath(connector_id)
+        
         return os.path.join(connector_dpath, 'config', self.extractor_type_transformer_fname)
 
     def get_extractor_class(self, connector_id):
-
+        if not connector_id:
+            raise ValueError(f"Connector ID is None. Cannot get extractor class.")
         connector_class_config = self.get_connector_class_config(connector_id)
+        if not connector_class_config:
+            raise ValueError(f"Connector '{connector_id}' not found in configuration. Check that the connector type is valid.")
         return self.get_class_obj(connector_class_config, 'extractor')
 
     def get_loader_class(self, connector_id):
+        if not connector_id:
+            raise ValueError(f"Connector ID is None. Cannot get loader class.")
         connector_class_config = self.get_connector_class_config(connector_id)
+        if not connector_class_config:
+            raise ValueError(f"Connector '{connector_id}' not found in configuration. Check that the connector type is valid.")
         return self.get_class_obj(connector_class_config,'loader')
 
     def get_class_obj(self, connector_class_config, class_type):
-
-        module_path = connector_class_config.get('connector_dpath') + '.' + connector_class_config.get(class_type).get('module_path')
-        class_name = connector_class_config.get(class_type).get('class_name')
+        if not connector_class_config:
+            raise ValueError(f"Connector class config is None. Cannot get {class_type} class.")
+        if class_type not in connector_class_config:
+            raise ValueError(f"Class type '{class_type}' not found in connector configuration.")
+        class_config = connector_class_config.get(class_type)
+        if not class_config:
+            raise ValueError(f"Class configuration for '{class_type}' is None.")
+        module_path = connector_class_config.get('connector_dpath') + '.' + class_config.get('module_path')
+        class_name = class_config.get('class_name')
         class_object = load_class_obj(module_path, class_name)
         return class_object
 

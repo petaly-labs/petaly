@@ -1,10 +1,14 @@
 {
-  "pipeline": {"pipeline_attributes": {},
-        "source_attributes": {},
-        "target_attributes": {},
-        "data_attributes": {
-            "data_objects_spec_mode":{}
-        }
+  "pipeline": {
+    "pipeline_name": "",
+    "source_attributes": {},
+    "target_attributes": {},
+    "data_attributes": {
+      "include_data_objects": "spec",
+      "csv_default_settings": {
+        "type_autodetection": true
+      }
+    }
   },
   "data_objects_spec": []
 }

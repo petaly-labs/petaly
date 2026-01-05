@@ -1,0 +1,11 @@
+{
+  "encoding_charset": {"in_use":false, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": null, "key_comment": "[Optional] Define file encoding; If in doubt, leave it blank or use UTF8."},
+  "source_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": null, "key_comment": "Define the absolute path to your source file directory (base directory for all objects). This directory contains files to be extracted. Used when file connector (CSV/Parquet/JSON) is configured as source. Complementary to object_source_dir: If source_dir is set and object_source_dir is set, final path = source_dir + / + object_source_dir. If object_source_dir is not set but source_dir is, final path = source_dir + / + object_name. If source_dir is empty, object_source_dir must be an absolute path."},
+  "destination_dir": {"in_use":true, "preassigned_values": [null], "default_value":null, "key_type": "String", "dependency": null, "key_comment": "Define the absolute path to your destination file directory. This directory will serve as the final destination for your extracted files. Used when file connector (CSV/Parquet/JSON) is configured as target."},
+  "object_connector_settings":
+  {
+      "newlines_in_values": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"false", "key_type": "String", "dependency": null, "key_comment": "Whether newline characters are allowed in file values. Setting this to True reduces the performance of multi-threaded file reading."},
+      "ignore_empty_lines": {"in_use":false, "preassigned_values": ["true", "false"], "default_value":"true", "key_type": "String", "dependency": null, "key_comment": "Whether empty lines are ignored in file input. If False, an empty line is interpreted as containing a single empty value (assuming a one-column file)."}
+  }
+}
+

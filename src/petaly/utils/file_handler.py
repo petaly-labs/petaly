@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -237,8 +226,20 @@ class FileHandler:
             return True
 
     def make_dirs(self, path_to_dir):
+        """
+        Creates a directory if it doesn't exist.
+        
+        Args:
+            path_to_dir: Path to the directory to create
+            
+        Note: If a file exists at the same path, this will raise an error.
+              Use os.path.exists() to check if path exists as a file first.
+        """
         if not os.path.isdir(path_to_dir):
-            os.makedirs(path_to_dir)
+            # Check if path exists as a file (which would cause makedirs to fail)
+            if os.path.exists(path_to_dir) and os.path.isfile(path_to_dir):
+                raise FileExistsError(f"Cannot create directory '{path_to_dir}': a file with the same name already exists")
+            os.makedirs(path_to_dir, exist_ok=True)
 
     def get_file_names_with_extensions(self, dir_path, *file_extensions):
         """
@@ -429,12 +430,36 @@ class FileHandler:
             return None
 
     def gunzip_csv_files(self, gz_dpath, cleanup_file=True):
-        gz_file_list = self.get_specific_files(gz_dpath, '*.csv.gz')
+        """
+        Unzips compressed delimited files in a directory.
+        Files can have any extension - content format is determined by delimiter in csv_default_settings.
+        
+        Args:
+            gz_dpath: Directory containing compressed files
+            cleanup_file: Whether to delete the compressed file after extraction
+        """
+        # Look for any .gz files (regardless of base extension)
+        gz_file_list = self.get_specific_files(gz_dpath, '*.gz')
         for gz_fpath in gz_file_list:
             self.gunzip_file(gz_fpath, cleanup_file)
 
     def gzip_csv_files(self, gz_dpath, cleanup_file=True):
-        gz_file_list = self.get_specific_files(gz_dpath, '*.csv')
+        """
+        Compresses delimited files in a directory.
+        Files can have any extension - content format is determined by delimiter in csv_default_settings.
+        
+        Args:
+            gz_dpath: Directory containing files to compress
+            cleanup_file: Whether to delete the original file after compression
+        """
+        # Look for common delimited file patterns (but accept any extension)
+        import glob
+        import os
+        all_files = []
+        for pattern in ['*.csv', '*.tsv', '*.txt', '*']:
+            all_files.extend(glob.glob(os.path.join(gz_dpath, pattern)))
+        # Filter to only files (not directories) and exclude already compressed files
+        gz_file_list = [f for f in all_files if os.path.isfile(f) and not f.endswith('.gz')]
         for gz_fpath in gz_file_list:
             self.gzip_file(gz_fpath, cleanup_file)
 

@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -26,8 +15,13 @@ class S3Loader(FLoader):
         self.f_handler = FileHandler()
 
         super().__init__(pipeline)
-        self.cloud_bucket_name = self.pipeline.target_attr.get('aws_bucket_name')
-        self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name + '/'
+        self.cloud_bucket_name = self.pipeline.target_attr.get('bucket_name')
+        # bucket_name is required for S3
+        if self.cloud_bucket_name:
+            self.cloud_bucket_path = self.s3_connector.bucket_prefix + self.cloud_bucket_name + '/'
+        else:
+            logger.error(f"bucket_name is required for S3 target but was not found in target_attributes")
+            raise ValueError("bucket_name is required in target_attributes for S3 connector")
 
     def load_data(self):
         super().load_data(file_to_gzip=True)

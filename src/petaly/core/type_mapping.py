@@ -1,16 +1,5 @@
-# Copyright © 2024-2025 Pavel Rabaev
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright © 2024-2026 Pavel Rabaev
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -43,17 +32,27 @@ class TypeMapping:
         Gets target-source type mapping configuration.
         
         Logic:
-        1. Try to load pipeline-specific type mapping
-        2. Fall back to default type mapping if not found
+        1. Try to load pipeline-specific type mapping from pipeline directory (e.g., pipeline_name/postgres.json)
+        2. Fall back to default type mapping from connector if not found locally
         3. Load and return type mapping dictionary
         """
-        type_mapping_fpath = self.pipeline.pipeline_type_mapping_fpath.format(source_connector_id=self.pipeline.source_connector_id)
-
-        if not self.f_handler.is_file(type_mapping_fpath):
-            type_mapping_fpath = self.m_conf.compose_type_mapping_path(self.pipeline.target_connector_id, self.pipeline.source_connector_id)
-
-        logger.debug(f"Load data type mapping from: {type_mapping_fpath}")
-        type_mapping_dict = self.f_handler.load_json(type_mapping_fpath)
+        # First, try to load from pipeline directory (local file takes precedence)
+        # Only check local file if source_connector_id is set
+        if self.pipeline.source_connector_id:
+            pipeline_type_mapping_fpath = self.pipeline.pipeline_type_mapping_fpath.format(source_connector_id=self.pipeline.source_connector_id)
+            
+            logger.debug(f"Checking for local type mapping file: {pipeline_type_mapping_fpath}")
+            if self.f_handler.is_file(pipeline_type_mapping_fpath):
+                logger.debug(f"Load data type mapping from local pipeline file: {pipeline_type_mapping_fpath}")
+                type_mapping_dict = self.f_handler.load_json(pipeline_type_mapping_fpath)
+                return type_mapping_dict
+            else:
+                logger.debug(f"Local type mapping file not found: {pipeline_type_mapping_fpath}")
+        
+        # Fall back to connector's default type mapping
+        connector_type_mapping_fpath = self.m_conf.compose_type_mapping_path(self.pipeline.target_connector_id, self.pipeline.source_connector_id)
+        logger.debug(f"Loading from connector default: {connector_type_mapping_fpath}")
+        type_mapping_dict = self.f_handler.load_json(connector_type_mapping_fpath)
         return type_mapping_dict
 
     def get_extractor_type_transformer(self):

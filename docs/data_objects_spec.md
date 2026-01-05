@@ -13,9 +13,10 @@ The pipeline configuration uses data_objects_spec sections to handle data object
 1. **Pipeline main section**:
    ```yaml
    pipeline:
+     pipeline_name: my_pipeline
      data_attributes:
-       data_objects_spec_mode: only  # Controls how data_objects_spec is used
-       object_default_settings:      # Default settings for all objects
+       include_data_objects: spec  # Controls how data_objects_spec is used: "all" or "spec"
+       csv_default_settings:        # Default settings for CSV/TSV/TXT files
          header: true
          columns_delimiter: ","
          columns_quote: double
@@ -30,13 +31,12 @@ The pipeline configuration uses data_objects_spec sections to handle data object
        destination_object_name: target_table
    ```
 
-### data_objects_spec_mode
+### include_data_objects
 
-The `data_objects_spec_mode` in `data_attributes` controls how the `data_objects_spec` main section is used:
+The `include_data_objects` parameter in `data_attributes` controls how the `data_objects_spec` main section is used:
 
-- `only`: Load only the objects explicitly specified in `data_objects_spec`. These objects will be configured in the next step.
-- `ignore`: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section, completely disregarding `data_objects_spec`.
-- `prefer`: Load all objects from the database_schema, but for objects specified in `data_objects_spec`, apply the refined configuration defined in that section.
+- `"spec"`: Load only the objects explicitly specified in `data_objects_spec`. If `data_objects_spec` is empty, no objects will be loaded.
+- `"all"`: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section. If objects are specified in `data_objects_spec`, their configurations will be applied; otherwise, default settings from `csv_default_settings` will be used.
 
 ## Basic Structure
 
@@ -75,9 +75,10 @@ Settings for each data object:
 ```yaml
 # First main section: Pipeline configuration
 pipeline:
+  pipeline_name: csv_to_db
   data_attributes:
-    data_objects_spec_mode: only
-    object_default_settings:
+    include_data_objects: spec
+    csv_default_settings:
       header: true
       columns_delimiter: ","
       columns_quote: double
@@ -93,12 +94,13 @@ data_objects_spec:
       - stocks.csv
 ```
 
-### Database Tables with Prefer Mode
+### Database Tables with All Mode
 ```yaml
 # First main section: Pipeline configuration
 pipeline:
+  pipeline_name: db_to_db
   data_attributes:
-    data_objects_spec_mode: prefer  # Will load all tables but apply specific settings to listed ones
+    include_data_objects: all  # Will load all tables but apply specific settings to listed ones
 
 # Second main section: Data objects specification
 data_objects_spec:

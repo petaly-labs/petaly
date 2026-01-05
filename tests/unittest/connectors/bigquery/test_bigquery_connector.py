@@ -108,6 +108,7 @@ class TestBQExtractor:
             'gcp_region': 'us-central1'
         }
         pipeline.source_connector_id = "test_source"
+        pipeline.target_connector_id = "csv"  # Add target_connector_id for extract_to test
         pipeline.m_conf.set_extractor_paths = MagicMock(return_value=None)
         return pipeline
 

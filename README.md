@@ -1,3 +1,7 @@
+![](https://raw.githubusercontent.com/petaly-labs/petaly/main/images/logo/petaly_logo_transparent.png)
+
+![](https://raw.githubusercontent.com/petaly-labs/petaly/main/docs/tutorial/recording/petaly_run_pipe.gif)
+
 ## Overview
 
 Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by and for data professionals! Our mission is to simplify data movement across different platforms with a tool that truly understands the needs of the data community.
@@ -189,51 +193,92 @@ python3 -m petaly run -p my_pipeline -o object1,object2
 
 1. **Initialize Pipeline**
 ```bash
-python3 -m petaly init -p csv_to_postgres
+python3 -m petaly init -p csv2psql
 ```
 
-2. **Download Test Data**
-```bash
-# Download and extract test files
-gunzip options.csv.gz
-gunzip stocks.csv.gz
-```
+2. **Configure Connections** (if using connection names)
+   - Set up `csv_local` connection in `connections.yaml`
+   - Set up `my_postgres` connection in `connections.yaml`
+   - See [Connections Template](docs/connections.yaml-template) for details
 
 3. **Configure Pipeline**
-- Use `csv` as source
-- Use `postgres` as target
-- Configure database connection details
+   - Use `csv` as source with `connection_name: csv_local`
+   - Use `postgres` as target with `connection_name: my_postgres`
+   - Set `type_autodetection: true` for automatic type detection
+   - Configure `object_source_dir` for each data object
 
 4. **Run Pipeline**
 ```bash
-python3 -m petaly run -p csv_to_postgres
+python3 -m petaly run -p csv2psql
 ```
 
 ### Example Configuration
+
+**Using Connection Names (Recommended):**
 ```yaml
 pipeline:
-  pipeline_name: csv_to_postgres
+  pipeline_name: psql2bq
   source_attributes:
-    connector_type: csv
+    connection_name: my_postgres
+    database_schema: petaly_tutorial
   target_attributes:
-    connector_type: postgres
-    database_user: root
-    database_password: db-password
-    database_host: localhost
-    database_port: 5432
-    database_name: petalydb
+    connection_name: my_bigquery
+    database_schema: petaly_tutorial
+    bucket_pipeline_prefix: petaly/{pipeline_name}
+  data_attributes:
+    include_data_objects: spec
+    csv_default_settings:
+      header: true
+      columns_delimiter: ','
+      columns_quote: double
+data_objects_spec:
+- object_spec:
+    object_name: new_stocks
+    destination_object_name: new_stocks
+    recreate_destination_object: true
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    - adjust_close
+```
+
+**CSV to PostgreSQL Example:**
+```yaml
+pipeline:
+  pipeline_name: csv2psql
+  source_attributes:
+    connection_name: csv_local
+    source_dir: /path/to/csv/folder
+    type_autodetection: true
+  target_attributes:
+    connection_name: my_postgres
     database_schema: petaly_tutorial
   data_attributes:
     include_data_objects: spec
     csv_default_settings:
       header: true
-      columns_delimiter: ","
-      columns_quote: none
+      columns_delimiter: ','
+      columns_quote: double
+data_objects_spec:
+- object_spec:
+    object_name: stocks
+    destination_object_name: null
+    recreate_destination_object: true
+    cleanup_linebreak_in_fields: false
+    exclude_columns:
+    - null
+    object_source_dir: stocks/
+    file_names:
+    -
 ```
+
+For more examples, see [Pipeline Configuration Guide](docs/pipeline_examples.md) and [Connections Template](docs/connections.yaml-template).
 
 ## Documentation
 
 - [Pipeline Configuration Guide](docs/pipeline_examples.md)
+- [Source and Target Attributes](docs/source_target_attributes.md)
+- [Connections Template](docs/connections.yaml-template)
+- [CLI Reference](docs/cli_reference.md)
 - [Cloud Platform Guide](docs/cloud_platforms.md)
 - [Troubleshooting Guide](docs/troubleshooting.md)
 - [Video Tutorials](docs/recording/)

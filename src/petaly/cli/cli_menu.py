@@ -33,7 +33,9 @@ class CliMenu():
     """
 
     def __init__(self, main_config):
-        self.use_pipeline_wizard = True
+        # Set use_pipeline_wizard based on full_pipeline_wizard from config
+        full_pipeline_wizard = main_config.global_settings.get('full_pipeline_wizard', 'true')
+        self.use_pipeline_wizard = full_pipeline_wizard.lower() == 'true'
         self.console = Console()
         self.prompt = prompt
         self.m_conf = main_config
@@ -91,7 +93,14 @@ class CliMenu():
                 if not self.include_based_on_dependency(assigned_attributes, value.get('dependency')):
                     continue
 
-                # 4. compose key comment and default value
+                # 4. Check wizard_required: if use_pipeline_wizard is False, only ask if wizard_required is True
+                wizard_required = value.get('wizard_required', False)
+                if not self.use_pipeline_wizard and not wizard_required:
+                    # Short form mode and this field is not required - use default value
+                    assigned_attributes.update({key: assigned_value})
+                    continue
+
+                # 5. compose key comment and default value
                 console_message = "\n"
 
                 console_message += f"{value.get('key_comment')}"
@@ -101,17 +110,17 @@ class CliMenu():
                 self.console.print(console_message)
 
                 if key == 'database_password':
-                    if self.use_pipeline_wizard:
+                    if self.use_pipeline_wizard or wizard_required:
                         assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", password=True)
 
                 elif value.get('key_type') == 'Integer':
-                    if self.use_pipeline_wizard:
+                    if self.use_pipeline_wizard or wizard_required:
                         assigned_value = prompt.IntPrompt.ask(f"[bold green]{key}[/bold green]", default=default_value,
                                                               show_default=False)
 
                 elif value.get('key_type') == 'Array':
 
-                    if self.use_pipeline_wizard:
+                    if self.use_pipeline_wizard or wizard_required:
                         assigned_value = prompt.Prompt.ask(f"[bold green]{key}[/bold green]", default=default_value,
                                                            show_default=False)
 
@@ -121,7 +130,7 @@ class CliMenu():
                     if assigned_value is None:
                         assigned_value = [None]
                 else:
-                    if self.use_pipeline_wizard:
+                    if self.use_pipeline_wizard or wizard_required:
                         # For String types, only pass choices if preassigned_values is not None
                         # If preassigned_values is None, prompt without choices (free text input)
                         if preassigned_values is not None:
@@ -168,7 +177,7 @@ class CliMenu():
         # Allow selection by number or name (without showing list again)
         while True:
             selection = prompt.Prompt.ask(
-                f"\nSelect connection for {connection_type} (enter number 0-{max_num} or connection name)"
+                f"\nSelect connection for [bold]{connection_type}[/bold] (enter number 0-{max_num} or connection name)"
             )
             
             # Check for option 0 (create new connection)
@@ -237,7 +246,7 @@ class CliMenu():
         
         # First ask if user wants to use an existing connection
         if existing_connection_names:
-            use_existing = prompt.Confirm.ask(f"Do you want to use an existing connection for {connection_type}?", default=True)
+            use_existing = prompt.Confirm.ask(f"Do you want to use an existing connection for [bold]{connection_type}[/bold]?", default=True)
             
             if use_existing:
                 # Show all existing connections (one per line) with option 0 to create new
@@ -249,7 +258,7 @@ class CliMenu():
                 # Allow selection by number or name (without showing all choices in one line)
                 while True:
                     selection = prompt.Prompt.ask(
-                        f"\nSelect connection for {connection_type} (enter number 0-{len(existing_connection_names)} or connection name)"
+                        f"\nSelect connection for [bold]{connection_type}[/bold] (enter number 0-{len(existing_connection_names)} or connection name)"
                     )
                     
                     # Check for option 0 (create new connection)

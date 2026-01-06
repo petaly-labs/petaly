@@ -180,6 +180,13 @@ class Pipeline:
 
             self.load_attributes = pipeline_dict.get('pipeline', {}).get('load_attributes', {})
             
+            # Incremental load parameters are now per-object in data_objects_spec
+            # Default values for when not specified in object_spec
+            self.load_mode = 'full'
+            self.column_primary_key = ''
+            self.column_last_modified = ''
+            self.batch_size = None
+            
             # Get use_data_objects_spec, with backward compatibility for old parameter names
             self.use_data_objects_spec = self.load_attributes.get('use_data_objects_spec', 'prefer')
             

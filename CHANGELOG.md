@@ -8,17 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Incremental Load Support**: New incremental load feature for MySQL and PostgreSQL sources allows loading only new/updated rows based on timestamp columns. Configure per-object with `load_mode: "incremental"`, `column_last_modified`, `column_primary_key`, and `batch_size` parameters. State is automatically tracked in `load_state.json` files for resumable loads
 - Export support for BigQuery and Redshift to Parquet/JSON format
 - Load support for BigQuery and Redshift from Parquet/JSON files
 - Parquet/JSON to CSV conversion for PostgreSQL and MySQL loaders
 - Support for Parquet and JSON file connectors as source and target
 - New utility script: `inspect_parquet.py` for inspecting Parquet file structure
-- Enhanced CSV parsing with manual parser for handling escaped commas in unquoted fields
 - Configurable `connections_file_path` parameter in `petaly.ini` (defaults to `pipeline_dir_path/connections.yaml`)
 - Parallel processing support with `max_workers` parameter for concurrent object processing
 - `exclude_objects` parameter in `load_attributes` to exclude specific objects from processing
 - `flow_mode` parameter (`"object"` or `"dump"`) to control processing flow
 - `null_string` and `force_null` default parameters in `csv_default_settings`
+- Configurable `connections_file_path` parameter in `petaly.ini` (defaults to `pipeline_dir_path/connections.yaml`)
+- `full_pipeline_wizard` parameter in `petaly.ini` to control wizard mode (short form for faster setup)
 - Thread-safe parallel processing with thread-local database connections
 - Utility scripts: `check_parallel.sh`, `check_postgres_connections.sh`, `check_mysql_connections.sh` for monitoring
 

@@ -57,6 +57,24 @@ class DataObject:
         self.file_names = data_object_spec.get('file_names')
         cleanup_linebreak_in_fields = data_object_spec.get('cleanup_linebreak_in_fields')
         self.object_settings.update({'cleanup_linebreak_in_fields': cleanup_linebreak_in_fields})
+        
+        # Incremental load parameters (per-object)
+        # Note: Incremental load is only supported for MySQL and PostgreSQL sources
+        self.load_mode = data_object_spec.get('load_mode', 'full')
+        self.column_primary_key = data_object_spec.get('column_primary_key', '')
+        self.column_last_modified = data_object_spec.get('column_last_modified', '')
+        batch_size = data_object_spec.get('batch_size')
+        self.batch_size = int(batch_size) if batch_size is not None and batch_size != '' else None
+        
+        # Validate incremental load is only used with supported sources
+        if self.load_mode == 'incremental':
+            if pipeline.source_connector_id not in ('mysql', 'postgres'):
+                logger.error(
+                    f"Incremental load mode is only supported for MySQL and PostgreSQL sources. "
+                    f"Current source connector: {pipeline.source_connector_id}. "
+                    f"Please set load_mode to 'full' or use MySQL/PostgreSQL as source."
+                )
+                sys.exit()
 
     def to_dict(self) -> dict:
         """
@@ -99,6 +117,12 @@ class DataObject:
         self.exclude_columns = [None]
         self.object_source_dir = None
         self.file_names = [None]
+        
+        # Incremental load parameters (defaults for objects without spec)
+        self.load_mode = 'full'
+        self.column_primary_key = ''
+        self.column_last_modified = ''
+        self.batch_size = None
 
     def format_csv_default_settings(self, csv_default_settings):
         """

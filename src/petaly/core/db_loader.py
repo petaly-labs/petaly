@@ -453,6 +453,46 @@ class DBLoader(ABC):
             logger.debug(f"Error counting rows in files from {output_data_object_dir}: {e}")
             return None
     
+    def table_exists(self, schema_table_name: str) -> bool:
+        """
+        Check if a table exists in the target database.
+        
+        Args:
+            schema_table_name: Full table name including schema (e.g., 'schema.table')
+            
+        Returns:
+            True if table exists, False otherwise
+        """
+        try:
+            # Try to query the table - if it exists, query succeeds
+            # Use a simple SELECT 1 query that's fast and doesn't return data
+            if self.pipeline.target_connector_id == 'bigquery':
+                check_query = f"SELECT 1 FROM `{schema_table_name}` LIMIT 1"
+                try:
+                    result = self.db_connector.get_metadata_result(check_query)
+                    return result is not None and len(result) >= 0  # Even empty result means table exists
+                except Exception:
+                    return False
+            elif self.pipeline.target_connector_id == 'redshift' and hasattr(self.db_connector, 'execute_sql') and hasattr(self.db_connector, 'is_serverless'):
+                # Redshift IAM
+                check_query = f"SELECT 1 FROM {schema_table_name} LIMIT 1"
+                try:
+                    result_data, request_id = self.db_connector.execute_sql(check_query, sleep_sec=1)
+                    return result_data is not None
+                except Exception:
+                    return False
+            else:
+                # PostgreSQL, MySQL, Redshift TCP
+                check_query = f"SELECT 1 FROM {schema_table_name} LIMIT 1"
+                try:
+                    result = self.db_connector.get_query_result(check_query)
+                    return result is not None
+                except Exception:
+                    return False
+        except Exception as e:
+            logger.debug(f"Error checking if table '{schema_table_name}' exists: {e}")
+            return False
+    
     def get_table_row_count(self, schema_table_name):
         """
         Gets the total row count from a table.

@@ -3,6 +3,7 @@
 
 import os
 import sys
+import shutil
 
 from petaly.utils.file_handler import FileHandler
 from petaly.core.pipeline import Pipeline
@@ -102,37 +103,80 @@ class CliInitializer():
 		pipeline_exists = self.f_handler.is_file(pipeline_fpath)
 		output_dir_exists = self.f_handler.is_dir(output_pipeline_dpath)
 		
-		# Check if both pipeline and output directory exist, merge questions if both exist
-		if pipeline_exists and output_dir_exists:
+		# Track what user wants to clean up
+		cleanup_pipeline = False
+		cleanup_data_folders = False
+		cleanup_metadata_folders = False
+		
+		# Ask separately for pipeline, data folders, and metadata folders
+		if pipeline_exists:
+			self.console.print(f"\n[bold]{self.cli_menu.break_line}[/bold]")
+			self.console.print(f"[bold]Pipeline Configuration[/bold]")
 			self.console.print(f"Pipeline with the path {pipeline_dpath} already exists.")
-			self.console.print(f"Output directory with the path {output_pipeline_dpath} already exists.")
-			process_continue = self.cli_menu.prompt.Confirm.ask(
-				f"\nDo you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration and output directory?\n"
-				f"All files in the output directory will be deleted and a backup of {self.m_conf.pipeline_fname} will be created."
+			cleanup_pipeline = self.cli_menu.prompt.Confirm.ask(
+				f"Do you want to overwrite the existing {self.m_conf.pipeline_fname} configuration?",
+				default=False
 			)
-			
-			if process_continue:
+			if cleanup_pipeline:
 				self.console.print(f"Backup with the name {self.m_conf.pipeline_fname}.buckup_<timestamp> from pipeline.yaml will be created.")
-				self.f_handler.cleanup_dir(output_pipeline_dpath)
-				self.f_handler.make_dirs(output_pipeline_dpath)
-			else:
-				sys.exit()
-		elif pipeline_exists:
-			self.console.print(f"Pipeline with the path {pipeline_dpath} already exists.")
-			process_continue = self.cli_menu.prompt.Confirm.ask(f"\nDo you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration?")
-
-			if process_continue:
-				self.console.print(f"Backup with the name {self.m_conf.pipeline_fname}.buckup_<timestamp> from pipeline.yaml will be created.")
-			else:
-				sys.exit()
-		elif output_dir_exists:
+		
+		if output_dir_exists:
+			self.console.print(f"\n[bold]{self.cli_menu.break_line}[/bold]")
+			self.console.print(f"[bold]Output Directory[/bold]")
 			self.console.print(f"Output directory with the path {output_pipeline_dpath} already exists.")
-			process_continue = self.cli_menu.prompt.Confirm.ask(f"\nDo you want to continue and overwrite the existing output directory? All files inside will be deleted.")
-			if process_continue is True:
-				self.f_handler.cleanup_dir(output_pipeline_dpath)
-				self.f_handler.make_dirs(output_pipeline_dpath)
-			else:
-				sys.exit()
+			
+			# Check if data folders exist
+			data_folders_exist = False
+			metadata_folders_exist = False
+			if os.path.exists(output_pipeline_dpath):
+				for item in os.listdir(output_pipeline_dpath):
+					item_path = os.path.join(output_pipeline_dpath, item)
+					if os.path.isdir(item_path):
+						data_path = os.path.join(item_path, 'data')
+						metadata_path = os.path.join(item_path, 'metadata')
+						if os.path.exists(data_path):
+							data_folders_exist = True
+						if os.path.exists(metadata_path):
+							metadata_folders_exist = True
+						if data_folders_exist and metadata_folders_exist:
+							break
+			
+			if data_folders_exist:
+				cleanup_data_folders = self.cli_menu.prompt.Confirm.ask(
+					f"Do you want to delete all data folders (output/object-name/data/)?",
+					default=False
+				)
+			
+			if metadata_folders_exist:
+				cleanup_metadata_folders = self.cli_menu.prompt.Confirm.ask(
+					f"Do you want to delete all metadata folders (output/object-name/metadata/)?",
+					default=False
+				)
+			
+			# Perform cleanup based on user choices
+			if cleanup_data_folders or cleanup_metadata_folders:
+				if os.path.exists(output_pipeline_dpath):
+					for item in os.listdir(output_pipeline_dpath):
+						item_path = os.path.join(output_pipeline_dpath, item)
+						if os.path.isdir(item_path):
+							data_path = os.path.join(item_path, 'data')
+							metadata_path = os.path.join(item_path, 'metadata')
+							
+							if cleanup_data_folders and os.path.exists(data_path):
+								shutil.rmtree(data_path)
+								self.console.print(f"[yellow]Deleted data folder:[/yellow] {data_path}")
+								# Recreate empty data folder
+								os.makedirs(data_path, exist_ok=True)
+							
+							if cleanup_metadata_folders and os.path.exists(metadata_path):
+								shutil.rmtree(metadata_path)
+								self.console.print(f"[yellow]Deleted metadata folder:[/yellow] {metadata_path}")
+								# Recreate empty metadata folder
+								os.makedirs(metadata_path, exist_ok=True)
+		
+		# If user didn't want to continue with pipeline recreation, exit
+		if pipeline_exists and not cleanup_pipeline:
+			sys.exit()
 		
 		# Create directories if they don't exist
 		if not self.f_handler.is_dir(pipeline_dpath):
@@ -249,7 +293,8 @@ class CliInitializer():
 			self.console.print(f"Either set use_data_objects_spec='prefer' to load all objects from schema, or add objects to data_objects_spec[].")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
 		elif use_data_objects_spec == 'prefer' and len(data_objects_spec) == 0:
-			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (use_data_objects_spec='prefer')")
+			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (use_data_objects_spec='prefer').")
+			self.console.print(f"In order to load specific objects incrementally, specify them one by one, or modify the pipeline manually.")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
 
 		if process_continue:

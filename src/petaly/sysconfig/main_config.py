@@ -75,7 +75,8 @@ class MainConfig:
             "logging_mode": "INFO",
             "pipeline_file_format": "yaml",
             "connections_file_format": "yaml",
-            "csv_analysis_max_size_mb": "10"
+            "csv_analysis_max_size_mb": "10",
+            "full_pipeline_wizard": "true"
         }
 
 
@@ -217,11 +218,13 @@ class MainConfig:
                 if conf_parser.has_option(section_name, 'connections_file_path'):
                     connections_file_path = conf_parser.get(section_name, 'connections_file_path')
                     if connections_file_path and connections_file_path.strip():
-                        # Validate it's an absolute path
+                        # Expand ~ to home directory and normalize the path
+                        connections_file_path = os.path.expanduser(connections_file_path.strip())
+                        # Validate it's an absolute path after expansion
                         if os.path.isabs(connections_file_path):
                             self.connections_file_path = connections_file_path
                         else:
-                            self.console.print(f"[yellow]Warning:[/yellow] connections_file_path is not absolute. Using default: {self.pipeline_base_dpath}/connections.yaml")
+                            self.console.print(f"[yellow]Warning:[/yellow] connections_file_path is not absolute after expanding ~. Using default: {self.pipeline_base_dpath}/connections.yaml")
                             self.connections_file_path = None
                     else:
                         self.connections_file_path = None
@@ -279,6 +282,11 @@ class MainConfig:
                                 self.global_settings['csv_analysis_max_size_mb'] = str(size_mb)
                         except ValueError:
                             self.console.print(f"The option csv_analysis_max_size_mb must be a valid number. Check csv_analysis_max_size_mb under section global_settings in petaly.ini.")
+                    elif key == 'full_pipeline_wizard':
+                        if value.lower() in ('true', 'false'):
+                            self.global_settings['full_pipeline_wizard'] = value.lower()
+                        else:
+                            self.console.print(f"The option full_pipeline_wizard supports true or false only. Check full_pipeline_wizard under section global_settings in petaly.ini.")
                 else:
                     self.console.print(f"The option {key} is not specified under section global_settings in petaly.ini.")
         else:

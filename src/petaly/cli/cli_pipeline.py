@@ -109,26 +109,35 @@ class CliPipeline:
                 for idx, connection_name in enumerate(existing_connection_names, 1):
                     self.console.print(f"  {idx}. {connection_name}")
                 
-                # Select source connection
+                # SOURCE: Select source connection
                 source_connection_name = self.cli_menu._select_connection_from_list('source', existing_connection_names, len(existing_connection_names), connections_fpath)
-                
-                # Select target connection (don't show list again)
-                target_connection_name = self.cli_menu._select_connection_from_list('target', existing_connection_names, len(existing_connection_names), connections_fpath)
             else:
                 # No existing connections, create new ones
+                # SOURCE: Create/select source connection
                 source_connection_name = self.cli_menu.select_or_create_connection('source', connections_fpath, skip_list=True)
+            
+            # Set source connection reference
+            self.composed_pipeline_config['pipeline']['source_attributes']['connection_name'] = source_connection_name
+            
+            # SOURCE: Prompt for schema/dataset if connector supports it (pipeline-specific, not connection)
+            self._prompt_for_schema_if_needed('source_attributes', source_connection_name)
+            
+            # SOURCE: Prompt for bucket_pipeline_prefix if connector needs it
+            self._prompt_for_bucket_prefix_if_needed('source_attributes', source_connection_name, pipeline_name)
+            
+            # TARGET: Select target connection
+            if existing_connection_names:
+                target_connection_name = self.cli_menu._select_connection_from_list('target', existing_connection_names, len(existing_connection_names), connections_fpath)
+            else:
                 target_connection_name = self.cli_menu.select_or_create_connection('target', connections_fpath, skip_list=True)
             
-            # Set connection references inside source_attributes and target_attributes
-            self.composed_pipeline_config['pipeline']['source_attributes']['connection_name'] = source_connection_name
+            # Set target connection reference
             self.composed_pipeline_config['pipeline']['target_attributes']['connection_name'] = target_connection_name
             
-            # Prompt for schema/dataset if connector supports it (pipeline-specific, not connection)
-            self._prompt_for_schema_if_needed('source_attributes', source_connection_name)
+            # TARGET: Prompt for schema/dataset if connector supports it (pipeline-specific, not connection)
             self._prompt_for_schema_if_needed('target_attributes', target_connection_name)
             
-            # Prompt for bucket_pipeline_prefix if connector needs it
-            self._prompt_for_bucket_prefix_if_needed('source_attributes', source_connection_name, pipeline_name)
+            # TARGET: Prompt for bucket_pipeline_prefix if connector needs it
             self._prompt_for_bucket_prefix_if_needed('target_attributes', target_connection_name, pipeline_name)
             
             self.console.print(f"\n[green]✓[/green] Pipeline will use connections:")

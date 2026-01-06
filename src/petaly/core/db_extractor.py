@@ -93,24 +93,31 @@ class DBExtractor(ABC):
 
         # 5. run loop for each object
         for object_name in object_list:
-
-            logger.info(f"Extract object: {object_name} started...")
-            start_time = time.time()
-
-            # 5. get all export scripts and store data into output directory
-            extractor_obj_conf = self.get_extractor_obj_conf(object_name)
-
-            # 6. run export data
-            self.extract_to(extractor_obj_conf)
-            
-            # 7. Convert to target format if needed (database extractors write CSV, but target might be parquet/json)
-            self._convert_to_target_format(extractor_obj_conf, object_name)
-
-            end_time = time.time()
-            logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+            self.extract_per_object(object_name)
 
         end_total_time = time.time()
         logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
+
+    def extract_per_object(self, object_name):
+        """Extract a single object from the source.
+        
+        Args:
+            object_name: Name of the object to extract
+        """
+        logger.info(f"Extract object: {object_name} started...")
+        start_time = time.time()
+
+        # Get all export scripts and store data into output directory
+        extractor_obj_conf = self.get_extractor_obj_conf(object_name)
+
+        # Run export data
+        self.extract_to(extractor_obj_conf)
+        
+        # Convert to target format if needed (database extractors write CSV, but target might be parquet/json)
+        self._convert_to_target_format(extractor_obj_conf, object_name)
+
+        end_time = time.time()
+        logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
 
     def execute_meta_query(self, meta_query):
         """Executes a metadata query and returns the results.
@@ -221,31 +228,31 @@ class DBExtractor(ABC):
                 return ''
 
         logger.debug("Compose data source meta query:")
-        logger.debug(f"include_data_objects={self.pipeline.include_data_objects}, data_objects={self.pipeline.data_objects}, data_objects_from_cli={self.pipeline.data_objects_from_cli}")
+        logger.debug(f"use_data_objects_spec={self.pipeline.use_data_objects_spec}, data_objects={self.pipeline.data_objects}, data_objects_from_cli={self.pipeline.data_objects_from_cli}")
         
         # if data_objects_from_cli is set, use it to compose the table_stmt and ignore all other settings
         if len(self.pipeline.data_objects_from_cli)>0:
             table_stmt = get_table_stmt(self.pipeline.data_objects_from_cli)
             logger.debug(f"Using CLI objects: {self.pipeline.data_objects_from_cli}, table_stmt: {table_stmt}")
         
-        # Check if include_data_objects is 'all' (load all tables from schema)
-        elif self.pipeline.include_data_objects == 'all':
-            # include_data_objects='all': load all tables from schema
+        # Check if use_data_objects_spec is 'prefer' (load all tables from schema, use spec if exists)
+        elif self.pipeline.use_data_objects_spec == 'prefer':
+            # use_data_objects_spec='prefer': load all tables from schema
             # Specifications from data_objects_spec will be applied where available
             table_stmt = ''
             if len(self.pipeline.data_objects) > 0:
-                logger.debug(f"include_data_objects='all': loading all tables from schema, with custom specs for: {self.pipeline.data_objects}")
+                logger.debug(f"use_data_objects_spec='prefer': loading all tables from schema, with custom specs for: {self.pipeline.data_objects}")
             else:
-                logger.debug("include_data_objects='all': loading all tables from schema with default specifications")
+                logger.debug("use_data_objects_spec='prefer': loading all tables from schema with default specifications")
             
-        # include_data_objects is 'spec' - load only objects in data_objects_spec[]
+        # use_data_objects_spec is 'strict' - load only objects in data_objects_spec[]
         else:
             if len(self.pipeline.data_objects)==0:
-                logger.error(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If include_data_objects is set to 'spec', the data_objects_spec[] should have at least one object specification")
+                logger.error(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If use_data_objects_spec is set to 'strict', the data_objects_spec[] should have at least one object specification")
                 sys.exit()
 			
             table_stmt = get_table_stmt(self.pipeline.data_objects)
-            logger.debug(f"include_data_objects='spec': loading only specified objects: {self.pipeline.data_objects}, table_stmt: {table_stmt}")
+            logger.debug(f"use_data_objects_spec='strict': loading only specified objects: {self.pipeline.data_objects}, table_stmt: {table_stmt}")
 
         source_schema = self.pipeline.source_attr.get('database_schema')
 

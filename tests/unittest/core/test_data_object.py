@@ -18,7 +18,7 @@ class TestDataObject:
         """Create a mock pipeline object."""
         pipeline = MagicMock()
         pipeline.output_object_data_dpath = '/output/{object_name}'
-        pipeline.include_data_objects = 'spec'
+        pipeline.use_data_objects_spec = 'strict'
         pipeline.csv_default_settings = {
             'header': True,
             'columns_delimiter': ',',
@@ -54,7 +54,7 @@ class TestDataObject:
     
     def test_initialization_without_spec_all_mode(self, pipeline_mock):
         """Test DataObject initialization without spec in 'all' mode."""
-        pipeline_mock.include_data_objects = 'all'
+        pipeline_mock.use_data_objects_spec = 'prefer'
         pipeline_mock.data_objects_spec = []
         
         data_object = DataObject(pipeline_mock, 'table1')
@@ -66,7 +66,7 @@ class TestDataObject:
     
     def test_initialization_without_spec_spec_mode(self, pipeline_mock):
         """Test DataObject initialization without spec in 'spec' mode should exit."""
-        pipeline_mock.include_data_objects = 'spec'
+        pipeline_mock.use_data_objects_spec = 'strict'
         pipeline_mock.data_objects_spec = []
         
         with pytest.raises(SystemExit):
@@ -74,7 +74,7 @@ class TestDataObject:
     
     def test_initialization_file_connector_spec_required(self, pipeline_mock):
         """Test that file connectors require spec even in 'all' mode."""
-        pipeline_mock.include_data_objects = 'all'
+        pipeline_mock.use_data_objects_spec = 'prefer'
         pipeline_mock.data_objects_spec = []
         pipeline_mock.source_connector_id = 'csv'
         

@@ -39,9 +39,15 @@ class CliConnections:
         self.break_line = cli_menu.break_line
         
         # Get connections file path
-        connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
-        self.connections_fname = f'connections.{connection_format}'
-        self.connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, self.connections_fname)
+        # Priority: 1) connections_file_path from config, 2) default: pipeline_dir_path/connections.yaml
+        if hasattr(self.m_conf, 'connections_file_path') and self.m_conf.connections_file_path:
+            # Use explicitly specified connections file path
+            self.connections_fpath = self.m_conf.connections_file_path
+        else:
+            # Default: use pipeline_dir_path/connections.yaml
+            connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
+            self.connections_fname = f'connections.{connection_format}'
+            self.connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, self.connections_fname)
     
     def init_connections(self):
         """

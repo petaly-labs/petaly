@@ -1,8 +1,11 @@
 # Copyright © 2024-2026 Pavel Rabaev
 # Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 import sys
+import logging
 
 from petaly.utils.file_handler import FileHandler
+
+logger = logging.getLogger(__name__)
 
 
 class Composer:
@@ -43,21 +46,30 @@ class Composer:
 		
 		Logic:
 		1. Get object directories from output path
-		2. If data_objects_spec has objects, use those (regardless of include_data_objects)
-		3. If data_objects_spec is empty, check include_data_objects
+		2. If data_objects_spec has objects, use those (regardless of use_data_objects_spec)
+		3. If data_objects_spec is empty, check use_data_objects_spec
+		4. Always exclude objects in exclude_objects (applies regardless of use_data_objects_spec)
 		"""
 		object_dir_list = self.f_handler.get_all_dir_names(pipeline.output_pipeline_dpath)
 		pipeline_object_list = pipeline.data_objects
 
-		# If data_objects_spec has objects, use those (regardless of include_data_objects)
+		# If data_objects_spec has objects, use those (regardless of use_data_objects_spec)
 		if len(pipeline_object_list) > 0:
 			return_list = self.get_data_objects_intersection(object_dir_list, pipeline_object_list)
-		# If data_objects_spec is empty and include_data_objects is 'all', return all objects
-		elif pipeline.include_data_objects == 'all':
+		# If data_objects_spec is empty and use_data_objects_spec is 'prefer', return all objects
+		elif pipeline.use_data_objects_spec == 'prefer':
 			return_list = object_dir_list
-		# If data_objects_spec is empty and include_data_objects is 'spec', return empty list
+		# If data_objects_spec is empty and use_data_objects_spec is 'strict', return empty list
 		else:
 			return_list = []
+
+		# Always exclude objects in exclude_objects (applies regardless of use_data_objects_spec)
+		# Even if objects are explicitly specified in data_objects_spec, they will be excluded
+		if len(pipeline.exclude_objects) > 0:
+			original_count = len(return_list)
+			return_list = [obj for obj in return_list if obj not in pipeline.exclude_objects]
+			if len(return_list) < original_count:
+				logger.debug(f"Excluded {original_count - len(return_list)} object(s) from output directory list based on exclude_objects: {pipeline.exclude_objects}")
 
 		return return_list
 	def get_data_objects_intersection(self, first_list, second_list):
@@ -82,8 +94,8 @@ class Composer:
 		
 		Logic:
 		1. Determine file format from extension
-		2. Update data objects specification
-		3. Save in appropriate format (YAML/JSON)
+		2. Update data objects specification while preserving exclude_objects from load_attributes
+		3. Save in single document format (YAML/JSON)
 		"""
 		if pipeline_all_obj is None:
 			return
@@ -92,19 +104,39 @@ class Composer:
 		file_extension = self.f_handler.get_file_extensions(pipeline_fpath)[-1].lower()
 		file_format = 'yaml' if file_extension == '.yaml' else 'json'
 
-		# Update the data objects specification
-		pipeline_all_obj['data_objects_spec']= data_objects_spec
-
-		# Save in the appropriate format
-		if file_format == 'yaml':
-			self.f_handler.save_dict_to_yaml(pipeline_fpath, pipeline_all_obj, dump_all=False)
+		# Extract pipeline dict and exclude_objects from load_attributes
+		if isinstance(pipeline_all_obj, list):
+			# Legacy multi-document format (backward compatibility)
+			pipeline_dict = pipeline_all_obj[0] if len(pipeline_all_obj) > 0 else {}
+			# Get exclude_objects from load_attributes if available
+			exclude_objects = pipeline_dict.get('pipeline', {}).get('load_attributes', {}).get('exclude_objects', [])
 		else:
-			# For JSON, we need to combine both documents into one
-			combined_config = {
-				'pipeline': pipeline_all_obj['pipeline'],
-				'data_objects_spec': pipeline_all_obj['data_objects_spec']
-			}
-			self.f_handler.save_dict_to_json(pipeline_fpath, combined_config)
+			# Single document format (current format)
+			pipeline_dict = {'pipeline': pipeline_all_obj.get('pipeline', {})}
+			# Get exclude_objects from load_attributes
+			exclude_objects = pipeline_all_obj.get('pipeline', {}).get('load_attributes', {}).get('exclude_objects', [])
+		
+		# Ensure exclude_objects is preserved in load_attributes at the end
+		if 'pipeline' not in pipeline_dict:
+			pipeline_dict['pipeline'] = {}
+		if 'load_attributes' not in pipeline_dict['pipeline']:
+			pipeline_dict['pipeline']['load_attributes'] = {}
+		# Remove exclude_objects if it exists (to re-add at end)
+		if 'exclude_objects' in pipeline_dict['pipeline']['load_attributes']:
+			del pipeline_dict['pipeline']['load_attributes']['exclude_objects']
+		# Add exclude_objects at the end
+		pipeline_dict['pipeline']['load_attributes']['exclude_objects'] = exclude_objects
+		
+		# Save as single document (no "---" separator)
+		config_to_save = {
+			'pipeline': pipeline_dict['pipeline'],
+			'data_objects_spec': data_objects_spec
+		}
+		
+		if file_format == 'yaml':
+			self.f_handler.save_dict_to_yaml(pipeline_fpath, config_to_save, dump_all=False)
+		else:
+			self.f_handler.save_dict_to_json(pipeline_fpath, config_to_save)
 
 	def get_object_spec_from_array(self, data_objects_spec, object_name):
 		"""

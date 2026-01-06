@@ -51,8 +51,8 @@ class TestCsvExtractor:
             'path': 'test.csv',
             'source_dir': '/tmp/test_source'  # Add source_dir to avoid validation error
         }
-        pipeline.data_attributes = {
-            'include_data_objects': 'spec',
+        pipeline.load_attributes = {
+            'use_data_objects_spec': 'strict',
             'csv_default_settings': {
                 'header': True,
                 'columns_delimiter': ','
@@ -151,8 +151,8 @@ class TestCsvLoader:
             'destination_dir': 'test_dest_dir'
         }
         pipeline.pipeline_name = 'test_pipeline'
-        pipeline.data_attributes = {
-            'include_data_objects': 'spec',
+        pipeline.load_attributes = {
+            'use_data_objects_spec': 'strict',
             'csv_default_settings': {
                 'header': True,
                 'columns_delimiter': ','

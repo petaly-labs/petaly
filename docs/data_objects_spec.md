@@ -14,8 +14,8 @@ The pipeline configuration uses data_objects_spec sections to handle data object
    ```yaml
    pipeline:
      pipeline_name: my_pipeline
-     data_attributes:
-       include_data_objects: spec  # Controls how data_objects_spec is used: "all" or "spec"
+     load_attributes:
+       use_data_objects_spec: strict  # Controls how data_objects_spec is used: "prefer" or "strict"
        csv_default_settings:        # Default settings for CSV/TSV/TXT files
          header: true
          columns_delimiter: ","
@@ -31,12 +31,12 @@ The pipeline configuration uses data_objects_spec sections to handle data object
        destination_object_name: target_table
    ```
 
-### include_data_objects
+### use_data_objects_spec
 
-The `include_data_objects` parameter in `data_attributes` controls how the `data_objects_spec` main section is used:
+The `use_data_objects_spec` parameter in `load_attributes` controls how the `data_objects_spec` main section is used:
 
-- `"spec"`: Load only the objects explicitly specified in `data_objects_spec`. If `data_objects_spec` is empty, no objects will be loaded.
-- `"all"`: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section. If objects are specified in `data_objects_spec`, their configurations will be applied; otherwise, default settings from `csv_default_settings` will be used.
+- `"strict"`: Load only the objects explicitly specified in `data_objects_spec`. If `data_objects_spec` is empty, no objects will be loaded.
+- `"prefer"`: Load all objects from the database_schema (or database_name if no schema exists) as defined in the source_attributes section. If objects are specified in `data_objects_spec`, their configurations will be applied; otherwise, default settings from `csv_default_settings` will be used.
 
 ## Basic Structure
 
@@ -76,8 +76,8 @@ Settings for each data object:
 # First main section: Pipeline configuration
 pipeline:
   pipeline_name: csv_to_db
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -99,8 +99,8 @@ data_objects_spec:
 # First main section: Pipeline configuration
 pipeline:
   pipeline_name: db_to_db
-  data_attributes:
-    include_data_objects: all  # Will load all tables but apply specific settings to listed ones
+  load_attributes:
+    use_data_objects_spec: prefer  # Will load all tables but apply specific settings to listed ones
 
 # Second main section: Data objects specification
 data_objects_spec:

@@ -13,7 +13,7 @@ pipeline:
     ...
   target_attributes:
     ...
-  data_attributes:
+  load_attributes:
     ...
 data_objects_spec: []
 ```
@@ -170,11 +170,11 @@ target_attributes:
   destination_dir: /path/to/output/directory
 ```
 
-### Data Attributes
+### Load Attributes
 ```yaml
-data_attributes:
+load_attributes:
   # Mode for handling data objects
-  include_data_objects: spec  # Options: "all" or "spec"
+  use_data_objects_spec: strict  # Options: "prefer" or "strict"
   
   # Default settings for CSV/TSV/TXT file processing
   csv_default_settings:
@@ -268,8 +268,8 @@ pipeline:
     database_port: 5432
     database_name: petalydb
     database_schema: petaly_tutorial
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -311,8 +311,8 @@ pipeline:
     database_port: 5432
     database_name: target_db
     database_schema: public
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
 
 data_objects_spec:
 - object_spec:
@@ -386,8 +386,8 @@ pipeline:
     database_port: 5432
     database_name: petalydb
     database_schema: petaly_tutorial
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -420,8 +420,8 @@ pipeline:
     database_host: localhost
     database_port: 3306
     database_name: petaly_tutorial
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -472,8 +472,8 @@ pipeline:
   target_attributes:
     connector_type: csv
     destination_dir: /your-path-to-destination-folder
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -516,8 +516,8 @@ pipeline:
   target_attributes:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data/
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -549,8 +549,8 @@ pipeline:
     gcp_region: EU
     gcp_bucket_name: 'bucket-name'
     bucket_pipeline_prefix: petaly/{pipeline_name}
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -584,8 +584,8 @@ pipeline:
     gcp_region: EU
     gcp_bucket_name: 'bucket-name'
     bucket_pipeline_prefix: petaly/{pipeline_name}
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -629,8 +629,8 @@ pipeline:
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
     aws_secret_access_key:
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -742,8 +742,8 @@ pipeline:
   target_attributes:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: '\t'

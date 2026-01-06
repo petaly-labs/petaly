@@ -5,7 +5,7 @@ All notable changes to the Petaly project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v2.01] - 2026-01-03
+## [Unreleased]
 
 ### Added
 - Export support for BigQuery and Redshift to Parquet/JSON format
@@ -14,9 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for Parquet and JSON file connectors as source and target
 - New utility script: `inspect_parquet.py` for inspecting Parquet file structure
 - Enhanced CSV parsing with manual parser for handling escaped commas in unquoted fields
+- Configurable `connections_file_path` parameter in `petaly.ini` (defaults to `pipeline_dir_path/connections.yaml`)
+- Parallel processing support with `max_workers` parameter for concurrent object processing
+- `exclude_objects` parameter in `load_attributes` to exclude specific objects from processing
+- `flow_mode` parameter (`"object"` or `"dump"`) to control processing flow
+- `null_string` and `force_null` default parameters in `csv_default_settings`
+- Thread-safe parallel processing with thread-local database connections
+- Utility scripts: `check_parallel.sh`, `check_postgres_connections.sh`, `check_mysql_connections.sh` for monitoring
 
 ### Changed
-- **BREAKING:** Renamed `load_all_from_schema` → `include_data_objects` (changed from boolean to string: `"all"` or `"spec"`)
+- **BREAKING:** Renamed `include_data_objects` → `use_data_objects_spec` (changed values: `"all"` → `"prefer"`, `"spec"` → `"strict"`, default changed to `"prefer"`)
+- **BREAKING:** Renamed `data_attributes` → `load_attributes`
 - **BREAKING:** Removed `pipeline_attributes` section - `pipeline_name` now directly under `pipeline`
 - **BREAKING:** Renamed `object_default_settings` → `csv_default_settings`
 - **BREAKING:** Removed `is_enabled` parameter - pipelines are always enabled
@@ -24,18 +32,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced file connector structure (CSV, Parquet, JSON unified under `file/` directory)
 - Added `source_dir` and `object_source_dir` support for Parquet/JSON connectors
 - Streamlined CLI prompts (removed redundant questions, always use pipeline wizard)
+- Removed YAML document separators (`---`) from pipeline files (single document format)
+- Updated pipeline initialization to prompt for `exclude_objects` during setup
+- All connection file path resolutions now respect `connections_file_path` configuration
 
 ### Fixed
 - Fixed CSV corruption issue when converting CSV with `columns_quote: none` to Parquet/JSON
-- Fixed Parquet/JSON to CSV conversion for database loaders (handles complex types, NaN values)
-- Fixed internal pandas index columns (`__index_level_0__`) causing DDL mismatches
-- Fixed row counting for Parquet/JSON files in load summaries
-- Improved JSON file reading with multiple fallback strategies for inconsistent structures
 
 ### Backward Compatibility
 - Old pipelines with `pipeline_attributes` section will continue to work with deprecation warning
 - Old pipelines with `object_default_settings` will continue to work with deprecation warning
 - Old pipelines with `load_all_from_schema: true/false` will be automatically converted
+- Old pipelines with `include_data_objects` will be automatically converted to `use_data_objects_spec`
+- Old pipelines with `data_attributes` will be automatically converted to `load_attributes`
+- Legacy multi-document YAML format (with `---` separator) is still supported
 
 ## [v0.1.0] - 2025-05-10 (BETA)
 
@@ -55,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     pipeline_attributes:
     source_attributes:
     target_attributes:
-    data_attributes:
+    load_attributes:
   ---
   data_objects_spec:
   - object_spec:   
@@ -66,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     pipeline_attributes:
     source_attributes:
     target_attributes:
-    data_attributes:
+    load_attributes:
   data_objects_spec:
   - object_spec:   
   ```

@@ -28,6 +28,7 @@ The `[workspace_config]` section defines the core directories for Petaly's opera
 | `pipeline_dir_path` | Absolute path where all pipeline configurations are stored. This is where Petaly will create and manage your pipeline files. | Yes | `/home/user/petaly/pipelines` |
 | `logs_dir_path` | Absolute path for storing log files. Petaly will create detailed logs of all operations here. | Yes | `/home/user/petaly/logs` |
 | `output_dir_path` | Absolute path for temporary data storage during pipeline execution. This directory is used as a transition space between source and destination. | Yes | `/home/user/petaly/output` |
+| `connections_file_path` | Absolute path to the connections.yaml/json file. If not specified, defaults to `pipeline_dir_path/connections.yaml`. | No | `/home/user/petaly/connections.yaml` |
 
 ### Example
 ```ini
@@ -35,6 +36,9 @@ The `[workspace_config]` section defines the core directories for Petaly's opera
 pipeline_dir_path=/home/user/petaly/pipelines
 logs_dir_path=/home/user/petaly/logs
 output_dir_path=/home/user/petaly/output
+# Optional: Custom connections file path
+# If not specified, defaults to: pipeline_dir_path/connections.yaml
+connections_file_path=~/.petaly/connections.yaml
 ```
 
 ## Global Settings
@@ -64,6 +68,8 @@ Here's a complete example of a `petaly.ini` file:
 pipeline_dir_path=/home/user/petaly/pipelines
 logs_dir_path=/home/user/petaly/logs
 output_dir_path=/home/user/petaly/output
+# Optional: Custom connections file path
+connections_file_path=
 
 [global_settings]
 logging_mode=INFO

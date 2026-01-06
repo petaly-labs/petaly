@@ -3,6 +3,9 @@
 
 import logging
 import json
+import concurrent.futures
+import threading
+import time
 from petaly.utils.utils import sanitize_sensitive_data
 
 logger = logging.getLogger(__name__)
@@ -31,6 +34,11 @@ class MainCtl():
 
     def run_pipeline(self, pipeline, run_endpoint, object_name_list):
         """ Call this function to run pipeline source and target
+        
+        Args:
+            pipeline: Pipeline instance
+            run_endpoint: 'source', 'target', or None for both
+            object_name_list: Optional comma-separated list of object names to process
         """
         pipeline_name = pipeline.pipeline_name
         
@@ -42,11 +50,19 @@ class MainCtl():
         if object_name_list is not None:
             pipeline.data_objects_from_cli = object_name_list.split(',')
 
-        if run_endpoint is None or run_endpoint == 'source':
-            self.run_source(pipeline)
+        # Check flow mode: object (default) or dump
+        flow_mode = pipeline.load_attributes.get('flow_mode', 'object').lower()
 
-        if run_endpoint is None or run_endpoint == 'target':
-            self.run_target(pipeline)
+        if flow_mode == 'object':
+            # Object flow: extract → load per object, with parallel processing support
+            self.run_pipeline_end_to_end(pipeline, run_endpoint)
+        else:
+            # Dump flow: extract all → load all
+            if run_endpoint is None or run_endpoint == 'source':
+                self.run_source(pipeline)
+
+            if run_endpoint is None or run_endpoint == 'target':
+                self.run_target(pipeline)
 
         logger.info(f"[End] Pipeline {pipeline_name}")
     
@@ -134,3 +150,171 @@ class MainCtl():
 
         else:
             logger.error(f"Loader with connector-id: {pipe.target_connector_id} can't initialized.")
+
+    ####################### run pipeline object ####################################
+
+    def run_pipeline_end_to_end(self, pipeline, run_endpoint):
+        """
+        Run pipeline in object mode: extract → load per object.
+
+        This method processes objects one by one (extract then load) instead of
+        extracting all objects first, then loading all objects. Supports parallel
+        processing of multiple objects using max_workers parameter.
+
+        Args:
+            pipeline: Pipeline instance
+            run_endpoint: 'source', 'target', or None for both
+        """
+        logger.info("[Object Flow Mode] Processing objects: extract → load per object")
+
+        # Get source and target extractors/loaders
+        source_extractor = None
+        target_loader = None
+
+        if run_endpoint is None or run_endpoint == 'source':
+            source_class = self.m_conf.get_extractor_class(pipeline.source_connector_id)
+            if source_class:
+                source_extractor = source_class(pipeline)
+            else:
+                logger.error(f"Extractor with connector-id: {pipeline.source_connector_id} can't be initialized.")
+
+        if run_endpoint is None or run_endpoint == 'target':
+            target_class = self.m_conf.get_loader_class(pipeline.target_connector_id)
+            if target_class:
+                target_loader = target_class(pipeline)
+            else:
+                logger.error(f"Loader with connector-id: {pipeline.target_connector_id} can't be initialized.")
+
+        if not source_extractor and not target_loader:
+            logger.error("Neither source extractor nor target loader could be initialized")
+            return
+
+        # Get list of objects to process
+        if source_extractor:
+            # Cleanup output directory once at the start (for object mode)
+            source_extractor.f_handler.cleanup_dir(pipeline.output_pipeline_dpath)
+            
+            # Get object list based on extractor type
+            # Database extractors: process metadata to get object list
+            # File extractors: use pipeline.data_objects
+            if hasattr(source_extractor, 'compose_meta_query'):
+                # Database extractor - process metadata once to get object list and set up metadata
+                # This is required before extract_per_object can work
+                meta_query = source_extractor.compose_meta_query()
+                meta_result = source_extractor.execute_meta_query(meta_query)
+                object_list = source_extractor.object_metadata.process_metadata(meta_result)
+            else:
+                # File extractor - use pipeline.data_objects
+                object_list = pipeline.data_objects
+        else:
+            # If only loading, get objects from output directory
+            from petaly.core.composer import Composer
+            composer = Composer()
+            object_list = composer.get_object_list_from_output_dir(pipeline)
+
+        if not object_list:
+            logger.warning("No objects found to process")
+            return
+
+        # Get max_workers for parallel processing
+        max_workers = int(pipeline.load_attributes.get('max_workers', 1))
+        logger.info(f"[Object] Processing {len(object_list)} objects with max_workers={max_workers}")
+
+        # Initialize load summary if loading
+        if target_loader:
+            from petaly.core.load_summary import LoadSummary
+            load_summary = LoadSummary()
+        else:
+            load_summary = None
+
+        def process_object_end_to_end(obj_name: str):
+            """Process a single object: extract → load (object)"""
+            thread_id = threading.current_thread().ident
+            thread_name = threading.current_thread().name
+            start_time = time.time()
+            
+            if max_workers > 1:
+                logger.info(f"[Object] [Thread-{thread_id}] Processing object: {obj_name} (PARALLEL MODE)")
+            else:
+                logger.info(f"[Object] Processing object: {obj_name} (SEQUENTIAL MODE)")
+            
+            try:
+                # For parallel processing, create thread-local extractors/loaders to avoid connection sharing
+                # Database connections are not thread-safe, so each thread needs its own instances
+                thread_source_extractor = None
+                thread_target_loader = None
+                
+                if max_workers > 1:
+                    logger.debug(f"[Object] [Thread-{thread_id}] Creating thread-local extractor/loader instances")
+                    # Create new extractor/loader instances for this thread
+                    if source_extractor and (run_endpoint is None or run_endpoint == 'source'):
+                        source_class = self.m_conf.get_extractor_class(pipeline.source_connector_id)
+                        if source_class:
+                            thread_source_extractor = source_class(pipeline)
+                    
+                    if target_loader and (run_endpoint is None or run_endpoint == 'target'):
+                        target_class = self.m_conf.get_loader_class(pipeline.target_connector_id)
+                        if target_class:
+                            thread_target_loader = target_class(pipeline)
+                else:
+                    # Sequential processing - reuse shared instances
+                    thread_source_extractor = source_extractor
+                    thread_target_loader = target_loader
+                
+                # Extract object (if source processing enabled)
+                if thread_source_extractor and (run_endpoint is None or run_endpoint == 'source'):
+                    thread_source_extractor.extract_per_object(obj_name)
+
+                # Load object (if target processing enabled)
+                if thread_target_loader and (run_endpoint is None or run_endpoint == 'target'):
+                    thread_target_loader.load_per_object(obj_name, load_summary)
+
+                elapsed_time = time.time() - start_time
+                if max_workers > 1:
+                    logger.info(f"[Object] [Thread-{thread_id}] Successfully processed object: {obj_name} in {elapsed_time:.2f}s (PARALLEL)")
+                else:
+                    logger.info(f"[Object] Successfully processed object: {obj_name} in {elapsed_time:.2f}s")
+                
+                # Close thread-local connections if they were created
+                if max_workers > 1:
+                    logger.debug(f"[Object] [Thread-{thread_id}] Closing thread-local database connections")
+                    if thread_source_extractor and hasattr(thread_source_extractor, 'db_connector'):
+                        if hasattr(thread_source_extractor.db_connector, 'conn') and thread_source_extractor.db_connector.conn:
+                            try:
+                                thread_source_extractor.db_connector.conn.close()
+                            except Exception:
+                                pass
+                    if thread_target_loader and hasattr(thread_target_loader, 'db_connector'):
+                        if hasattr(thread_target_loader.db_connector, 'conn') and thread_target_loader.db_connector.conn:
+                            try:
+                                thread_target_loader.db_connector.conn.close()
+                            except Exception:
+                                pass
+
+            except Exception as exc:
+                logger.error(f"[Object] Failed to process object {obj_name}: {exc}", exc_info=True)
+                raise
+
+        # Process objects in parallel batches limited by max_workers
+        if max_workers == 1:
+            # Sequential processing (no threading overhead)
+            logger.info(f"[Object] Running in SEQUENTIAL mode (max_workers=1)")
+            for obj_name in object_list:
+                process_object_end_to_end(obj_name)
+        else:
+            # Parallel processing
+            logger.info(f"[Object] Running in PARALLEL mode (max_workers={max_workers})")
+            logger.info(f"[Object] Objects will be processed concurrently across {max_workers} worker threads")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                future_to_obj = {executor.submit(process_object_end_to_end, obj): obj for obj in object_list}
+                for future in concurrent.futures.as_completed(future_to_obj):
+                    obj = future_to_obj[future]
+                    try:
+                        future.result()
+                    except Exception as exc:
+                        logger.error(f"[Object] Failed to process object {obj}: {exc}")
+                        # Continue with next object instead of failing the entire pipeline
+
+        # Display load summary if loading was performed
+        if target_loader and load_summary:
+            load_summary.display()

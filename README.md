@@ -225,8 +225,8 @@ pipeline:
     connection_name: my_bigquery
     database_schema: petaly_tutorial
     bucket_pipeline_prefix: petaly/{pipeline_name}
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -252,8 +252,8 @@ pipeline:
   target_attributes:
     connection_name: my_postgres
     database_schema: petaly_tutorial
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','

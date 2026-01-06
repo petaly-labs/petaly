@@ -8,7 +8,7 @@ Major improvements: CSV/Parquet/JSON conversion fixes, parameter renaming, file 
 ## Key Changes
 
 ### 1. Parameter Renaming
-- `load_all_from_schema` → `include_data_objects` (`"all"`/`"spec"` instead of boolean)
+- `include_data_objects` → `use_data_objects_spec` (`"all"`/`"spec"` → `"prefer"`/`"strict"`, default changed to `"prefer"`)
 - `object_default_settings` → `csv_default_settings`
 - Removed `pipeline_attributes` nesting (moved `pipeline_name` directly under `pipeline`)
 - **Backward compatibility:** All old parameter names still work with deprecation warnings
@@ -36,7 +36,7 @@ Major improvements: CSV/Parquet/JSON conversion fixes, parameter renaming, file 
 
 ## Breaking Changes
 ⚠️ Parameter names changed (backward compatible):
-- `load_all_from_schema` → `include_data_objects`
+- `include_data_objects` → `use_data_objects_spec` (`"all"`/`"spec"` → `"prefer"`/`"strict"`)
 - `object_default_settings` → `csv_default_settings`
 - `pipeline_attributes` section removed (use `pipeline_name` directly)
 

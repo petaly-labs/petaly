@@ -87,9 +87,20 @@ class PsqlLoader(DBLoader):
         elif columns_quote == 'single':
             load_options += f", QUOTE \"'\""
 
-        # Add NULL handling for \N (common null representation in TSV/CSV files)
-        # This allows PostgreSQL to recognize \N as NULL for all column types (including numeric)
-        load_options += f", NULL '\\N'"
+        # Add NULL handling based on csv_default_settings.null_string
+        # This allows PostgreSQL to recognize the configured null string as NULL for all column types
+        # Common values: empty string (""), "NULL", "\N"
+        null_string = object_settings.get('null_string', '')
+        # Escape single quotes in the null string for SQL
+        escaped_null_string = str(null_string).replace("'", "''")
+        load_options += f", NULL '{escaped_null_string}'"
+
+        # Optionally force zero-length strings to be treated as NULL to avoid type errors on typed columns
+        force_null = object_settings.get('force_null', False)
+        if force_null:
+            column_list = loader_obj_conf.get('table_ddl_dict', {}).get('column_list')
+            if column_list:
+                load_options += f", FORCE_NULL ({column_list})"
 
         return load_options
 

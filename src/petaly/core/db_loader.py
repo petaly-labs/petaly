@@ -76,69 +76,86 @@ class DBLoader(ABC):
         load_summary = LoadSummary()
 
         for object_name in object_list:
+            self.load_per_object(object_name, load_summary)
 
-            logger.info(f"Load object: {object_name} started...")
-            start_time = time.time()
-            load_status = 'success'
-            rows_loaded = None
+        end_total_time = time.time()
+        logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
+        
+        # Display summary
+        load_summary.display()
 
-            try:
-                # 1. compose loader_obj_conf
-                loader_obj_conf = self.get_loader_obj_conf(object_name)
-                
-                # Get schema_table_name for summary
-                table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
-                schema_name = table_ddl_dict.get('schema_name')
-                table_name = table_ddl_dict.get('table_name')
-                if schema_name:
-                    schema_table_name = f"{schema_name}.{table_name}"
-                else:
-                    schema_table_name = table_name
-                
-                # Track if destination object was recreated
-                destination_object_recreated = loader_obj_conf.get('recreate_destination_object', False)
+    def load_per_object(self, object_name, load_summary=None):
+        """Load a single object into the target.
+        
+        Args:
+            object_name: Name of the object to load
+            load_summary: Optional LoadSummary instance to track loading progress
+        
+        Returns:
+            tuple: (load_status, rows_loaded, schema_table_name, destination_object_recreated)
+        """
+        logger.info(f"Load object: {object_name} started...")
+        start_time = time.time()
+        load_status = 'success'
+        rows_loaded = None
+        schema_table_name = object_name
+        destination_object_recreated = False
 
-                # 2. load data into table (this may convert Parquet/JSON to CSV first)
-                self.load_from(loader_obj_conf)
-                
-                # 3. Count rows from CSV files in output directory (after conversion, before summary)
-                # This gives us the exact number of rows that were loaded
-                output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
-                rows_loaded = self.count_rows_in_csv_files(output_data_object_dir, loader_obj_conf)
-
-                end_time = time.time()
-                duration_sec = round(end_time - start_time, 2)
-                logger.info(f"Load object: {object_name} completed | time: {duration_sec}s")
-                
-            except Exception as e:
-                # Load failed - capture error details
-                end_time = time.time()
-                duration_sec = round(end_time - start_time, 2)
-                load_status = 'failed'
-                logger.error(f"Load object: {object_name} failed | time: {duration_sec}s | error: {str(e)}", exc_info=True)
-                
-                # Try to get schema_table_name even if load failed (for summary display)
-                try:
-                    if 'schema_table_name' not in locals():
-                        loader_obj_conf = self.get_loader_obj_conf(object_name)
-                        table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
-                        schema_name = table_ddl_dict.get('schema_name')
-                        table_name = table_ddl_dict.get('table_name')
-                        if schema_name:
-                            schema_table_name = f"{schema_name}.{table_name}"
-                        else:
-                            schema_table_name = table_name
-                        destination_object_recreated = loader_obj_conf.get('recreate_destination_object', False)
-                    else:
-                        # schema_table_name already defined
-                        pass
-                except Exception:
-                    # If we can't even get the schema_table_name, use object_name as fallback
-                    schema_table_name = object_name
-                    destination_object_recreated = False
+        try:
+            # 1. compose loader_obj_conf
+            loader_obj_conf = self.get_loader_obj_conf(object_name)
             
+            # Get schema_table_name for summary
+            table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
+            schema_name = table_ddl_dict.get('schema_name')
+            table_name = table_ddl_dict.get('table_name')
+            if schema_name:
+                schema_table_name = f"{schema_name}.{table_name}"
+            else:
+                schema_table_name = table_name
+            
+            # Track if destination object was recreated
+            destination_object_recreated = loader_obj_conf.get('recreate_destination_object', False)
+
+            # 2. load data into table (this may convert Parquet/JSON to CSV first)
+            self.load_from(loader_obj_conf)
+            
+            # 3. Count rows from CSV files in output directory (after conversion, before summary)
+            # This gives us the exact number of rows that were loaded
+            output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
+            rows_loaded = self.count_rows_in_csv_files(output_data_object_dir, loader_obj_conf)
+
+            end_time = time.time()
+            duration_sec = round(end_time - start_time, 2)
+            logger.info(f"Load object: {object_name} completed | time: {duration_sec}s")
+            
+        except Exception as e:
+            # Load failed - capture error details
+            end_time = time.time()
+            duration_sec = round(end_time - start_time, 2)
+            load_status = 'failed'
+            logger.error(f"Load object: {object_name} failed | time: {duration_sec}s | error: {str(e)}", exc_info=True)
+            
+            # Try to get schema_table_name even if load failed (for summary display)
+            try:
+                if schema_table_name == object_name:
+                    loader_obj_conf = self.get_loader_obj_conf(object_name)
+                    table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
+                    schema_name = table_ddl_dict.get('schema_name')
+                    table_name = table_ddl_dict.get('table_name')
+                    if schema_name:
+                        schema_table_name = f"{schema_name}.{table_name}"
+                    else:
+                        schema_table_name = table_name
+                    destination_object_recreated = loader_obj_conf.get('recreate_destination_object', False)
+            except Exception:
+                # If we can't even get the schema_table_name, use object_name as fallback
+                schema_table_name = object_name
+                destination_object_recreated = False
+        
+        # Add to summary if provided
+        if load_summary is not None:
             # Get source and target connection names
-            # Use connection_name if available (from connections.yaml), otherwise show 'inline' for inline attributes
             source_connection_name = self.pipeline.source_attr.get('connection_name')
             if not source_connection_name:
                 source_connection_name = 'inline'
@@ -151,27 +168,22 @@ class DBLoader(ABC):
             source_object_name = object_name
             
             # Target object name is the schema_table_name
-            target_object_name = schema_table_name if 'schema_table_name' in locals() else object_name
+            target_object_name = schema_table_name
             
-            # Add to summary (whether success or failure)
             load_summary.add_entry(
                 source_connection=source_connection_name,
                 source_object=source_object_name,
                 target_connection=target_connection_name,
                 target_object=target_object_name,
-                recreated=destination_object_recreated if 'destination_object_recreated' in locals() else False,
+                recreated=destination_object_recreated,
                 rows_loaded=rows_loaded,
-                duration_sec=duration_sec if 'duration_sec' in locals() else 0,
+                duration_sec=duration_sec if 'duration_sec' in locals() else round(end_time - start_time, 2),
                 status=load_status,
-                start_time=start_time if 'start_time' in locals() else None,
-                end_time=end_time if 'end_time' in locals() else None
+                start_time=start_time,
+                end_time=end_time
             )
-
-        end_total_time = time.time()
-        logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
         
-        # Display summary
-        load_summary.display()
+        return load_status, rows_loaded, schema_table_name, destination_object_recreated
 
     def get_loader_obj_conf(self, object_name) ->dict:
         """Gets the configuration for loading a specific object.

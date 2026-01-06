@@ -162,6 +162,11 @@ logs_dir_path=/home/username/petaly/logs
 # Directory for temporary data storage during pipeline execution
 output_dir_path=/home/username/petaly/output
 
+# Connections file path (optional)
+# If not specified, defaults to: pipeline_dir_path/connections.yaml
+# Example: /home/username/petaly/connections.yaml
+connections_file_path=
+
 [global_settings]
 # Logging level: INFO or DEBUG
 logging_mode=INFO
@@ -184,6 +189,7 @@ This command will:
 - Set up the initial workspace structure
 - Verify directory permissions
 - Create default templates and configurations
+- Create `connections.yaml` file (at `pipeline_dir_path/connections.yaml` or custom `connections_file_path` if specified)
 
 ## Next Steps
 

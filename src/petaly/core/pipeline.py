@@ -39,11 +39,17 @@ class Pipeline:
         self.pipeline_fname = f'pipeline.{pipeline_format}'
         self.pipeline_fpath = os.path.join(self.pipeline_dpath, self.pipeline_fname)
         
-        # Set connections file path (stored at pipeline_base_dpath level, shared across pipelines)
-        # Use connections_file_format from config, fallback to pipeline_file_format for backward compatibility
-        connection_format = self.m_conf.global_settings.get('connections_file_format', pipeline_format)
-        self.connections_fname = f'connections.{connection_format}'
-        self.connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, self.connections_fname)
+        # Set connections file path
+        # Priority: 1) connections_file_path from config, 2) default: pipeline_dir_path/connections.yaml
+        if hasattr(self.m_conf, 'connections_file_path') and self.m_conf.connections_file_path:
+            # Use explicitly specified connections file path
+            self.connections_fpath = self.m_conf.connections_file_path
+        else:
+            # Default: use pipeline_dir_path/connections.yaml
+            # Use connections_file_format from config, fallback to pipeline_file_format for backward compatibility
+            connection_format = self.m_conf.global_settings.get('connections_file_format', pipeline_format)
+            self.connections_fname = f'connections.{connection_format}'
+            self.connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, self.connections_fname)
         
         # Initialize connections handler
         self.connections = Connections(self.connections_fpath)
@@ -89,13 +95,14 @@ class Pipeline:
         # Initialize attributes with default values
         self.source_attr = {}
         self.target_attr = {}
-        self.data_attributes = {}
+        self.load_attributes = {}
         self.data_objects_spec = []
         self.data_objects = []
         self.data_objects_from_cli = []
+        self.exclude_objects = []
         self.source_connector_id = None
         self.target_connector_id = None
-        self.include_data_objects = None
+        self.use_data_objects_spec = None
         self.csv_default_settings = {}
 
         try:
@@ -104,13 +111,26 @@ class Pipeline:
                 logger.warning(f"Could not load pipeline configuration from {self.pipeline_fpath}")
                 return
 
-            # Handle both YAML and JSON formats
+            # Handle both YAML and JSON formats (now both single document)
             if isinstance(pipeline_all_obj, list):
+                # Legacy multi-document format support (backward compatibility)
                 pipeline_dict = pipeline_all_obj[0]
-                data_objects_spec = pipeline_all_obj[1] if len(pipeline_all_obj) > 1 else {'data_objects_spec': []}
+                second_doc = pipeline_all_obj[1] if len(pipeline_all_obj) > 1 else {}
+                if isinstance(second_doc, dict):
+                    data_objects_spec_array = second_doc.get('data_objects_spec', [])
+                elif isinstance(second_doc, list):
+                    data_objects_spec_array = second_doc
+                else:
+                    data_objects_spec_array = []
             else:
+                # Single document format (current format)
                 pipeline_dict = {'pipeline': pipeline_all_obj.get('pipeline', {})}
-                data_objects_spec = {'data_objects_spec': pipeline_all_obj.get('data_objects_spec', [])}
+                data_objects_spec_array = pipeline_all_obj.get('data_objects_spec', [])
+            
+            # Normalize to internal structure
+            data_objects_spec = {
+                'data_objects_spec': data_objects_spec_array if isinstance(data_objects_spec_array, list) else []
+            }
 
             
             if pipeline_dict is None:
@@ -158,51 +178,67 @@ class Pipeline:
             self.source_connector_id = self.source_attr.get('connector_type')
             self.target_connector_id = self.target_attr.get('connector_type')
 
-            self.data_attributes = pipeline_dict.get('pipeline', {}).get('data_attributes', {})
+            self.load_attributes = pipeline_dict.get('pipeline', {}).get('load_attributes', {})
             
-            # Get include_data_objects, with backward compatibility for old parameter names
-            self.include_data_objects = self.data_attributes.get('include_data_objects', 'spec')
+            # Get use_data_objects_spec, with backward compatibility for old parameter names
+            self.use_data_objects_spec = self.load_attributes.get('use_data_objects_spec', 'prefer')
             
             # Backward compatibility: check for old parameter names
-            if self.include_data_objects is None or self.include_data_objects not in ('all', 'spec'):
-                # Check for old load_data_objects parameter
-                old_load_data_objects = self.data_attributes.get('load_data_objects')
-                if old_load_data_objects is not None:
-                    # Convert old load_data_objects to new include_data_objects
-                    if isinstance(old_load_data_objects, str):
-                        old_load_data_objects = old_load_data_objects.lower()
-                    self.include_data_objects = old_load_data_objects if old_load_data_objects in ('all', 'spec') else 'spec'
-                else:
-                    # Check for old load_all_from_schema parameter (boolean)
-                    old_load_all = self.data_attributes.get('load_all_from_schema')
-                    if old_load_all is not None:
-                        # Convert old boolean to new string format
-                        if isinstance(old_load_all, str):
-                            old_load_all = old_load_all.lower() == 'true'
-                        self.include_data_objects = 'all' if old_load_all else 'spec'
+            if self.use_data_objects_spec is None or self.use_data_objects_spec not in ('prefer', 'strict'):
+                # Check for old include_data_objects parameter
+                old_include_data_objects = self.load_attributes.get('include_data_objects')
+                if old_include_data_objects is not None:
+                    # Convert old include_data_objects to new use_data_objects_spec
+                    if isinstance(old_include_data_objects, str):
+                        old_include_data_objects = old_include_data_objects.lower()
+                    # Map: 'all' -> 'prefer', 'spec' -> 'strict'
+                    if old_include_data_objects == 'all':
+                        self.use_data_objects_spec = 'prefer'
+                    elif old_include_data_objects == 'spec':
+                        self.use_data_objects_spec = 'strict'
                     else:
-                        # Check for old load_data_objects_spec_only parameter
-                        old_load_spec_only = self.data_attributes.get('load_data_objects_spec_only')
-                        if old_load_spec_only is not None:
-                            # Invert: old load_data_objects_spec_only=true means include_data_objects=spec
-                            if isinstance(old_load_spec_only, str):
-                                old_load_spec_only = old_load_spec_only.lower() == 'true'
-                            self.include_data_objects = 'spec' if old_load_spec_only else 'all'
+                        self.use_data_objects_spec = 'prefer'
+                else:
+                    # Check for old load_data_objects parameter
+                    old_load_data_objects = self.load_attributes.get('load_data_objects')
+                    if old_load_data_objects is not None:
+                        if isinstance(old_load_data_objects, str):
+                            old_load_data_objects = old_load_data_objects.lower()
+                        # Map: 'all' -> 'prefer', 'spec' -> 'strict'
+                        if old_load_data_objects == 'all':
+                            self.use_data_objects_spec = 'prefer'
+                        elif old_load_data_objects == 'spec':
+                            self.use_data_objects_spec = 'strict'
                         else:
-                            # Check for even older apply_data_objects_spec parameter
-                            old_apply_spec = self.data_attributes.get('apply_data_objects_spec')
-                            if old_apply_spec is not None:
-                                # Old apply_data_objects_spec=true means prefer (load all), which is include_data_objects=all
-                                if isinstance(old_apply_spec, str):
-                                    old_apply_spec = old_apply_spec.lower() == 'true'
-                                self.include_data_objects = 'all' if old_apply_spec else 'spec'
+                            self.use_data_objects_spec = 'prefer'
+                    else:
+                        # Check for old load_all_from_schema parameter (boolean)
+                        old_load_all = self.load_attributes.get('load_all_from_schema')
+                        if old_load_all is not None:
+                            if isinstance(old_load_all, str):
+                                old_load_all = old_load_all.lower() == 'true'
+                            self.use_data_objects_spec = 'prefer' if old_load_all else 'strict'
+                        else:
+                            # Check for old load_data_objects_spec_only parameter
+                            old_load_spec_only = self.load_attributes.get('load_data_objects_spec_only')
+                            if old_load_spec_only is not None:
+                                if isinstance(old_load_spec_only, str):
+                                    old_load_spec_only = old_load_spec_only.lower() == 'true'
+                                self.use_data_objects_spec = 'strict' if old_load_spec_only else 'prefer'
+                            else:
+                                # Check for even older apply_data_objects_spec parameter
+                                old_apply_spec = self.load_attributes.get('apply_data_objects_spec')
+                                if old_apply_spec is not None:
+                                    if isinstance(old_apply_spec, str):
+                                        old_apply_spec = old_apply_spec.lower() == 'true'
+                                    self.use_data_objects_spec = 'prefer' if old_apply_spec else 'strict'
             
             # Normalize to lowercase string
-            if isinstance(self.include_data_objects, str):
-                self.include_data_objects = self.include_data_objects.lower()
-                if self.include_data_objects not in ('all', 'spec'):
-                    logger.warning(f"Invalid value for include_data_objects: {self.include_data_objects}. Expected 'all' or 'spec'. Defaulting to 'spec'.")
-                    self.include_data_objects = 'spec'
+            if isinstance(self.use_data_objects_spec, str):
+                self.use_data_objects_spec = self.use_data_objects_spec.lower()
+                if self.use_data_objects_spec not in ('prefer', 'strict'):
+                    logger.warning(f"Invalid value for use_data_objects_spec: {self.use_data_objects_spec}. Expected 'prefer' or 'strict'. Defaulting to 'prefer'.")
+                    self.use_data_objects_spec = 'prefer'
             
             self.csv_default_settings = self.get_csv_default_settings()
 
@@ -214,11 +250,25 @@ class Pipeline:
                     if obj is not None:
                         self.data_objects.append(obj.get('object_spec', {}).get('object_name'))
             
-            # Warning: if include_data_objects=spec and data_objects_spec[] is empty, no objects will be loaded
-            if self.include_data_objects == 'spec' and len(self.data_objects) == 0:
+            # Set exclude_objects array from load_attributes
+            self.exclude_objects = self.load_attributes.get('exclude_objects', [])
+            if not isinstance(self.exclude_objects, list):
+                logger.warning(f"exclude_objects should be an array, got {type(self.exclude_objects)}. Converting to list.")
+                self.exclude_objects = []
+            
+            # Remove excluded objects from data_objects list (applies regardless of use_data_objects_spec)
+            # Even if objects are explicitly specified in data_objects_spec, they will be excluded
+            if len(self.exclude_objects) > 0:
+                original_count = len(self.data_objects)
+                self.data_objects = [obj for obj in self.data_objects if obj not in self.exclude_objects]
+                if len(self.data_objects) < original_count:
+                    logger.info(f"Excluded {original_count - len(self.data_objects)} object(s) from data_objects based on exclude_objects: {self.exclude_objects}")
+            
+            # Warning: if use_data_objects_spec=strict and data_objects_spec[] is empty, no objects will be loaded
+            if self.use_data_objects_spec == 'strict' and len(self.data_objects) == 0:
                 logger.warning(
-                    f"Pipeline {pipeline_name}: include_data_objects='spec' and data_objects_spec[] is empty. "
-                    f"No objects will be loaded. Either set include_data_objects='all' to load all objects from schema, "
+                    f"Pipeline {pipeline_name}: use_data_objects_spec='strict' and data_objects_spec[] is empty. "
+                    f"No objects will be loaded. Either set use_data_objects_spec='prefer' to load all objects from schema, "
                     f"or add objects to data_objects_spec[] to load specific objects."
                 )
 
@@ -259,7 +309,26 @@ class Pipeline:
             file_extension = os.path.splitext(self.pipeline_fpath)[1].lower()
             
             if file_extension == '.yaml':
-                pipeline_all_obj = self.f_handler.load_yaml(self.pipeline_fpath)
+                # Load YAML - try single document first (current format), then multi-document (legacy)
+                try:
+                    # Try single document format first (current format)
+                    pipeline_all_obj = self.f_handler.load_yaml(self.pipeline_fpath)
+                    # If it's a dict with 'pipeline', it's single document format
+                    if isinstance(pipeline_all_obj, dict) and 'pipeline' in pipeline_all_obj:
+                        # Single document format - return as-is
+                        pass
+                    elif isinstance(pipeline_all_obj, list):
+                        # Already multi-document format (legacy) - return as-is
+                        pass
+                    else:
+                        # Fallback: wrap in list for legacy compatibility
+                        pipeline_all_obj = [pipeline_all_obj] if pipeline_all_obj else []
+                except Exception:
+                    # Fall back to multi-document loading for legacy files
+                    try:
+                        pipeline_all_obj = self.f_handler.load_yaml_all(self.pipeline_fpath)
+                    except Exception:
+                        pipeline_all_obj = None
             elif file_extension == '.json':
                 # For JSON, we need to split the single document into two parts to match YAML structure
                 json_data = self.f_handler.load_json(self.pipeline_fpath)
@@ -295,14 +364,14 @@ class Pipeline:
         """
 
         # Backward compatibility: check for old 'object_default_settings' name
-        csv_default_settings = self.data_attributes.get('csv_default_settings') or self.data_attributes.get('object_default_settings')
+        csv_default_settings = self.load_attributes.get('csv_default_settings') or self.load_attributes.get('object_default_settings')
         if csv_default_settings is None:
-            logger.error("Missing 'csv_default_settings' in data_attributes")
+            logger.error("Missing 'csv_default_settings' in load_attributes")
             return {}
         csv_default_settings = csv_default_settings.copy()
         
         # Warn if old name was used
-        if 'object_default_settings' in self.data_attributes and 'csv_default_settings' not in self.data_attributes:
+        if 'object_default_settings' in self.load_attributes and 'csv_default_settings' not in self.load_attributes:
             logger.warning("Pipeline uses deprecated 'object_default_settings'. Please rename to 'csv_default_settings'.")
         
         self.check_pipeline_outdated_arguments(csv_default_settings)
@@ -342,6 +411,21 @@ class Pipeline:
         elif type_autodetection is None:
             type_autodetection = True  # Default to true if not specified
         csv_default_settings.update({'type_autodetection': bool(type_autodetection)})
+
+        # 5. NULL STRING (string representation of NULL values in CSV files)
+        null_string = csv_default_settings.get('null_string', '')
+        if null_string is None:
+            null_string = ''
+        csv_default_settings.update({'null_string': str(null_string)})
+
+        # 6. FORCE NULL (force zero-length strings to be treated as NULL)
+        force_null = csv_default_settings.get('force_null', False)
+        # Convert string to boolean if needed (for backward compatibility)
+        if isinstance(force_null, str):
+            force_null = force_null.lower() in ('true', '1', 'yes', 'on')
+        elif force_null is None:
+            force_null = False  # Default to false if not specified
+        csv_default_settings.update({'force_null': bool(force_null)})
 
         return csv_default_settings
 
@@ -417,13 +501,26 @@ class Pipeline:
             if not pipeline_all_obj:
                 return None
             
-            # Handle both YAML and JSON formats
+            # Handle both YAML and JSON formats (now both single document)
             if isinstance(pipeline_all_obj, list):
+                # Legacy multi-document format support (backward compatibility)
                 pipeline_dict = pipeline_all_obj[0]
-                data_objects_spec = pipeline_all_obj[1] if len(pipeline_all_obj) > 1 else {'data_objects_spec': []}
+                second_doc = pipeline_all_obj[1] if len(pipeline_all_obj) > 1 else {}
+                if isinstance(second_doc, dict):
+                    data_objects_spec_array = second_doc.get('data_objects_spec', [])
+                elif isinstance(second_doc, list):
+                    data_objects_spec_array = second_doc
+                else:
+                    data_objects_spec_array = []
             else:
+                # Single document format (current format)
                 pipeline_dict = {'pipeline': pipeline_all_obj.get('pipeline', {})}
-                data_objects_spec = {'data_objects_spec': pipeline_all_obj.get('data_objects_spec', [])}
+                data_objects_spec_array = pipeline_all_obj.get('data_objects_spec', [])
+            
+            # Normalize to internal structure
+            data_objects_spec = {
+                'data_objects_spec': data_objects_spec_array if isinstance(data_objects_spec_array, list) else []
+            }
             
             # Create consolidated config
             consolidated_pipeline = pipeline_dict.get('pipeline', {}).copy()

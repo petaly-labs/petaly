@@ -65,21 +65,21 @@ The pipeline: {pipeline_name} is disabled. To enable pipeline {pipeline_dpath} s
 
 ### Missing Object Specification
 ```
-For {connector_type} extract the parameters include_data_objects=spec and specification in the data_objects_spec[] are required.
+For {connector_type} extract the parameters use_data_objects_spec=spec and specification in the data_objects_spec[] are required.
 ```
-**Cause**: Required object specifications are missing when using `include_data_objects: "spec"`.
+**Cause**: Required object specifications are missing when using `use_data_objects_spec: "spec"`.
 **Solution**:
 - Add object specifications to the data_objects_spec section
 - Use the command: `python -m petaly init -p {pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini`
-- Or change `include_data_objects` to `"all"` to load all objects from the schema
+- Or change `use_data_objects_spec` to `"all"` to load all objects from the schema
 
 ### CSV Source Configuration Error
 ```
-In case your source is csv, the parameters include_data_objects should be set to spec and require the specification in the data_objects_spec[].
+In case your source is csv, the parameters use_data_objects_spec should be set to spec and require the specification in the data_objects_spec[].
 ```
 **Cause**: CSV sources require explicit object specifications.
 **Solution**:
-- Set `include_data_objects: "spec"`
+- Set `use_data_objects_spec: "spec"`
 - Add required object specifications including:
   - object_name
   - object_source_dir (or source_dir in source_attributes)

@@ -55,46 +55,55 @@ class FLoader(ABC):
         logger.info(f"[--- Load into {self.pipeline.target_connector_id} ---]")
         start_total_time = time.time()
 
-        if self.pipeline.include_data_objects == 'spec':
+        if self.pipeline.use_data_objects_spec == 'strict':
             object_list = self.pipeline.data_objects
         else:
             #object_list = self.f_handler.get_all_dir_names(self.pipeline.output_pipeline_dpath)
             object_list = self.composer.get_object_list_from_output_dir(self.pipeline)
 
         for object_name in object_list:
-
-            logger.info(f"Load object: {object_name} started...")
-            start_time = time.time()
-
-            loader_obj_conf = {}
-            loader_obj_conf.update({'object_name': object_name})
-            output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
-            loader_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
-
-            output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
-            loader_obj_conf.update({'output_data_object_dir': output_data_object_dir})
-
-            output_load_from_stmt_fpath = self.pipeline.output_load_from_stmt_fpath.format(object_name=object_name)
-            loader_obj_conf.update({'load_from_stmt_fpath': output_load_from_stmt_fpath})
-
-            if file_to_gzip:
-                self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
-
-            file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.*')
-            loader_obj_conf.update({'file_list': file_list})
-
-            blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.target_attr.get('bucket_pipeline_prefix'),
-                                                                    self.pipeline.pipeline_name,
-                                                                    object_name)
-            loader_obj_conf.update({'blob_prefix': blob_prefix})
-
-            self.load_from(loader_obj_conf)
-
-            end_time = time.time()
-            logger.info(f"Load object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+            self.load_per_object(object_name, file_to_gzip)
 
         end_total_time = time.time()
         logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
+
+    def load_per_object(self, object_name, load_summary=None, file_to_gzip=False):
+        """Load a single object into the file target.
+        
+        Args:
+            object_name: Name of the object to load
+            load_summary: Optional LoadSummary instance (not used for file loaders, kept for API consistency)
+            file_to_gzip: Whether to gzip files before loading
+        """
+        logger.info(f"Load object: {object_name} started...")
+        start_time = time.time()
+
+        loader_obj_conf = {}
+        loader_obj_conf.update({'object_name': object_name})
+        output_metadata_object_dir = self.pipeline.output_object_metadata_dpath.format(object_name=object_name)
+        loader_obj_conf.update({'output_metadata_object_dir': output_metadata_object_dir})
+
+        output_data_object_dir = self.pipeline.output_object_data_dpath.format(object_name=object_name)
+        loader_obj_conf.update({'output_data_object_dir': output_data_object_dir})
+
+        output_load_from_stmt_fpath = self.pipeline.output_load_from_stmt_fpath.format(object_name=object_name)
+        loader_obj_conf.update({'load_from_stmt_fpath': output_load_from_stmt_fpath})
+
+        if file_to_gzip:
+            self.f_handler.gzip_csv_files(output_data_object_dir, cleanup_file=True)
+
+        file_list = self.f_handler.get_specific_files(output_data_object_dir, '*.*')
+        loader_obj_conf.update({'file_list': file_list})
+
+        blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.target_attr.get('bucket_pipeline_prefix'),
+                                                                self.pipeline.pipeline_name,
+                                                                object_name)
+        loader_obj_conf.update({'blob_prefix': blob_prefix})
+
+        self.load_from(loader_obj_conf)
+
+        end_time = time.time()
+        logger.info(f"Load object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
 
     def get_data_object(self, object_name):
         """Gets a DataObject instance for the specified object.

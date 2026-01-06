@@ -15,6 +15,11 @@
 # Absolute path where all pipeline configurations will be stored.
 pipeline_dir_path=
 
+# Connections File Path (Optional)
+# Absolute path to the connections.yaml/json file.
+# If not specified, defaults to: pipeline_dir_path/connections.yaml
+connections_file_path=
+
 # Log Directory
 # Absolute path where all log files will be stored.
 logs_dir_path=

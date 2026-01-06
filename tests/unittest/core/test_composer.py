@@ -1,7 +1,7 @@
 """
 Unit tests for Composer class.
 
-Tests object filtering logic and include_data_objects handling.
+Tests object filtering logic and use_data_objects_spec handling.
 """
 import pytest
 from unittest.mock import Mock, MagicMock, patch
@@ -21,7 +21,7 @@ class TestComposer:
         """Create a mock pipeline object."""
         pipeline = MagicMock()
         pipeline.output_pipeline_dpath = '/output'
-        pipeline.include_data_objects = 'spec'
+        pipeline.use_data_objects_spec = 'strict'
         pipeline.data_objects = ['table1', 'table2']
         return pipeline
     
@@ -45,8 +45,8 @@ class TestComposer:
             assert set(result) == {'table1', 'table2'}
     
     def test_get_object_list_from_output_dir_all_mode(self, composer, pipeline_mock):
-        """Test get_object_list_from_output_dir with include_data_objects='all'."""
-        pipeline_mock.include_data_objects = 'all'
+        """Test get_object_list_from_output_dir with use_data_objects_spec='prefer'."""
+        pipeline_mock.use_data_objects_spec = 'prefer'
         pipeline_mock.data_objects = []
         
         with patch.object(composer.f_handler, 'get_all_dir_names', return_value=['table1', 'table2', 'table3']):
@@ -56,8 +56,8 @@ class TestComposer:
             assert set(result) == {'table1', 'table2', 'table3'}
     
     def test_get_object_list_from_output_dir_spec_mode_empty(self, composer, pipeline_mock):
-        """Test get_object_list_from_output_dir with include_data_objects='spec' and empty spec."""
-        pipeline_mock.include_data_objects = 'spec'
+        """Test get_object_list_from_output_dir with use_data_objects_spec='strict' and empty spec."""
+        pipeline_mock.use_data_objects_spec = 'strict'
         pipeline_mock.data_objects = []
         
         with patch.object(composer.f_handler, 'get_all_dir_names', return_value=['table1', 'table2']):

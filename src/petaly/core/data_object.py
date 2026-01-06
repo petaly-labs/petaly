@@ -25,24 +25,24 @@ class DataObject:
         """
         data_objects = pipeline.data_objects_spec
         self.pipeline_data_object_dir = pipeline.output_object_data_dpath.format(object_name=object_name)
-        self.include_data_objects = pipeline.include_data_objects
+        self.use_data_objects_spec = pipeline.use_data_objects_spec
         self.object_settings = self.format_csv_default_settings(pipeline.csv_default_settings)
         self.object_settings.update({'cleanup_linebreak_in_fields': False})
 
         data_object_spec = self.get_object_spec(data_objects, object_name)
         logger.debug(f"Data object spec: {data_object_spec}")
         if not data_object_spec:
-            # If include_data_objects is 'spec' (only mode), spec is required
-            if self.include_data_objects == 'spec':
+            # If use_data_objects_spec is 'strict' (only mode), spec is required
+            if self.use_data_objects_spec == 'strict':
                 logger.info(
-                    f"For {pipeline.source_connector_id} extract the parameters include_data_objects='spec' and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
+                    f"For {pipeline.source_connector_id} extract the parameters use_data_objects_spec='strict' and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
                 sys.exit()
 
-            # If include_data_objects is 'all' (load all) or spec is empty, check file connector requirement
+            # If use_data_objects_spec is 'prefer' (load all) or spec is empty, check file connector requirement
             if pipeline.source_connector_id in ('csv', 'parquet', 'json'):
                 logger.info(
-                    f"In case your source is a file connector ({pipeline.source_connector_id}), the parameters include_data_objects should be set to 'spec' and require the specification in the data_objects_spec[]."
-                    f"\ninclude_data_objects='spec'"
+                    f"In case your source is a file connector ({pipeline.source_connector_id}), the parameters use_data_objects_spec should be set to 'strict' and require the specification in the data_objects_spec[]."
+                    f"\nuse_data_objects_spec='strict'"
                     f"\nCheck pipeline under: {pipeline.pipeline_fpath}")
 
                 sys.exit()

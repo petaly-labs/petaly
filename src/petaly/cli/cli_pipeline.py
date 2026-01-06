@@ -56,9 +56,13 @@ class CliPipeline:
         self.composed_pipeline_config['pipeline']['pipeline_name'] = pipeline_name
         
         # Check if connections.yaml exists
-        connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
-        connections_fname = f'connections.{connection_format}'
-        connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, connections_fname)
+        # Priority: 1) connections_file_path from config, 2) default: pipeline_dir_path/connections.yaml
+        if hasattr(self.m_conf, 'connections_file_path') and self.m_conf.connections_file_path:
+            connections_fpath = self.m_conf.connections_file_path
+        else:
+            connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
+            connections_fname = f'connections.{connection_format}'
+            connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, connections_fname)
         
         connections_exist = self.f_handler.is_file(connections_fpath)
         
@@ -166,7 +170,7 @@ class CliPipeline:
             self._prompt_for_bucket_prefix_if_needed('source_attributes', None, pipeline_name)
             self._prompt_for_bucket_prefix_if_needed('target_attributes', None, pipeline_name)
         
-        self.compose_data_attributes()
+        self.compose_load_attributes()
     
 
     def compose_connection_attributes(self, connection_attributes_name):
@@ -246,9 +250,13 @@ class CliPipeline:
             connection_name: Name of the connection to check
         """
         # Load connection to check connector type
-        connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
-        connections_fname = f'connections.{connection_format}'
-        connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, connections_fname)
+        # Priority: 1) connections_file_path from config, 2) default: pipeline_dir_path/connections.yaml
+        if hasattr(self.m_conf, 'connections_file_path') and self.m_conf.connections_file_path:
+            connections_fpath = self.m_conf.connections_file_path
+        else:
+            connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
+            connections_fname = f'connections.{connection_format}'
+            connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, connections_fname)
         
         if not self.f_handler.is_file(connections_fpath):
             return
@@ -337,9 +345,13 @@ class CliPipeline:
         
         if connection_name:
             # Using connections - load connection config to get connector type
-            connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
-            connections_fname = f'connections.{connection_format}'
-            connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, connections_fname)
+            # Priority: 1) connections_file_path from config, 2) default: pipeline_dir_path/connections.yaml
+            if hasattr(self.m_conf, 'connections_file_path') and self.m_conf.connections_file_path:
+                connections_fpath = self.m_conf.connections_file_path
+            else:
+                connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
+                connections_fname = f'connections.{connection_format}'
+                connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, connections_fname)
             
             if not self.f_handler.is_file(connections_fpath):
                 return
@@ -390,24 +402,29 @@ class CliPipeline:
         # Keep {pipeline_name} placeholder as-is - it will be replaced automatically during execution
         self.composed_pipeline_config['pipeline'][connection_attributes_name]['bucket_pipeline_prefix'] = bucket_prefix if bucket_prefix else default_value
 
-    def compose_data_attributes(self):
+    def compose_load_attributes(self):
         """
-        Composes data attributes including default object settings and data objects spec mode.
+        Composes load attributes including default object settings and data objects spec mode.
         """
-        data_attributes = self.pipeline_meta_config.get('data_attributes')
+        load_attributes = self.pipeline_meta_config.get('load_attributes')
+
+        # Use default csv_default_settings from skeleton (no user prompts)
+        # Defaults: header: true, columns_delimiter: ',', columns_quote: 'double', type_autodetection: true, null_string: '', force_null: false
+        default_csv_settings = {
+            "header": True,
+            "columns_delimiter": ",",
+            "columns_quote": "double",
+            "type_autodetection": True,
+            "null_string": "",
+            "force_null": False
+        }
+        self.composed_pipeline_config['pipeline']['load_attributes'].update({"csv_default_settings": default_csv_settings})
 
         self.console.print(f"\n[bold]{self.break_line}[/bold]")
-        self.console.print(f"[bold]Specify default object settings[/bold]")
+        self.console.print(f"[bold]Specify load attributes[/bold]")
 
-        csv_default_settings = data_attributes.get('csv_default_settings')
-        assigned_csv_default_settings = self.cli_menu.assign_attributes(csv_default_settings, predefined_values=None)
-        self.composed_pipeline_config['pipeline']['data_attributes'].update({"csv_default_settings": assigned_csv_default_settings})
-
-        self.console.print(f"\n[bold]{self.break_line}[/bold]")
-        self.console.print(f"[bold]Specify data object attributes[/bold]")
-
-        assigned_data_attributes = self.cli_menu.assign_attributes(data_attributes, predefined_values=None, exclude_key_list=[None])
-        self.composed_pipeline_config['pipeline']['data_attributes'].update(assigned_data_attributes)
+        assigned_load_attributes = self.cli_menu.assign_attributes(load_attributes, predefined_values=None, exclude_key_list=[None])
+        self.composed_pipeline_config['pipeline']['load_attributes'].update(assigned_load_attributes)
 
     def compose_object_spec(self, pipeline, object_name, use_pipeline_wizard):
         """

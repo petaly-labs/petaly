@@ -68,7 +68,8 @@ class MainConfig:
         self.workspace_config = {
             "pipeline_dir_path": None,
             "logs_dir_path": None,
-            "output_dir_path": None
+            "output_dir_path": None,
+            "connections_file_path": None
         }
         self.global_settings = {
             "logging_mode": "INFO",
@@ -172,14 +173,19 @@ class MainConfig:
         1. Check each workspace path in the configuration
         2. Verify that each path is absolute
         3. Warning for any invalid paths
+        4. connections_file_path is optional (will use default if not specified)
         """
         return_value = True
+        optional_keys = {'connections_file_path'}  # Optional parameters that don't need to be specified
 
         for key in self.workspace_config.keys():
-
+            if key in optional_keys:
+                # Skip validation for optional keys
+                continue
+                
             if key in conf_parser.options('workspace_config'):
                 abs_path = conf_parser.get('workspace_config', key)
-                if os.path.isabs(abs_path) is False:
+                if abs_path and abs_path.strip() and os.path.isabs(abs_path) is False:
                     self.console.print(f"The value of the option {key} is not specified or the path to the directory is not absolute.")
                     return_value = False
             else:
@@ -206,6 +212,21 @@ class MainConfig:
                 self.pipeline_base_dpath = conf_parser.get(section_name,'pipeline_dir_path')
                 self.logs_base_dpath = conf_parser.get(section_name,'logs_dir_path')
                 self.output_base_dpath = conf_parser.get(section_name,'output_dir_path')
+                
+                # Get connections_file_path if specified, otherwise use default
+                if conf_parser.has_option(section_name, 'connections_file_path'):
+                    connections_file_path = conf_parser.get(section_name, 'connections_file_path')
+                    if connections_file_path and connections_file_path.strip():
+                        # Validate it's an absolute path
+                        if os.path.isabs(connections_file_path):
+                            self.connections_file_path = connections_file_path
+                        else:
+                            self.console.print(f"[yellow]Warning:[/yellow] connections_file_path is not absolute. Using default: {self.pipeline_base_dpath}/connections.yaml")
+                            self.connections_file_path = None
+                    else:
+                        self.connections_file_path = None
+                else:
+                    self.connections_file_path = None
                 
                 # Setup logging to file once logs directory is known
                 from petaly.sysconfig.logger import setup_logging

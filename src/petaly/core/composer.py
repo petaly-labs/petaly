@@ -46,24 +46,24 @@ class Composer:
 		
 		Logic:
 		1. Get object directories from output path
-		2. If data_objects_spec has objects, use those (regardless of use_data_objects_spec)
-		3. If data_objects_spec is empty, check use_data_objects_spec
-		4. Always exclude objects in exclude_objects (applies regardless of use_data_objects_spec)
+		2. If data_objects_spec has objects, use those (regardless of all_from_schema)
+		3. If data_objects_spec is empty, check all_from_schema
+		4. Always exclude objects in exclude_objects (applies regardless of all_from_schema)
 		"""
 		object_dir_list = self.f_handler.get_all_dir_names(pipeline.output_pipeline_dpath)
 		pipeline_object_list = pipeline.data_objects
 
-		# If data_objects_spec has objects, use those (regardless of use_data_objects_spec)
+		# If data_objects_spec has objects, use those (regardless of all_from_schema)
 		if len(pipeline_object_list) > 0:
 			return_list = self.get_data_objects_intersection(object_dir_list, pipeline_object_list)
-		# If data_objects_spec is empty and use_data_objects_spec is 'prefer', return all objects
-		elif pipeline.use_data_objects_spec == 'prefer':
+		# If data_objects_spec is empty and all_from_schema is True, return all objects
+		elif pipeline.all_from_schema:
 			return_list = object_dir_list
-		# If data_objects_spec is empty and use_data_objects_spec is 'strict', return empty list
+		# If data_objects_spec is empty and all_from_schema is False, return empty list
 		else:
 			return_list = []
 
-		# Always exclude objects in exclude_objects (applies regardless of use_data_objects_spec)
+		# Always exclude objects in exclude_objects (applies regardless of all_from_schema)
 		# Even if objects are explicitly specified in data_objects_spec, they will be excluded
 		if len(pipeline.exclude_objects) > 0:
 			original_count = len(return_list)

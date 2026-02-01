@@ -1,5 +1,5 @@
 {
-    "string": "character varying",
+    "string": "VARCHAR(MAX)",
     "int32": "integer",
     "int64": "bigint",
     "date32[day]": "date",
@@ -7,5 +7,5 @@
     "timestamp[ns]": "timestamp without time zone",
     "timestamp[ns, tz=UTC]": "timestamp with time zone",
     "double": "double precision",
-    "null": "character varying"
+    "null": "VARCHAR(MAX)"
   }

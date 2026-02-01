@@ -172,7 +172,11 @@ connections_file_path=
 logging_mode=INFO
 
 # Pipeline configuration format: yaml or json
-pipeline_format=yaml
+pipeline_file_format=yaml
+# Connections configuration format: yaml or json
+connections_file_format=yaml
+# Pipeline wizard mode: true (full wizard) or false (short form)
+full_pipeline_wizard=true
 
 ```
 

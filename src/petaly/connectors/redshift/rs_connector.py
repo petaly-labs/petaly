@@ -93,7 +93,10 @@ class RSConnectorIAM():
 
                 elif query_status == "FAILED":
                     finished = True
-                    logger.error(f"Query {query_status}: {statement_description.get('Error')}")
+                    error_message = statement_description.get('Error', 'Unknown error')
+                    logger.error(f"Query {query_status}: {error_message}")
+                    # Raise an exception so db_loader can catch it and mark as failed in summary
+                    raise Exception(f"Redshift query failed: {error_message}")
 
                 else:
                     if query_status != last_query_status:

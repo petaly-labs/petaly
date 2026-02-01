@@ -174,7 +174,8 @@ target_attributes:
 ```yaml
 load_attributes:
   # Mode for handling data objects
-  use_data_objects_spec: strict  # Options: "prefer" or "strict"
+  all_from_schema: false          # Load only objects from data_objects_spec (false) or all from schema (true)
+  use_data_objects_spec: true    # Apply specifications from data_objects_spec if they exist (true) or ignore them (false)
   
   # Default settings for CSV/TSV/TXT file processing
   csv_default_settings:
@@ -269,7 +270,8 @@ pipeline:
     database_name: petalydb
     database_schema: petaly_tutorial
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -312,7 +314,8 @@ pipeline:
     database_name: target_db
     database_schema: public
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
 
 data_objects_spec:
 - object_spec:
@@ -323,6 +326,46 @@ data_objects_spec:
       - created_at
       - updated_at
 ```
+
+### MySQL to PostgreSQL with Incremental Load
+```yaml
+pipeline:
+  pipeline_name: mysql_to_postgres_incremental
+  source_attributes:
+    connector_type: mysql
+    database_user: root
+    database_password: dbpassword
+    database_host: localhost
+    database_port: 3306
+    database_name: source_db
+  target_attributes:
+    connector_type: postgres
+    database_user: postgres
+    database_password: dbpassword
+    database_host: localhost
+    database_port: 5432
+    database_name: target_db
+    database_schema: public
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
+
+data_objects_spec:
+- object_spec:
+    object_name: users
+    load_mode: incremental
+    column_primary_key: user_id
+    column_last_modified: updated_at
+    batch_size: 10000
+- object_spec:
+    object_name: orders
+    load_mode: incremental
+    column_primary_key: order_id
+    column_last_modified: modified_at
+    batch_size: 5000
+```
+
+**Note:** Incremental load is only supported for MySQL and PostgreSQL sources. The `load_state.json` file is automatically created in `{output_dir_path}/{pipeline_name}/{object_name}/metadata/` to track the last loaded timestamp and enable resumable loads.
 
 ## Best Practices
 
@@ -387,7 +430,8 @@ pipeline:
     database_name: petalydb
     database_schema: petaly_tutorial
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -421,7 +465,8 @@ pipeline:
     database_port: 3306
     database_name: petaly_tutorial
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -473,7 +518,8 @@ pipeline:
     connector_type: csv
     destination_dir: /your-path-to-destination-folder
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -517,7 +563,8 @@ pipeline:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data/
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -550,7 +597,8 @@ pipeline:
     gcp_bucket_name: 'bucket-name'
     bucket_pipeline_prefix: petaly/{pipeline_name}
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -585,7 +633,8 @@ pipeline:
     gcp_bucket_name: 'bucket-name'
     bucket_pipeline_prefix: petaly/{pipeline_name}
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -630,7 +679,8 @@ pipeline:
     aws_access_key_id:
     aws_secret_access_key:
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -743,7 +793,8 @@ pipeline:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: '\t'

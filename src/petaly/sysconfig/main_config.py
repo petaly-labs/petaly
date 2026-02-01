@@ -440,7 +440,7 @@ class MainConfig:
 
         return self.f_handler.load_json(connector_attributes_fpath)
 
-    def compose_type_mapping_path(self, connector_id, source_connector_id, source_file_format='csv'):
+    def compose_type_mapping_path(self, connector_id, source_connector_id):
 
         type_mapping_fpath = self.get_type_mapping_path(connector_id)
         connector_category = self.get_connector_category(source_connector_id)

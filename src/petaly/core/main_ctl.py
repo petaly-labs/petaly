@@ -172,6 +172,12 @@ class MainCtl():
         target_loader = None
 
         if run_endpoint is None or run_endpoint == 'source':
+            if not pipeline.source_connector_id:
+                logger.error(
+                    f"Pipeline {pipeline.pipeline_name}: source_connector_id is None. "
+                    f"Please configure source_attributes in the pipeline file: {pipeline.pipeline_fpath}"
+                )
+                return
             source_class = self.m_conf.get_extractor_class(pipeline.source_connector_id)
             if source_class:
                 source_extractor = source_class(pipeline)
@@ -179,6 +185,12 @@ class MainCtl():
                 logger.error(f"Extractor with connector-id: {pipeline.source_connector_id} can't be initialized.")
 
         if run_endpoint is None or run_endpoint == 'target':
+            if not pipeline.target_connector_id:
+                logger.error(
+                    f"Pipeline {pipeline.pipeline_name}: target_connector_id is None. "
+                    f"Please configure target_attributes in the pipeline file: {pipeline.pipeline_fpath}"
+                )
+                return
             target_class = self.m_conf.get_loader_class(pipeline.target_connector_id)
             if target_class:
                 target_loader = target_class(pipeline)

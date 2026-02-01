@@ -228,27 +228,27 @@ class DBExtractor(ABC):
                 return ''
 
         logger.debug("Compose data source meta query:")
-        logger.debug(f"use_data_objects_spec={self.pipeline.use_data_objects_spec}, data_objects={self.pipeline.data_objects}, data_objects_from_cli={self.pipeline.data_objects_from_cli}")
+        logger.debug(f"all_from_schema={self.pipeline.all_from_schema}, use_data_objects_spec={self.pipeline.use_data_objects_spec}, data_objects={self.pipeline.data_objects}, data_objects_from_cli={self.pipeline.data_objects_from_cli}")
         
         # if data_objects_from_cli is set, use it to compose the table_stmt and ignore all other settings
         if len(self.pipeline.data_objects_from_cli)>0:
             table_stmt = get_table_stmt(self.pipeline.data_objects_from_cli)
             logger.debug(f"Using CLI objects: {self.pipeline.data_objects_from_cli}, table_stmt: {table_stmt}")
         
-        # Check if use_data_objects_spec is 'prefer' (load all tables from schema, use spec if exists)
-        elif self.pipeline.use_data_objects_spec == 'prefer':
-            # use_data_objects_spec='prefer': load all tables from schema
+        # Check if all_from_schema is True (load all tables from schema, use spec if exists)
+        elif self.pipeline.all_from_schema:
+            # all_from_schema=True: load all tables from schema
             # Specifications from data_objects_spec will be applied where available
             table_stmt = ''
             if len(self.pipeline.data_objects) > 0:
-                logger.debug(f"use_data_objects_spec='prefer': loading all tables from schema, with custom specs for: {self.pipeline.data_objects}")
+                logger.debug(f"all_from_schema=true: loading all tables from schema, with custom specs for: {self.pipeline.data_objects}")
             else:
-                logger.debug("use_data_objects_spec='prefer': loading all tables from schema with default specifications")
+                logger.debug("all_from_schema=true: loading all tables from schema with default specifications")
             
-        # use_data_objects_spec is 'strict' - load only objects in data_objects_spec[]
+        # all_from_schema is False - load only objects in data_objects_spec[]
         else:
             if len(self.pipeline.data_objects)==0:
-                logger.error(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If use_data_objects_spec is set to 'strict', the data_objects_spec[] should have at least one object specification")
+                logger.error(f"Pipeline {self.pipeline.pipeline_name} in {self.pipeline.pipeline_fpath} wasn't specified properly. If all_from_schema is set to false, the data_objects_spec[] should have at least one object specification")
                 sys.exit()
 			
             table_stmt = get_table_stmt(self.pipeline.data_objects)

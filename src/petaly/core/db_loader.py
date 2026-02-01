@@ -120,10 +120,16 @@ class DBLoader(ABC):
             # 2. load data into table (this may convert Parquet/JSON to CSV first)
             self.load_from(loader_obj_conf)
             
-            # 3. Count rows from CSV files in output directory (after conversion, before summary)
-            # This gives us the exact number of rows that were loaded
-            output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
-            rows_loaded = self.count_rows_in_csv_files(output_data_object_dir, loader_obj_conf)
+            # 3. Get row count - prefer BigQuery's actual loaded count if available
+            # Otherwise count rows from files in output directory
+            if loader_obj_conf.get('rows_loaded_from_bigquery') is not None:
+                rows_loaded = loader_obj_conf.get('rows_loaded_from_bigquery')
+                logger.debug(f"Using BigQuery actual row count: {rows_loaded} rows")
+            else:
+                # Count rows from CSV files in output directory (after conversion, before summary)
+                # This gives us the exact number of rows that were loaded
+                output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
+                rows_loaded = self.count_rows_in_csv_files(output_data_object_dir, loader_obj_conf)
 
             end_time = time.time()
             duration_sec = round(end_time - start_time, 2)
@@ -218,8 +224,8 @@ class DBLoader(ABC):
         logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
         loader_obj_conf.update({'object_settings': data_object.object_settings})
 
-        if data_object.recreate_destination_object == True:
-            loader_obj_conf.update({'recreate_destination_object': True})
+        # Always set recreate_destination_object in loader_obj_conf (True or False)
+        loader_obj_conf.update({'recreate_destination_object': bool(data_object.recreate_destination_object)})
 
         # 5. compose statement load_from
         output_load_from_stmt_fpath = self.pipeline.output_load_from_stmt_fpath.format(object_name=object_name)
@@ -417,9 +423,9 @@ class DBLoader(ABC):
                                     # Single object, count as 1
                                     row_count = 1
                             except json.JSONDecodeError:
-                                # Try newline-delimited JSON
-                                row_count = sum(1 for _ in f)
-                                f.seek(0)  # Reset for actual reading
+                                # Try newline-delimited JSON - reset file pointer BEFORE counting
+                                f.seek(0)
+                                row_count = sum(1 for line in f if line.strip())
                         total_rows += row_count
                         logger.debug(f"File {file_path}: {row_count} rows (JSON)")
                         continue

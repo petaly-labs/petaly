@@ -222,62 +222,42 @@ class CliInitializer():
 		self.console.print(f"\nCheck pipeline {pipeline_name} under: {pipeline_fpath}")
 		self.console.print(f"Check output directory under: {output_pipeline_dpath}")
 
-		use_data_objects_spec = composed_config['pipeline']['load_attributes'].get('use_data_objects_spec', 'prefer')
+		# Get new boolean parameters with defaults
+		all_from_schema = composed_config['pipeline']['load_attributes'].get('all_from_schema', True)
+		use_data_objects_spec = composed_config['pipeline']['load_attributes'].get('use_data_objects_spec', True)
 		
-		# Backward compatibility: check for old parameter names
-		if use_data_objects_spec is None or use_data_objects_spec not in ('prefer', 'strict'):
-			# Check for old include_data_objects parameter
-			old_include_data_objects = composed_config['pipeline']['load_attributes'].get('include_data_objects')
-			if old_include_data_objects is not None:
-				if isinstance(old_include_data_objects, str):
-					old_include_data_objects = old_include_data_objects.lower()
-				# Map: 'all' -> 'prefer', 'spec' -> 'strict'
-				if old_include_data_objects == 'all':
-					use_data_objects_spec = 'prefer'
-				elif old_include_data_objects == 'spec':
-					use_data_objects_spec = 'strict'
-				else:
-					use_data_objects_spec = 'prefer'
-			else:
-				# Check for old load_data_objects parameter
-				old_load_data_objects = composed_config['pipeline']['load_attributes'].get('load_data_objects')
-				if old_load_data_objects is not None:
-					if isinstance(old_load_data_objects, str):
-						old_load_data_objects = old_load_data_objects.lower()
-					# Map: 'all' -> 'prefer', 'spec' -> 'strict'
-					if old_load_data_objects == 'all':
-						use_data_objects_spec = 'prefer'
-					elif old_load_data_objects == 'spec':
-						use_data_objects_spec = 'strict'
-					else:
-						use_data_objects_spec = 'prefer'
-				else:
-					# Check for old load_all_from_schema parameter (boolean)
-					old_load_all = composed_config['pipeline']['load_attributes'].get('load_all_from_schema')
-					if old_load_all is not None:
-						if isinstance(old_load_all, str):
-							old_load_all = old_load_all.lower() == 'true'
-						use_data_objects_spec = 'prefer' if old_load_all else 'strict'
-					else:
-						# Check for old load_data_objects_spec_only parameter
-						old_load_spec_only = composed_config['pipeline']['load_attributes'].get('load_data_objects_spec_only')
-						if old_load_spec_only is not None:
-							if isinstance(old_load_spec_only, str):
-								old_load_spec_only = old_load_spec_only.lower() == 'true'
-							use_data_objects_spec = 'strict' if old_load_spec_only else 'prefer'
-						else:
-							# Check for even older apply_data_objects_spec parameter
-							old_apply_spec = composed_config['pipeline']['load_attributes'].get('apply_data_objects_spec')
-							if old_apply_spec is not None:
-								if isinstance(old_apply_spec, str):
-									old_apply_spec = old_apply_spec.lower() == 'true'
-								use_data_objects_spec = 'prefer' if old_apply_spec else 'strict'
-		
-		# Normalize to lowercase string
+		# Convert to boolean if string
+		if isinstance(all_from_schema, str):
+			all_from_schema = all_from_schema.lower() in ('true', '1', 'yes')
 		if isinstance(use_data_objects_spec, str):
-			use_data_objects_spec = use_data_objects_spec.lower()
-			if use_data_objects_spec not in ('prefer', 'strict'):
-				use_data_objects_spec = 'prefer'
+			use_data_objects_spec = use_data_objects_spec.lower() in ('true', '1', 'yes')
+		
+		# Backward compatibility: convert old "prefer"/"strict" string values
+		old_use_data_objects_spec_str = composed_config['pipeline']['load_attributes'].get('use_data_objects_spec')
+		if isinstance(old_use_data_objects_spec_str, str) and old_use_data_objects_spec_str.lower() in ('prefer', 'strict'):
+			old_value = old_use_data_objects_spec_str.lower()
+			# Map: 'prefer' -> all_from_schema=True, use_data_objects_spec=True
+			# Map: 'strict' -> all_from_schema=False, use_data_objects_spec=True
+			if old_value == 'prefer':
+				all_from_schema = True
+				use_data_objects_spec = True
+			elif old_value == 'strict':
+				all_from_schema = False
+				use_data_objects_spec = True
+		
+		# Backward compatibility: check for old include_data_objects parameter
+		old_include_data_objects = composed_config['pipeline']['load_attributes'].get('include_data_objects')
+		if old_include_data_objects is not None:
+			if isinstance(old_include_data_objects, str):
+				old_include_data_objects = old_include_data_objects.lower()
+			# Map: 'all' -> all_from_schema=True, use_data_objects_spec=True
+			# Map: 'spec' -> all_from_schema=False, use_data_objects_spec=True
+			if old_include_data_objects == 'all':
+				all_from_schema = True
+				use_data_objects_spec = True
+			elif old_include_data_objects == 'spec':
+				all_from_schema = False
+				use_data_objects_spec = True
 		
 		# Handle data_objects_spec structure (can be array or object)
 		data_objects_spec_raw = composed_config.get('data_objects_spec', [])
@@ -287,13 +267,21 @@ class CliInitializer():
 			data_objects_spec = data_objects_spec_raw if isinstance(data_objects_spec_raw, list) else []
 		
 		process_continue = True
-		# Check if use_data_objects_spec='strict' and data_objects_spec is empty
-		if use_data_objects_spec == 'strict' and len(data_objects_spec) == 0:
-			self.console.print(f"\n[bold yellow]Warning:[/bold yellow] use_data_objects_spec='strict' and data_objects_spec[] is empty. No objects will be loaded.")
-			self.console.print(f"Either set use_data_objects_spec='prefer' to load all objects from schema, or add objects to data_objects_spec[].")
+		# Validate: all_from_schema=false and use_data_objects_spec=false is invalid
+		if not all_from_schema and not use_data_objects_spec:
+			self.console.print(f"\n[bold red]Error:[/bold red] Invalid configuration - all_from_schema=false and use_data_objects_spec=false.")
+			self.console.print(f"This combination will result in no objects being loaded. Please set at least one to true.")
+			# Auto-fix: set use_data_objects_spec to true
+			use_data_objects_spec = True
+			self.console.print(f"[bold yellow]Auto-corrected:[/bold yellow] set use_data_objects_spec=true to allow loading from data_objects_spec[]")
+		
+		# Check if all_from_schema=false and data_objects_spec is empty
+		if not all_from_schema and len(data_objects_spec) == 0:
+			self.console.print(f"\n[bold yellow]Warning:[/bold yellow] all_from_schema=false and data_objects_spec[] is empty. No objects will be loaded.")
+			self.console.print(f"Either set all_from_schema=true to load all objects from schema, or add objects to data_objects_spec[].")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
-		elif use_data_objects_spec == 'prefer' and len(data_objects_spec) == 0:
-			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (use_data_objects_spec='prefer').")
+		elif all_from_schema and len(data_objects_spec) == 0:
+			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (all_from_schema=true).")
 			self.console.print(f"In order to load specific objects incrementally, specify them one by one, or modify the pipeline manually.")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
 

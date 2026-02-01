@@ -90,6 +90,8 @@ class RSLoader(DBLoader):
         elif json_files:
             file_list = list(set([f for f in json_files if os.path.isfile(f)]))
             logger.info(f"Redshift will load JSON files directly (no CSV conversion needed): {len(file_list)} files")
+            # Convert JSON arrays to newline-delimited JSON format for Redshift
+            self._convert_json_to_newline_delimited(file_list)
         else:
             # No Parquet/JSON files found, fall back to CSV
             # Gzip all CSV files (they will be parsed based on delimiter, not extension)
@@ -112,6 +114,109 @@ class RSLoader(DBLoader):
                 FormatDict(path_to_data_file=path_to_data_file))
 
             self.db_connector.load_from(load_from_stmt)
+
+    def _convert_json_to_newline_delimited(self, json_files):
+        """
+        Converts JSON array files to newline-delimited JSON format for Redshift.
+        Redshift with FORMAT AS JSON 'auto' requires one JSON object per line,
+        not JSON arrays. Also flattens nested objects to JSON strings since
+        Redshift can't handle nested objects with 'auto' mode.
+        """
+        import json
+        
+        def flatten_nested_objects(obj):
+            """
+            Flattens nested objects/arrays to JSON strings.
+            Redshift FORMAT AS JSON 'auto' only works with flat JSON.
+            Nested objects (like geometry) must be converted to strings.
+            """
+            if not isinstance(obj, dict):
+                return obj
+            
+            flattened = {}
+            for key, value in obj.items():
+                if isinstance(value, (dict, list)):
+                    # Convert nested object/array to JSON string
+                    flattened[key] = json.dumps(value, ensure_ascii=False)
+                else:
+                    flattened[key] = value
+            return flattened
+        
+        for json_file in json_files:
+            try:
+                # Skip if already gzipped (we'll handle those separately if needed)
+                if json_file.endswith('.gz'):
+                    continue
+                
+                # Read the JSON file
+                with open(json_file, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    if not content:
+                        continue
+                    # Try to parse as JSON
+                    try:
+                        data = json.loads(content)
+                    except json.JSONDecodeError:
+                        # Might already be newline-delimited, check first line
+                        f.seek(0)
+                        first_line = f.readline().strip()
+                        if first_line.startswith('{') and first_line.endswith('}'):
+                            # Already newline-delimited, but might need flattening
+                            # Re-read and process line by line
+                            f.seek(0)
+                            lines = f.readlines()
+                            needs_flattening = False
+                            processed_lines = []
+                            for line in lines:
+                                line = line.strip()
+                                if not line:
+                                    continue
+                                try:
+                                    obj = json.loads(line)
+                                    flat_obj = flatten_nested_objects(obj)
+                                    if flat_obj != obj:
+                                        needs_flattening = True
+                                    processed_lines.append(flat_obj)
+                                except json.JSONDecodeError:
+                                    continue
+                            
+                            if needs_flattening and processed_lines:
+                                logger.debug(f"Flattening nested objects in newline-delimited JSON: {json_file}")
+                                with open(json_file, 'w', encoding='utf-8') as fw:
+                                    for obj in processed_lines:
+                                        json.dump(obj, fw, ensure_ascii=False)
+                                        fw.write('\n')
+                                logger.debug(f"Flattened {len(processed_lines)} objects in {json_file}")
+                            continue
+                        else:
+                            # Unknown format, skip conversion
+                            logger.warning(f"File {json_file} is not in a recognized JSON format, skipping conversion")
+                            continue
+                
+                # Check if it's a JSON array (needs conversion)
+                if isinstance(data, list):
+                    logger.debug(f"Converting JSON array to newline-delimited format: {json_file}")
+                    # Write as newline-delimited JSON (one object per line), flattening nested objects
+                    with open(json_file, 'w', encoding='utf-8') as f:
+                        for obj in data:
+                            flat_obj = flatten_nested_objects(obj)
+                            json.dump(flat_obj, f, ensure_ascii=False)
+                            f.write('\n')
+                    logger.debug(f"Converted {json_file} to newline-delimited JSON format ({len(data)} objects)")
+                elif isinstance(data, dict):
+                    # Single object - convert to newline-delimited format and flatten
+                    logger.debug(f"Converting single JSON object to newline-delimited format: {json_file}")
+                    flat_obj = flatten_nested_objects(data)
+                    with open(json_file, 'w', encoding='utf-8') as f:
+                        json.dump(flat_obj, f, ensure_ascii=False)
+                        f.write('\n')
+                    logger.debug(f"Converted {json_file} to newline-delimited JSON format")
+                # If it's already newline-delimited, leave it as is
+                
+            except Exception as e:
+                logger.warning(f"Error converting JSON file {json_file} to newline-delimited format: {e}")
+                # Continue with other files
+                continue
 
     def compose_create_table_stmt(self, loader_obj_conf):
 
@@ -148,17 +253,27 @@ class RSLoader(DBLoader):
         json_files.extend(glob.glob(os.path.join(output_data_object_dir, '*.json.gz')))
         
         # Determine format
+        using_json_format = False
+        using_parquet_format = False
+        using_csv_format = False
+        
         if parquet_files:
             # Parquet format - Redshift COPY supports FORMAT AS PARQUET
+            # Note: Parquet does NOT support GZIP option - it has internal compression
             load_options += "FORMAT AS PARQUET "
+            using_parquet_format = True
             logger.info(f"Redshift will load Parquet format directly (no CSV conversion needed)")
         elif json_files:
-            # JSON format - Redshift COPY supports FORMAT AS JSON
-            load_options += "FORMAT AS JSON "
+            # JSON format - Redshift COPY supports FORMAT AS JSON 'auto'
+            # Note: Redshift does NOT support GZIP, MAXERROR, or TIMEFORMAT with JSON format
+            # The 'auto' argument tells Redshift to automatically map JSON keys to column names
+            load_options += "FORMAT AS JSON 'auto' "
+            using_json_format = True
             logger.info(f"Redshift will load JSON format directly (no CSV conversion needed)")
         else:
             # CSV format - include delimiter, header, and quote options
             load_options += "FORMAT AS CSV "
+            using_csv_format = True
             columns_delimiter = object_settings.get("columns_delimiter")
 
             if columns_delimiter == '\t':
@@ -178,8 +293,14 @@ class RSLoader(DBLoader):
             # This provides consistent NULL handling across all column types
             load_options += "EMPTYASNULL "
 
-        # GZIP compression is supported for all formats
-        load_options += "GZIP "
+        # GZIP compression is ONLY supported for CSV format
+        # Parquet has internal compression, JSON does not support GZIP option
+        if using_csv_format:
+            load_options += "GZIP "
+
+        # Store format flags in loader_obj_conf so compose_load_from_stmt can use them
+        loader_obj_conf['using_json_format'] = using_json_format
+        loader_obj_conf['using_parquet_format'] = using_parquet_format
 
         return load_options
 
@@ -192,12 +313,62 @@ class RSLoader(DBLoader):
         schema_table_name = f"{table_ddl_dict.get('schema_name')}.{table_ddl_dict.get('table_name')}"
         column_list = '' if table_ddl_dict.get('column_list') == None else '(' + table_ddl_dict.get('column_list') + ')'
 
+        # Check format type - JSON and Parquet don't support MAXERROR or TIMEFORMAT
+        using_json_format = loader_obj_conf.get('using_json_format', False)
+        using_parquet_format = loader_obj_conf.get('using_parquet_format', False)
+        
+        # Remove trailing whitespace from load_data_options to prevent syntax errors
+        load_data_options = load_data_options.rstrip()
+        
+        # Format the statement first
         load_from_stmt = load_from_stmt.format_map(FormatDict(schema_table_name=schema_table_name,
                                                                column_list=column_list,
                                                               iam_role=self.aws_iam_role,
                                                               load_from_options=load_data_options))
+        
+        # For JSON and Parquet formats, remove MAXERROR and TIMEFORMAT from the formatted statement
+        # Redshift COPY with FORMAT AS JSON / FORMAT AS PARQUET doesn't support these options
+        if using_json_format or using_parquet_format:
+            # Remove MAXERROR and TIMEFORMAT lines
+            lines = load_from_stmt.split('\n')
+            filtered_lines = []
+            for line in lines:
+                stripped_line = line.strip()
+                # Skip MAXERROR and TIMEFORMAT lines
+                if stripped_line.startswith('MAXERROR') or stripped_line.startswith("TIMEFORMAT"):
+                    continue
+                filtered_lines.append(line)
+            
+            # Rejoin and clean up
+            load_from_stmt = '\n'.join(filtered_lines)
+            # Remove all trailing whitespace including newlines
+            load_from_stmt = load_from_stmt.rstrip()
+            
+            # Handle semicolon placement - remove standalone semicolons and ensure proper ending
+            lines = load_from_stmt.split('\n')
+            final_lines = []
+            for line in lines:
+                stripped = line.strip()
+                if stripped == ';':
+                    # Skip standalone semicolon lines
+                    continue
+                elif "FORMAT AS JSON" in line or "FORMAT AS PARQUET" in line:
+                    # FORMAT line - ensure it ends properly
+                    final_lines.append(line.rstrip())
+                else:
+                    final_lines.append(line)
+            
+            load_from_stmt = '\n'.join(final_lines).rstrip()
+            
+            # Ensure we have a semicolon at the end
+            if not load_from_stmt.rstrip().endswith(';'):
+                load_from_stmt = load_from_stmt.rstrip() + ';'
+        
         load_from_file_fpath = loader_obj_conf.get('load_from_stmt_fpath')
         self.f_handler.save_file(load_from_file_fpath, load_from_stmt)
+        
+        # Log the final statement for debugging
+        logger.debug(f"Final COPY statement for {schema_table_name}:\n{load_from_stmt}")
 
         return load_from_stmt
 

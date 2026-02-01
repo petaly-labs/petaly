@@ -127,9 +127,12 @@ class BQConnector():
             rows_end = table.num_rows
             rows_loaded = rows_end - rows_start
             logger.debug(f"Loaded {rows_loaded} rows and {len(table.schema)} columns to {table_id} from file {data_fpath}")
+            return rows_loaded
 
         except exceptions.GoogleCloudError as err:
-            logger.error(err)
+            logger.error(f"BigQuery load failed for {table_id} from {data_fpath}: {err}")
+            # Re-raise the exception so it can be caught by db_loader and marked as failed in summary
+            raise
 
     def drop_table(self, table_id):
         """ Function drop BigQuery table

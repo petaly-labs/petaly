@@ -143,8 +143,8 @@ class ObjectMetadata():
             # Get all objects from query results
             all_objects_from_query = self.compose_objects_meta_from_query(meta_query_result)
             
-            # If use_data_objects_spec is 'strict', filter to only specified objects
-            if self.pipeline.use_data_objects_spec == 'strict' and len(self.pipeline.data_objects) > 0:
+            # If all_from_schema is False, filter to only specified objects
+            if not self.pipeline.all_from_schema and len(self.pipeline.data_objects) > 0:
                 # Filter to only process objects that are in data_objects_spec[]
                 filtered_objects = [
                     meta_table for meta_table in all_objects_from_query
@@ -153,7 +153,7 @@ class ObjectMetadata():
                 logger.debug(f"Filtered objects from {len(all_objects_from_query)} to {len(filtered_objects)} based on data_objects_spec[]")
                 all_objects_from_query = filtered_objects
             
-            # Filter out excluded objects (applies regardless of use_data_objects_spec)
+            # Filter out excluded objects (applies regardless of all_from_schema)
             # Even if objects are explicitly specified in data_objects_spec, they will be excluded
             if len(self.pipeline.exclude_objects) > 0:
                 excluded_count = len(all_objects_from_query)

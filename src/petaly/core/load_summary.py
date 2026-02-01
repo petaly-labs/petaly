@@ -66,12 +66,14 @@ class LoadSummary:
         if not self.summary_list:
             return
         
+        # Calculate total width: 25 + 32 + 25 + 30 + 12 + 12 + 15 + 10 + 20 + 20 = 201
+        total_width = 201
         logger.info("")
-        logger.info("=" * 200)
+        logger.info("=" * total_width)
         logger.info("LOAD SUMMARY")
-        logger.info("=" * 200)
-        logger.info(f"{'source(connection)':<25} {'source-object':<25} {'target(connection)':<25} {'target-object':<30} {'recreated':<12} {'rows':<12} {'duration (sec)':<15} {'status':<10} {'start-time':<20} {'end-time':<20}")
-        logger.info("-" * 200)
+        logger.info("=" * total_width)
+        logger.info(f"{'source(connection)':<25} {'source-object':<32} {'target(connection)':<25} {'target-object':<30} {'recreated':<12} {'rows':<12} {'duration (sec)':<15} {'status':<10} {'start-time':<20} {'end-time':<20}")
+        logger.info("-" * total_width)
         
         for summary in self.summary_list:
             source_connection = summary.get('source_connection', 'N/A')
@@ -104,8 +106,8 @@ class LoadSummary:
             else:
                 end_time_str = 'N/A'
             
-            logger.info(f"{source_connection:<25} {source_object:<25} {target_connection:<25} {target_object:<30} {recreated:<12} {rows_str:<12} {duration_sec:<15} {status:<10} {start_time_str:<20} {end_time_str:<20}")
+            logger.info(f"{source_connection:<25} {source_object:<32} {target_connection:<25} {target_object:<30} {recreated:<12} {rows_str:<12} {duration_sec:<15} {status:<10} {start_time_str:<20} {end_time_str:<20}")
         
-        logger.info("=" * 200)
+        logger.info("=" * total_width)
         logger.info("")
 

@@ -102,7 +102,8 @@ class Pipeline:
         self.exclude_objects = []
         self.source_connector_id = None
         self.target_connector_id = None
-        self.use_data_objects_spec = None
+        self.all_from_schema = True
+        self.use_data_objects_spec = True
         self.csv_default_settings = {}
 
         try:
@@ -175,8 +176,22 @@ class Pipeline:
                 return
 
             # PIPELINE ATTRIBUTE
-            self.source_connector_id = self.source_attr.get('connector_type')
-            self.target_connector_id = self.target_attr.get('connector_type')
+            self.source_connector_id = self.source_attr.get('connector_type') if self.source_attr else None
+            self.target_connector_id = self.target_attr.get('connector_type') if self.target_attr else None
+            
+            # Validate connector IDs are set
+            if not self.source_connector_id:
+                logger.error(
+                    f"Pipeline {pipeline_name}: source_connector_id is not set. "
+                    f"Please configure source_attributes in the pipeline file: {self.pipeline_fpath}"
+                )
+                return
+            if not self.target_connector_id:
+                logger.error(
+                    f"Pipeline {pipeline_name}: target_connector_id is not set. "
+                    f"Please configure target_attributes in the pipeline file: {self.pipeline_fpath}"
+                )
+                return
 
             self.load_attributes = pipeline_dict.get('pipeline', {}).get('load_attributes', {})
             
@@ -187,65 +202,52 @@ class Pipeline:
             self.column_last_modified = ''
             self.batch_size = None
             
-            # Get use_data_objects_spec, with backward compatibility for old parameter names
-            self.use_data_objects_spec = self.load_attributes.get('use_data_objects_spec', 'prefer')
+            # Get all_from_schema and use_data_objects_spec, with backward compatibility
+            # New format: two boolean parameters
+            self.all_from_schema = self.load_attributes.get('all_from_schema', True)
+            self.use_data_objects_spec = self.load_attributes.get('use_data_objects_spec', True)
             
-            # Backward compatibility: check for old parameter names
-            if self.use_data_objects_spec is None or self.use_data_objects_spec not in ('prefer', 'strict'):
-                # Check for old include_data_objects parameter
-                old_include_data_objects = self.load_attributes.get('include_data_objects')
-                if old_include_data_objects is not None:
-                    # Convert old include_data_objects to new use_data_objects_spec
-                    if isinstance(old_include_data_objects, str):
-                        old_include_data_objects = old_include_data_objects.lower()
-                    # Map: 'all' -> 'prefer', 'spec' -> 'strict'
-                    if old_include_data_objects == 'all':
-                        self.use_data_objects_spec = 'prefer'
-                    elif old_include_data_objects == 'spec':
-                        self.use_data_objects_spec = 'strict'
-                    else:
-                        self.use_data_objects_spec = 'prefer'
-                else:
-                    # Check for old load_data_objects parameter
-                    old_load_data_objects = self.load_attributes.get('load_data_objects')
-                    if old_load_data_objects is not None:
-                        if isinstance(old_load_data_objects, str):
-                            old_load_data_objects = old_load_data_objects.lower()
-                        # Map: 'all' -> 'prefer', 'spec' -> 'strict'
-                        if old_load_data_objects == 'all':
-                            self.use_data_objects_spec = 'prefer'
-                        elif old_load_data_objects == 'spec':
-                            self.use_data_objects_spec = 'strict'
-                        else:
-                            self.use_data_objects_spec = 'prefer'
-                    else:
-                        # Check for old load_all_from_schema parameter (boolean)
-                        old_load_all = self.load_attributes.get('load_all_from_schema')
-                        if old_load_all is not None:
-                            if isinstance(old_load_all, str):
-                                old_load_all = old_load_all.lower() == 'true'
-                            self.use_data_objects_spec = 'prefer' if old_load_all else 'strict'
-                        else:
-                            # Check for old load_data_objects_spec_only parameter
-                            old_load_spec_only = self.load_attributes.get('load_data_objects_spec_only')
-                            if old_load_spec_only is not None:
-                                if isinstance(old_load_spec_only, str):
-                                    old_load_spec_only = old_load_spec_only.lower() == 'true'
-                                self.use_data_objects_spec = 'strict' if old_load_spec_only else 'prefer'
-                            else:
-                                # Check for even older apply_data_objects_spec parameter
-                                old_apply_spec = self.load_attributes.get('apply_data_objects_spec')
-                                if old_apply_spec is not None:
-                                    if isinstance(old_apply_spec, str):
-                                        old_apply_spec = old_apply_spec.lower() == 'true'
-                                    self.use_data_objects_spec = 'prefer' if old_apply_spec else 'strict'
-            
-            # Normalize to lowercase string
+            # Convert to boolean if string
+            if isinstance(self.all_from_schema, str):
+                self.all_from_schema = self.all_from_schema.lower() in ('true', '1', 'yes')
             if isinstance(self.use_data_objects_spec, str):
-                self.use_data_objects_spec = self.use_data_objects_spec.lower()
-                if self.use_data_objects_spec not in ('prefer', 'strict'):
-                    logger.warning(f"Invalid value for use_data_objects_spec: {self.use_data_objects_spec}. Expected 'prefer' or 'strict'. Defaulting to 'prefer'.")
-                    self.use_data_objects_spec = 'prefer'
+                self.use_data_objects_spec = self.use_data_objects_spec.lower() in ('true', '1', 'yes')
+            
+            # Backward compatibility: convert old "prefer"/"strict" string values
+            old_use_data_objects_spec_str = self.load_attributes.get('use_data_objects_spec')
+            if isinstance(old_use_data_objects_spec_str, str) and old_use_data_objects_spec_str.lower() in ('prefer', 'strict'):
+                old_value = old_use_data_objects_spec_str.lower()
+                # Map: 'prefer' -> all_from_schema=True, use_data_objects_spec=True
+                # Map: 'strict' -> all_from_schema=False, use_data_objects_spec=True
+                if old_value == 'prefer':
+                    self.all_from_schema = True
+                    self.use_data_objects_spec = True
+                elif old_value == 'strict':
+                    self.all_from_schema = False
+                    self.use_data_objects_spec = True
+            
+            # Validate: all_from_schema=false and use_data_objects_spec=false is invalid
+            if not self.all_from_schema and not self.use_data_objects_spec:
+                # For database sources, this combination is invalid and should fail
+                # File connectors (csv, parquet, json) don't use schema, so validation is different
+                if self.source_connector_id and self.source_connector_id not in ('csv', 'parquet', 'json'):
+                    logger.error(
+                        f"Pipeline {pipeline_name}: Invalid configuration - all_from_schema=false and use_data_objects_spec=false. "
+                        f"This combination will result in no objects being loaded. "
+                        f"For database sources (like {self.source_connector_id}), at least one parameter must be true. "
+                        f"Please fix the configuration in: {self.pipeline_fpath}"
+                    )
+                    import sys
+                    sys.exit(1)
+                else:
+                    # For file sources, auto-fix is acceptable (they don't use schema anyway)
+                    logger.warning(
+                        f"Pipeline {pipeline_name}: Invalid configuration - all_from_schema=false and use_data_objects_spec=false. "
+                        f"This combination will result in no objects being loaded. Auto-correcting..."
+                    )
+                    # Auto-fix: set use_data_objects_spec to true to allow loading from spec
+                    self.use_data_objects_spec = True
+                    logger.warning(f"Auto-corrected: set use_data_objects_spec=true to allow loading from data_objects_spec[]")
             
             self.csv_default_settings = self.get_csv_default_settings()
 
@@ -271,11 +273,11 @@ class Pipeline:
                 if len(self.data_objects) < original_count:
                     logger.info(f"Excluded {original_count - len(self.data_objects)} object(s) from data_objects based on exclude_objects: {self.exclude_objects}")
             
-            # Warning: if use_data_objects_spec=strict and data_objects_spec[] is empty, no objects will be loaded
-            if self.use_data_objects_spec == 'strict' and len(self.data_objects) == 0:
+            # Warning: if all_from_schema=false and data_objects_spec[] is empty, no objects will be loaded
+            if not self.all_from_schema and len(self.data_objects) == 0:
                 logger.warning(
-                    f"Pipeline {pipeline_name}: use_data_objects_spec='strict' and data_objects_spec[] is empty. "
-                    f"No objects will be loaded. Either set use_data_objects_spec='prefer' to load all objects from schema, "
+                    f"Pipeline {pipeline_name}: all_from_schema=false and data_objects_spec[] is empty. "
+                    f"No objects will be loaded. Either set all_from_schema=true to load all objects from schema, "
                     f"or add objects to data_objects_spec[] to load specific objects."
                 )
 

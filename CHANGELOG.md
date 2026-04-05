@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Incremental Load Support**: New incremental load feature for MySQL and PostgreSQL sources allows loading only new or updated rows based on timestamp columns. Configure per object with `load_mode: "incremental"`, `column_last_modified`, `column_primary_key`, and `batch_size`
 - `load_state.json` state tracking for resumable incremental loads
+- Separated endpoint definition from pipeline definition through reusable source and target connection references
+- `endpoint_type` parameter for reusable endpoint definitions with `source` and `target` modes
 - Export support for BigQuery and Redshift to Parquet and JSON format
 - Load support for BigQuery and Redshift from Parquet and JSON files
 - Parquet and JSON to CSV conversion for PostgreSQL and MySQL loaders
@@ -36,6 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING:** Renamed `object_default_settings` to `csv_default_settings`
 - **BREAKING:** Removed `pipeline_attributes` nesting and moved `pipeline_name` directly under `pipeline`
 - **BREAKING:** Removed `is_enabled` parameter, pipelines are always enabled
+- **BREAKING:** Source and target endpoint definitions were separated from the pipeline file. Pipelines can now reference reusable endpoint definitions instead of configuring both endpoints inline in every pipeline
+- Defining the source endpoint inline in `source_attributes` is now deprecated in favor of reusable connection definitions referenced by `connection_name`
+- Reusable endpoint definitions can now declare whether they are source-only or target-only
 - Improved object-by-object execution flow in `MainCtl` with support for extract then load per object
 - Updated file extractors and loaders to use clearer per-object processing methods
 - Enhanced BigQuery and Redshift loaders to detect Parquet and JSON directly and improve file handling
@@ -58,6 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Old pipelines with `load_all_from_schema: true/false` are automatically converted
 - Old pipelines with `include_data_objects` are converted to the new object-selection settings
 - Old pipelines with `data_attributes` are converted to `load_attributes`
+- Pipelines can still use inline source and target attributes, but reusable endpoint definitions are now supported and preferred
+- Connections without `endpoint_type` are still accepted for backward compatibility, but new endpoint definitions should declare either `source` or `target`
 - Legacy multi-document YAML format with `---` separator is still supported
 
 ## [v0.1.0] - 2025-05-10 (BETA)

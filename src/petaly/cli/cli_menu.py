@@ -357,6 +357,14 @@ class CliMenu():
                 exclude_key_list=['connector_type']
             )
             connection_attributes_dict.update(assigned_platform_attributes)
+
+        endpoint_type = prompt.Prompt.ask(
+            "Specify [bold green]endpoint_type[/bold green]",
+            choices=['source', 'target'],
+            default='source',
+            show_default=False
+        )
+        connection_attributes_dict.update({'endpoint_type': endpoint_type})
         
         return connection_attributes_dict
     

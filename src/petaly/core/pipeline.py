@@ -145,6 +145,14 @@ class Pipeline:
             # Get source and target attributes sections
             source_attributes_section = pipeline_dict_data.get('source_attributes', {})
             target_attributes_section = pipeline_dict_data.get('target_attributes', {})
+
+            # Deprecation warning: source endpoint should be defined via reusable connection
+            if source_attributes_section and not source_attributes_section.get('connection_name'):
+                logger.warning(
+                    "Pipeline uses inline 'source_attributes'. Defining the source endpoint directly in the pipeline "
+                    "is deprecated. Define the source in connections.yaml/json and reference it with "
+                    "'source_attributes.connection_name' instead."
+                )
             
             # Resolve source attributes (may contain connection reference)
             self.source_attr = self.connections.resolve_attributes(source_attributes_section, 'source')

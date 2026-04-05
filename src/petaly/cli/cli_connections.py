@@ -150,11 +150,13 @@ class CliConnections:
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("Connection Name", style="cyan", no_wrap=True)
         table.add_column("Connector Type", style="green")
+        table.add_column("Role", style="bright_blue")
         table.add_column("Platform", style="yellow")
         table.add_column("Key Details", style="white")
         
         for name, attrs in sorted(connections.items()):
             connector_type = attrs.get('connector_type', 'N/A')
+            endpoint_type = attrs.get('endpoint_type', 'unspecified')
             platform = attrs.get('platform_type', 'local')
             
             # Build key details string
@@ -177,7 +179,7 @@ class CliConnections:
             
             details_str = ", ".join(details[:2]) if details else "N/A"
             
-            table.add_row(name, connector_type, platform, details_str)
+            table.add_row(name, connector_type, endpoint_type, platform, details_str)
         
         self.console.print(table)
         self.console.print(f"\nTotal connections: {len(connections)}")
@@ -258,4 +260,3 @@ class CliConnections:
         except Exception as e:
             logger.error(f"Error loading connections from {self.connections_fpath}: {e}", exc_info=True)
             return {}
-

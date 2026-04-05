@@ -1,0 +1,29 @@
+name: Unit Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pipeline-mock-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install pytest pytest-asyncio
+
+      - name: Run focused pipeline mock tests
+        run: |
+          pytest -q tests/unittest/core/test_pipeline.py -k "inline_source_attributes_deprecated_warning or source_only_connection_cannot_be_used_as_target"

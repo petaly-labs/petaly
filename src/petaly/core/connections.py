@@ -159,6 +159,27 @@ class Connections:
                 # Other attributes present - keep them but warn
                 logger.warning(f"Could not resolve {connection_type} connection '{connection_ref}', using inline attributes only")
                 return {k: v for k, v in attributes.items() if k != 'connection_name'}
+
+        endpoint_type = resolved_connection.get('endpoint_type')
+        if endpoint_type is not None:
+            endpoint_type = str(endpoint_type).lower()
+
+        allowed_types = {'source', 'target'}
+        if endpoint_type is not None and endpoint_type not in allowed_types:
+            raise ValueError(
+                f"Connection '{connection_ref}' has invalid endpoint_type '{endpoint_type}'. "
+                f"Expected one of: source, target."
+            )
+
+        if connection_type == 'source' and endpoint_type == 'target':
+            raise ValueError(
+                f"Connection '{connection_ref}' is defined as target-only and cannot be used as a source."
+            )
+        if connection_type == 'target' and endpoint_type == 'source':
+            raise ValueError(
+                f"Connection '{connection_ref}' is defined as source-only and cannot be used as a target. "
+                f"This protects source endpoints from write operations."
+            )
         
         # Merge resolved connection with any additional inline attributes (inline overrides connection)
         # Preserve connection_name so it can be used for display purposes (e.g., in load summary)

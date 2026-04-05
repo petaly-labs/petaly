@@ -14,18 +14,22 @@
 connections:
   # CSV File Connector
   csv_local:
+    endpoint_type: source
     connector_type: csv
     
   # Parquet File Connector
   parquet_local:
+    endpoint_type: target
     connector_type: parquet
   
   # JSON File Connector
   json_local:
+    endpoint_type: target
     connector_type: json
     
   # PostgreSQL Database Connection
   my_postgres:
+    endpoint_type: source
     connector_type: postgres
     database_user: postgres
     database_password: password  # Replace with your actual password
@@ -35,6 +39,7 @@ connections:
   
   # MySQL Database Connection
   my_mysql:
+    endpoint_type: source
     connector_type: mysql
     database_user: root
     database_password: password  # Replace with your actual password
@@ -44,6 +49,7 @@ connections:
   
   # AWS Redshift Serverless (IAM Authentication)
   redshift_serverless_iam:
+    endpoint_type: target
     connector_type: redshift
     connection_method: iam
     is_serverless: true
@@ -62,6 +68,7 @@ connections:
   
   # AWS Redshift Cluster (TCP Authentication)
   redshift_tcp_dev:
+    endpoint_type: target
     connector_type: redshift
     connection_method: tcp
     database_user: your_redshift_user  # Replace with your Redshift username
@@ -80,6 +87,7 @@ connections:
   
   # AWS S3 Bucket Connection
   s3:
+    endpoint_type: target
     connector_type: s3
     platform_type: aws
     bucket_name: your-s3-bucket-name  # Replace with your S3 bucket name
@@ -92,6 +100,7 @@ connections:
   
   # Google BigQuery Connection
   bigquery_myproject:
+    endpoint_type: target
     connector_type: bigquery
     database_schema: your_dataset_name  # Replace with your BigQuery dataset name
     platform_type: gcp
@@ -101,6 +110,7 @@ connections:
   
   # Google Cloud Storage (GCS) Bucket Connection
   gcs_myproject:
+    endpoint_type: source
     connector_type: gcs
     platform_type: gcp
     gcp_project_id: your-gcp-project-id  # Replace with your GCP project ID
@@ -109,10 +119,9 @@ connections:
   
   # BigQuery Connection (Alternative)
   my_bigquery:
+    endpoint_type: target
     connector_type: bigquery
     bucket_name: your-gcs-bucket-name  # Replace with your GCS bucket name
     platform_type: gcp
     gcp_project_id: your-gcp-project-id  # Replace with your GCP project ID
     gcp_region: US  # Replace with your GCP region
-
-

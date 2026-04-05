@@ -150,14 +150,19 @@ class PsqlConnector():
                     self.conn.commit()
         except psycopg.Error as error:
             logger.error(f"PostgreSQL error: {str(error)}")
+            # Rollback the transaction to clear aborted state
+            try:
+                self.conn.rollback()
+            except Exception as rollback_error:
+                logger.warning(f"Failed to rollback transaction: {rollback_error}")
             raise
 
     def drop_table(self, schema_table_name):
         """Drop a table.
-        
+
         Args:
             schema_table_name (str): Schema-qualified table name.
-            
+
         Raises:
             psycopg.Error: If dropping fails.
         """
@@ -168,14 +173,19 @@ class PsqlConnector():
             logger.debug(f"Table {schema_table_name} was dropped.")
         except psycopg.Error as error:
             logger.error(f"PostgreSQL error: {str(error)}")
+            # Rollback the transaction to clear aborted state
+            try:
+                self.conn.rollback()
+            except Exception as rollback_error:
+                logger.warning(f"Failed to rollback transaction: {rollback_error}")
             raise
 
     def execute_sql(self, sql):
         """Execute a SQL statement.
-        
+
         Args:
             sql (str): SQL statement to execute.
-            
+
         Raises:
             psycopg.Error: If execution fails.
         """
@@ -185,6 +195,11 @@ class PsqlConnector():
             logger.debug(f"Query was executed: {sql}")
         except psycopg.Error as error:
             logger.error(f"PostgreSQL error: {str(error)}")
+            # Rollback the transaction to clear aborted state
+            try:
+                self.conn.rollback()
+            except Exception as rollback_error:
+                logger.warning(f"Failed to rollback transaction: {rollback_error}")
             raise
 
     def close(self):

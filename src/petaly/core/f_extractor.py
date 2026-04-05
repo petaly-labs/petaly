@@ -70,7 +70,7 @@ class FExtractor(ABC):
         self.composer = Composer()
         self.f_handler = FileHandler()
         self.object_metadata = ObjectMetadata(pipeline)
-        self.csv_default_settings = pipeline.data_attributes.get("csv_default_settings")
+        self.csv_default_settings = pipeline.load_attributes.get("csv_default_settings")
         
         # Set configurable max analysis size
         # Priority: 1) provided parameter, 2) petaly.ini config, 3) default (10MB)
@@ -116,25 +116,33 @@ class FExtractor(ABC):
 
         # 2. run loop for each object
         for object_name in object_list:
-            logger.info(f"Extract object: {object_name} started...")
-            start_time = time.time()
-
-            extractor_obj_conf = self.get_extractor_obj_conf(object_name)
-
-            # 3. cleanup pipeline directory before run
-            self.f_handler.cleanup_dir(extractor_obj_conf.get('output_data_object_dir'))
-
-            file_list = self.extract_to(extractor_obj_conf)
-
-            connector_category = self.pipeline.m_conf.get_connector_category(self.pipeline.target_connector_id)
-            if connector_category in ('database'):
-                self.extract_metadata_from_file(file_list[0], object_name, self.file_format)
-
-            end_time = time.time()
-            logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
+            self.extract_per_object(object_name)
 
         end_total_time = time.time()
         logger.info(f"Extract completed, duration: {round(end_total_time - start_total_time, 2)}s")
+
+    def extract_per_object(self, object_name):
+        """Extract a single object from the file source.
+        
+        Args:
+            object_name: Name of the object to extract
+        """
+        logger.info(f"Extract object: {object_name} started...")
+        start_time = time.time()
+
+        extractor_obj_conf = self.get_extractor_obj_conf(object_name)
+
+        # Cleanup pipeline directory before run
+        self.f_handler.cleanup_dir(extractor_obj_conf.get('output_data_object_dir'))
+
+        file_list = self.extract_to(extractor_obj_conf)
+
+        connector_category = self.pipeline.m_conf.get_connector_category(self.pipeline.target_connector_id)
+        if connector_category in ('database'):
+            self.extract_metadata_from_file(file_list[0], object_name, self.file_format)
+
+        end_time = time.time()
+        logger.info(f"Extract object: {object_name} completed | time: {round(end_time - start_time, 2)}s")
 
     def extract_metadata_from_file(self, first_file_fpath, object_name, file_format):
         """Extracts metadata from a file and saves it.

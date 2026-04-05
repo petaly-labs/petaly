@@ -48,8 +48,8 @@ class TestParquetExtractor:
         pipeline.source_attr = {
             'connector_type': 'parquet',
         }
-        pipeline.data_attributes = {
-            'include_data_objects': 'spec',
+        pipeline.load_attributes = {
+            'use_data_objects_spec': 'strict',
             'csv_default_settings': {
                 'header': True,
                 'columns_delimiter': ','
@@ -226,8 +226,8 @@ class TestParquetLoader:
             'destination_dir': '/tmp/test_dest'
         }
         pipeline.pipeline_name = 'test_pipeline'
-        pipeline.data_attributes = {
-            'include_data_objects': 'spec',
+        pipeline.load_attributes = {
+            'use_data_objects_spec': 'strict',
             'csv_default_settings': {
                 'header': True,
                 'columns_delimiter': ','

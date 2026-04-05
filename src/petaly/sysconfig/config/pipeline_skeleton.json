@@ -3,11 +3,20 @@
     "pipeline_name": "",
     "source_attributes": {},
     "target_attributes": {},
-    "data_attributes": {
-      "include_data_objects": "spec",
+    "load_attributes": {
+      "all_from_schema": true,
+      "use_data_objects_spec": true,
+      "flow_mode": "object",
+      "max_workers": 1,
       "csv_default_settings": {
-        "type_autodetection": true
-      }
+        "header": true,
+        "columns_delimiter": ",",
+        "columns_quote": "double",
+        "type_autodetection": true,
+        "null_string": "",
+        "force_null": false
+      },
+      "exclude_objects": []
     }
   },
   "data_objects_spec": []

@@ -15,6 +15,11 @@
 # Absolute path where all pipeline configurations will be stored.
 pipeline_dir_path=
 
+# Connections File Path (Optional)
+# Absolute path to the connections.yaml/json file.
+# If not specified, defaults to: pipeline_dir_path/connections.yaml
+connections_file_path=
+
 # Log Directory
 # Absolute path where all log files will be stored.
 logs_dir_path=
@@ -51,3 +56,10 @@ connections_file_format=yaml
 # Default: 10 (MB)
 # Set to 0 to analyze entire file regardless of size (not recommended for very large files)
 csv_analysis_max_size_mb=10
+
+# Pipeline Wizard Configuration
+# ------------------------------
+# Controls the pipeline initialization wizard mode:
+# - true: Ask all questions during pipeline initialization (default)
+# - false: Use short form - only ask questions marked as wizard_required=true in pipeline_meta_config.json
+full_pipeline_wizard=true

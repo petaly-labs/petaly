@@ -68,13 +68,15 @@ class MainConfig:
         self.workspace_config = {
             "pipeline_dir_path": None,
             "logs_dir_path": None,
-            "output_dir_path": None
+            "output_dir_path": None,
+            "connections_file_path": None
         }
         self.global_settings = {
             "logging_mode": "INFO",
             "pipeline_file_format": "yaml",
             "connections_file_format": "yaml",
-            "csv_analysis_max_size_mb": "10"
+            "csv_analysis_max_size_mb": "10",
+            "full_pipeline_wizard": "true"
         }
 
 
@@ -172,14 +174,19 @@ class MainConfig:
         1. Check each workspace path in the configuration
         2. Verify that each path is absolute
         3. Warning for any invalid paths
+        4. connections_file_path is optional (will use default if not specified)
         """
         return_value = True
+        optional_keys = {'connections_file_path'}  # Optional parameters that don't need to be specified
 
         for key in self.workspace_config.keys():
-
+            if key in optional_keys:
+                # Skip validation for optional keys
+                continue
+                
             if key in conf_parser.options('workspace_config'):
                 abs_path = conf_parser.get('workspace_config', key)
-                if os.path.isabs(abs_path) is False:
+                if abs_path and abs_path.strip() and os.path.isabs(abs_path) is False:
                     self.console.print(f"The value of the option {key} is not specified or the path to the directory is not absolute.")
                     return_value = False
             else:
@@ -206,6 +213,23 @@ class MainConfig:
                 self.pipeline_base_dpath = conf_parser.get(section_name,'pipeline_dir_path')
                 self.logs_base_dpath = conf_parser.get(section_name,'logs_dir_path')
                 self.output_base_dpath = conf_parser.get(section_name,'output_dir_path')
+                
+                # Get connections_file_path if specified, otherwise use default
+                if conf_parser.has_option(section_name, 'connections_file_path'):
+                    connections_file_path = conf_parser.get(section_name, 'connections_file_path')
+                    if connections_file_path and connections_file_path.strip():
+                        # Expand ~ to home directory and normalize the path
+                        connections_file_path = os.path.expanduser(connections_file_path.strip())
+                        # Validate it's an absolute path after expansion
+                        if os.path.isabs(connections_file_path):
+                            self.connections_file_path = connections_file_path
+                        else:
+                            self.console.print(f"[yellow]Warning:[/yellow] connections_file_path is not absolute after expanding ~. Using default: {self.pipeline_base_dpath}/connections.yaml")
+                            self.connections_file_path = None
+                    else:
+                        self.connections_file_path = None
+                else:
+                    self.connections_file_path = None
                 
                 # Setup logging to file once logs directory is known
                 from petaly.sysconfig.logger import setup_logging
@@ -258,6 +282,11 @@ class MainConfig:
                                 self.global_settings['csv_analysis_max_size_mb'] = str(size_mb)
                         except ValueError:
                             self.console.print(f"The option csv_analysis_max_size_mb must be a valid number. Check csv_analysis_max_size_mb under section global_settings in petaly.ini.")
+                    elif key == 'full_pipeline_wizard':
+                        if value.lower() in ('true', 'false'):
+                            self.global_settings['full_pipeline_wizard'] = value.lower()
+                        else:
+                            self.console.print(f"The option full_pipeline_wizard supports true or false only. Check full_pipeline_wizard under section global_settings in petaly.ini.")
                 else:
                     self.console.print(f"The option {key} is not specified under section global_settings in petaly.ini.")
         else:
@@ -411,7 +440,7 @@ class MainConfig:
 
         return self.f_handler.load_json(connector_attributes_fpath)
 
-    def compose_type_mapping_path(self, connector_id, source_connector_id, source_file_format='csv'):
+    def compose_type_mapping_path(self, connector_id, source_connector_id):
 
         type_mapping_fpath = self.get_type_mapping_path(connector_id)
         connector_category = self.get_connector_category(source_connector_id)

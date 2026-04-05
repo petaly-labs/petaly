@@ -58,5 +58,8 @@ petaly = "petaly.__main__:main"
 [tool.setuptools.package-data]
 "*" = ["*.ini","*.json","*.yaml","petaly/*.txt","*.sql"]
 
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+
 [project.urls]
 Homepage = "https://petaly.org"

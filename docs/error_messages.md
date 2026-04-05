@@ -52,6 +52,45 @@ Could not resolve source/target connection. The connection does not exist in con
   python3 -m petaly init --workspace
   ```
 
+#### Source Endpoint Used as Target
+```
+Connection 'connection_name' is defined as source-only and cannot be used as a target.
+This protects source endpoints from write operations.
+```
+**Cause**: A reusable endpoint definition marked with `endpoint_type: source` was referenced under `target_attributes`.
+**Solution**:
+- Define a separate target endpoint in `connections.yaml`
+- Mark writable destination endpoints with `endpoint_type: target`
+- Keep source systems referenced only from `source_attributes`
+
+#### Target Endpoint Used as Source
+```
+Connection 'connection_name' is defined as target-only and cannot be used as a source.
+```
+**Cause**: A reusable endpoint definition marked with `endpoint_type: target` was referenced under `source_attributes`.
+**Solution**:
+- Define a separate source endpoint in `connections.yaml`
+- Mark readable source endpoints with `endpoint_type: source`
+
+#### Invalid Endpoint Role
+```
+Connection 'connection_name' has invalid endpoint_type 'value'. Expected one of: source, target.
+```
+**Cause**: The connection definition contains an unsupported `endpoint_type` value.
+**Solution**:
+- Set `endpoint_type` to either `source` or `target`
+- Update older connection definitions to declare the role explicitly
+
+#### Inline Source Definition Deprecated
+```
+Pipeline uses inline 'source_attributes'. Defining the source endpoint directly in the pipeline is deprecated.
+```
+**Cause**: The pipeline defines the source endpoint inline instead of referencing a reusable endpoint definition.
+**Solution**:
+- Create the source endpoint in `connections.yaml` or `connections.json`
+- Reference it using `source_attributes.connection_name`
+- Keep only pipeline-specific overrides in the pipeline file
+
 ### Pipeline Disabled
 ```
 The pipeline: {pipeline_name} is disabled. To enable pipeline {pipeline_dpath} set the parameter is_enabled: true
@@ -65,21 +104,21 @@ The pipeline: {pipeline_name} is disabled. To enable pipeline {pipeline_dpath} s
 
 ### Missing Object Specification
 ```
-For {connector_type} extract the parameters include_data_objects=spec and specification in the data_objects_spec[] are required.
+For {connector_type} extract the parameters all_from_schema=false and specification in the data_objects_spec[] are required.
 ```
-**Cause**: Required object specifications are missing when using `include_data_objects: "spec"`.
+**Cause**: Required object specifications are missing when `all_from_schema` is disabled.
 **Solution**:
 - Add object specifications to the data_objects_spec section
 - Use the command: `python -m petaly init -p {pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini`
-- Or change `include_data_objects` to `"all"` to load all objects from the schema
+- Or set `all_from_schema: true` to load all objects from the schema
 
 ### CSV Source Configuration Error
 ```
-In case your source is csv, the parameters include_data_objects should be set to spec and require the specification in the data_objects_spec[].
+In case your source is csv, the parameters all_from_schema should be set to false and require the specification in the data_objects_spec[].
 ```
 **Cause**: CSV sources require explicit object specifications.
 **Solution**:
-- Set `include_data_objects: "spec"`
+- Set `all_from_schema: false`
 - Add required object specifications including:
   - object_name
   - object_source_dir (or source_dir in source_attributes)

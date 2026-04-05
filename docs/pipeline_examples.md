@@ -13,7 +13,7 @@ pipeline:
     ...
   target_attributes:
     ...
-  data_attributes:
+  load_attributes:
     ...
 data_objects_spec: []
 ```
@@ -29,15 +29,16 @@ pipeline:
 
 ## Connection Configuration
 
-Petaly supports two ways to configure source and target connections:
+Petaly uses separated reusable endpoint definitions for source and target connections.
 
-### 1. Using connections.yaml (Recommended)
+### Using connections.yaml or connections.json
 
 **Benefits:**
 - Reusable connection configurations across multiple pipelines
 - Centralized credential management
 - Easier maintenance and updates
 - Pipeline-specific attributes can override connection defaults
+- Explicit separation between readable source endpoints and writable target endpoints
 
 **connections.yaml Structure:**
 
@@ -48,6 +49,7 @@ For a complete template with examples of all connector types, see [connections.y
 connections:
   postgres_prod:
     connector_type: postgres
+    endpoint_type: target
     database_user: prod_user
     database_password: ${DB_PASSWORD}
     database_host: prod-db.example.com
@@ -56,6 +58,7 @@ connections:
   
   mysql_dev:
     connector_type: mysql
+    endpoint_type: source
     database_user: dev_user
     database_password: dev_password
     database_host: localhost
@@ -64,6 +67,7 @@ connections:
   
   bigquery_analytics:
     connector_type: bigquery
+    endpoint_type: target
     platform_type: gcp
     gcp_project_id: my-project-id
     gcp_region: US
@@ -87,94 +91,40 @@ pipeline:
 - Pipeline-specific attributes (like `database_schema`, `bucket_pipeline_prefix`) can be added to override connection defaults
 - Connections are stored at the workspace level (`pipeline_base_dpath/connections.yaml`)
 - The connections file format matches the pipeline format (YAML or JSON)
+- Reusable endpoints should declare `endpoint_type: source` or `endpoint_type: target`
+- If a source endpoint is referenced under `target_attributes`, Petaly rejects the pipeline to protect the source from write operations
 
-### 2. Inline Attributes (Backward Compatible)
-
-You can still define all connection attributes directly in the pipeline:
-
-```yaml
-pipeline:
-  pipeline_name: my_pipeline
-  source_attributes:
-    connector_type: mysql
-    database_user: root
-    database_password: password
-    database_host: localhost
-    database_port: 3306
-    database_name: my_db
-```
-
-**When to Use Each Approach:**
-- **Use connections.yaml** when:
-  - You have multiple pipelines using the same connections
-  - You want centralized credential management
-  - You need to update connection details in one place
-  
-- **Use inline attributes** when:
-  - You have a one-off pipeline with unique connection requirements
-  - You prefer keeping everything in one file
-  - You're migrating from older Petaly versions
+**Recommended approach:**
+- Define reusable source and target endpoints in `connections.yaml` or `connections.json`
+- Reference them from the pipeline with `connection_name`
+- Use `endpoint_type` to declare whether the endpoint is `source` or `target`
 
 ### Source Attributes
-Source configuration varies by connector type. Here are examples for common sources:
+In active pipeline configurations, `source_attributes` should normally contain a `connection_name` plus optional pipeline-specific overrides.
 
-#### PostgreSQL Source
+#### Source Reference Example
 ```yaml
 source_attributes:
-  connector_type: postgres
-  database_user: root
-  database_password: dbpassword
-  database_host: localhost
-  database_port: 5432
-  database_name: source_db
-  database_schema: public
-```
-
-#### MySQL Source
-```yaml
-source_attributes:
-  connector_type: mysql
-  database_user: root
-  database_password: dbpassword
-  database_host: localhost
-  database_port: 3306
-  database_name: source_db
-```
-
-#### CSV Source
-```yaml
-source_attributes:
-  connector_type: csv
-  # CSV files will be specified in data_objects_spec
+  connection_name: mysql_dev
+  database_schema: source_schema
 ```
 
 ### Target Attributes
-Target configuration also varies by connector type:
+In active pipeline configurations, `target_attributes` should normally contain a `connection_name` plus optional pipeline-specific overrides.
 
-#### PostgreSQL Target
+#### Target Reference Example
 ```yaml
 target_attributes:
-  connector_type: postgres
-  database_user: postgres
-  database_password: dbpassword
-  database_host: localhost
-  database_port: 5432
-  database_name: target_db
-  database_schema: public
+  connection_name: postgres_prod
+  database_schema: analytics
 ```
 
-#### CSV Target
+### Load Attributes
 ```yaml
-target_attributes:
-  connector_type: csv
-  destination_dir: /path/to/output/directory
-```
-
-### Data Attributes
-```yaml
-data_attributes:
+load_attributes:
   # Mode for handling data objects
-  include_data_objects: spec  # Options: "all" or "spec"
+  all_from_schema: false          # Load only objects from data_objects_spec (false) or all from schema (true)
+  use_data_objects_spec: true    # Apply specifications from data_objects_spec if they exist (true) or ignore them (false)
   
   # Default settings for CSV/TSV/TXT file processing
   csv_default_settings:
@@ -238,6 +188,7 @@ target_attributes:
 connections:
   postgres_target:
     connector_type: postgres
+    endpoint_type: target
     database_user: root
     database_password: db-password
     database_host: localhost
@@ -268,8 +219,9 @@ pipeline:
     database_port: 5432
     database_name: petalydb
     database_schema: petaly_tutorial
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -292,7 +244,7 @@ data_objects_spec:
       - options.csv
 ```
 
-### MySQL to PostgreSQL
+### Deprecated Inline Example: MySQL to PostgreSQL
 ```yaml
 pipeline:
   pipeline_name: mysql_to_postgres
@@ -311,8 +263,9 @@ pipeline:
     database_port: 5432
     database_name: target_db
     database_schema: public
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
 
 data_objects_spec:
 - object_spec:
@@ -323,6 +276,48 @@ data_objects_spec:
       - created_at
       - updated_at
 ```
+
+### Deprecated Inline Example: MySQL to PostgreSQL with Incremental Load
+```yaml
+pipeline:
+  pipeline_name: mysql_to_postgres_incremental
+  source_attributes:
+    connector_type: mysql
+    database_user: root
+    database_password: dbpassword
+    database_host: localhost
+    database_port: 3306
+    database_name: source_db
+  target_attributes:
+    connector_type: postgres
+    database_user: postgres
+    database_password: dbpassword
+    database_host: localhost
+    database_port: 5432
+    database_name: target_db
+    database_schema: public
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
+
+data_objects_spec:
+- object_spec:
+    object_name: users
+    load_mode: incremental
+    column_primary_key: user_id
+    column_last_modified: updated_at
+    batch_size: 10000
+- object_spec:
+    object_name: orders
+    load_mode: incremental
+    column_primary_key: order_id
+    column_last_modified: modified_at
+    batch_size: 5000
+```
+
+**Note:** Incremental load is only supported for MySQL and PostgreSQL sources. The `load_state.json` file is automatically created in `{output_dir_path}/{pipeline_name}/{object_name}/metadata/` to track the last loaded timestamp and enable resumable loads.
+
+These inline endpoint examples are deprecated. Prefer reusable endpoint definitions in `connections.yaml` or `connections.json`.
 
 ## Best Practices
 
@@ -362,7 +357,7 @@ Common issues and solutions:
 
 For more detailed troubleshooting, see our [Troubleshooting Guide](troubleshooting.md).
 
-## 7. More Pipeline Examples
+## 7. More Deprecated Inline Pipeline Examples
 
 #### MySQL to Postgres
 
@@ -386,8 +381,9 @@ pipeline:
     database_port: 5432
     database_name: petalydb
     database_schema: petaly_tutorial
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -420,8 +416,9 @@ pipeline:
     database_host: localhost
     database_port: 3306
     database_name: petaly_tutorial
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -472,8 +469,9 @@ pipeline:
   target_attributes:
     connector_type: csv
     destination_dir: /your-path-to-destination-folder
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ","
@@ -516,8 +514,9 @@ pipeline:
   target_attributes:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data/
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -549,8 +548,9 @@ pipeline:
     gcp_region: EU
     gcp_bucket_name: 'bucket-name'
     bucket_pipeline_prefix: petaly/{pipeline_name}
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -584,8 +584,9 @@ pipeline:
     gcp_region: EU
     gcp_bucket_name: 'bucket-name'
     bucket_pipeline_prefix: petaly/{pipeline_name}
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -629,8 +630,9 @@ pipeline:
     aws_profile_name: 'your-aws-profile'
     aws_access_key_id:
     aws_secret_access_key:
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -742,8 +744,9 @@ pipeline:
   target_attributes:
     connector_type: csv
     destination_dir: /opt/petaly_labs/data/dest_data
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: '\t'

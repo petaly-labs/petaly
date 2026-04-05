@@ -3,6 +3,7 @@
 
 import os
 import sys
+import shutil
 
 from petaly.utils.file_handler import FileHandler
 from petaly.core.pipeline import Pipeline
@@ -47,10 +48,19 @@ class CliInitializer():
 		Args:
 			skip_message_if_exist: If True, don't print message if file already exists
 		"""
-		# Determine connections file path and format
-		connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
-		connections_fname = f'connections.{connection_format}'
-		connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, connections_fname)
+		# Determine connections file path
+		# Priority: 1) connections_file_path from config, 2) default: pipeline_dir_path/connections.yaml
+		if hasattr(self.m_conf, 'connections_file_path') and self.m_conf.connections_file_path:
+			# Use explicitly specified connections file path
+			connections_fpath = self.m_conf.connections_file_path
+			# Determine format from file extension
+			file_ext = os.path.splitext(connections_fpath)[1].lower()
+			connection_format = 'yaml' if file_ext == '.yaml' else 'json'
+		else:
+			# Default: use pipeline_dir_path/connections.yaml
+			connection_format = self.m_conf.global_settings.get('connections_file_format', 'yaml')
+			connections_fname = f'connections.{connection_format}'
+			connections_fpath = os.path.join(self.m_conf.pipeline_base_dpath, connections_fname)
 		
 		if self.f_handler.is_file(connections_fpath):
 			if not skip_message_if_exist:
@@ -93,37 +103,80 @@ class CliInitializer():
 		pipeline_exists = self.f_handler.is_file(pipeline_fpath)
 		output_dir_exists = self.f_handler.is_dir(output_pipeline_dpath)
 		
-		# Check if both pipeline and output directory exist, merge questions if both exist
-		if pipeline_exists and output_dir_exists:
+		# Track what user wants to clean up
+		cleanup_pipeline = False
+		cleanup_data_folders = False
+		cleanup_metadata_folders = False
+		
+		# Ask separately for pipeline, data folders, and metadata folders
+		if pipeline_exists:
+			self.console.print(f"\n[bold]{self.cli_menu.break_line}[/bold]")
+			self.console.print(f"[bold]Pipeline Configuration[/bold]")
 			self.console.print(f"Pipeline with the path {pipeline_dpath} already exists.")
-			self.console.print(f"Output directory with the path {output_pipeline_dpath} already exists.")
-			process_continue = self.cli_menu.prompt.Confirm.ask(
-				f"\nDo you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration and output directory?\n"
-				f"All files in the output directory will be deleted and a backup of {self.m_conf.pipeline_fname} will be created."
+			cleanup_pipeline = self.cli_menu.prompt.Confirm.ask(
+				f"Do you want to overwrite the existing {self.m_conf.pipeline_fname} configuration?",
+				default=False
 			)
-			
-			if process_continue:
+			if cleanup_pipeline:
 				self.console.print(f"Backup with the name {self.m_conf.pipeline_fname}.buckup_<timestamp> from pipeline.yaml will be created.")
-				self.f_handler.cleanup_dir(output_pipeline_dpath)
-				self.f_handler.make_dirs(output_pipeline_dpath)
-			else:
-				sys.exit()
-		elif pipeline_exists:
-			self.console.print(f"Pipeline with the path {pipeline_dpath} already exists.")
-			process_continue = self.cli_menu.prompt.Confirm.ask(f"\nDo you want to continue and overwrite the existing {self.m_conf.pipeline_fname} configuration?")
-
-			if process_continue:
-				self.console.print(f"Backup with the name {self.m_conf.pipeline_fname}.buckup_<timestamp> from pipeline.yaml will be created.")
-			else:
-				sys.exit()
-		elif output_dir_exists:
+		
+		if output_dir_exists:
+			self.console.print(f"\n[bold]{self.cli_menu.break_line}[/bold]")
+			self.console.print(f"[bold]Output Directory[/bold]")
 			self.console.print(f"Output directory with the path {output_pipeline_dpath} already exists.")
-			process_continue = self.cli_menu.prompt.Confirm.ask(f"\nDo you want to continue and overwrite the existing output directory? All files inside will be deleted.")
-			if process_continue is True:
-				self.f_handler.cleanup_dir(output_pipeline_dpath)
-				self.f_handler.make_dirs(output_pipeline_dpath)
-			else:
-				sys.exit()
+			
+			# Check if data folders exist
+			data_folders_exist = False
+			metadata_folders_exist = False
+			if os.path.exists(output_pipeline_dpath):
+				for item in os.listdir(output_pipeline_dpath):
+					item_path = os.path.join(output_pipeline_dpath, item)
+					if os.path.isdir(item_path):
+						data_path = os.path.join(item_path, 'data')
+						metadata_path = os.path.join(item_path, 'metadata')
+						if os.path.exists(data_path):
+							data_folders_exist = True
+						if os.path.exists(metadata_path):
+							metadata_folders_exist = True
+						if data_folders_exist and metadata_folders_exist:
+							break
+			
+			if data_folders_exist:
+				cleanup_data_folders = self.cli_menu.prompt.Confirm.ask(
+					f"Do you want to delete all data folders (output/object-name/data/)?",
+					default=False
+				)
+			
+			if metadata_folders_exist:
+				cleanup_metadata_folders = self.cli_menu.prompt.Confirm.ask(
+					f"Do you want to delete all metadata folders (output/object-name/metadata/)?",
+					default=False
+				)
+			
+			# Perform cleanup based on user choices
+			if cleanup_data_folders or cleanup_metadata_folders:
+				if os.path.exists(output_pipeline_dpath):
+					for item in os.listdir(output_pipeline_dpath):
+						item_path = os.path.join(output_pipeline_dpath, item)
+						if os.path.isdir(item_path):
+							data_path = os.path.join(item_path, 'data')
+							metadata_path = os.path.join(item_path, 'metadata')
+							
+							if cleanup_data_folders and os.path.exists(data_path):
+								shutil.rmtree(data_path)
+								self.console.print(f"[yellow]Deleted data folder:[/yellow] {data_path}")
+								# Recreate empty data folder
+								os.makedirs(data_path, exist_ok=True)
+							
+							if cleanup_metadata_folders and os.path.exists(metadata_path):
+								shutil.rmtree(metadata_path)
+								self.console.print(f"[yellow]Deleted metadata folder:[/yellow] {metadata_path}")
+								# Recreate empty metadata folder
+								os.makedirs(metadata_path, exist_ok=True)
+		
+		# If user didn't want to continue with pipeline recreation, exit
+		if pipeline_exists and not cleanup_pipeline:
+			sys.exit()
 		
 		# Create directories if they don't exist
 		if not self.f_handler.is_dir(pipeline_dpath):
@@ -140,75 +193,96 @@ class CliInitializer():
 		pipeline_format = self.m_conf.global_settings.get('pipeline_file_format', 'yaml')
 		composed_config = self.cli_menu.cli_pipeline.get_composed_config()
 		
-		if pipeline_format == 'yaml':
-			config_to_save = {
-				'pipeline': composed_config['pipeline'],
-				'data_objects_spec': []
-			}
-		else:
-			# For JSON, combine the pipeline and data_objects_spec into a single document
-			config_to_save = {
-				'pipeline': composed_config['pipeline'],
-				'data_objects_spec': []
-			}
+		# Prompt for exclude_objects
+		self.console.print(f"\n[bold]{self.cli_menu.break_line}[/bold]")
+		self.console.print(f"[bold]Specify objects to exclude[/bold]")
+		exclude_objects_input = prompt.Prompt.ask(
+			"Enter comma-separated list of object names to exclude (or press Enter for none)",
+			default=""
+		)
+		exclude_objects = [obj.strip() for obj in exclude_objects_input.split(',') if obj.strip()] if exclude_objects_input else []
 		
+		# Add exclude_objects to load_attributes at the end
+		# Ensure load_attributes exists
+		if 'load_attributes' not in composed_config['pipeline']:
+			composed_config['pipeline']['load_attributes'] = {}
+		# Remove exclude_objects if it exists (to re-add at end)
+		if 'exclude_objects' in composed_config['pipeline']['load_attributes']:
+			del composed_config['pipeline']['load_attributes']['exclude_objects']
+		# Add exclude_objects at the end
+		composed_config['pipeline']['load_attributes']['exclude_objects'] = exclude_objects
+		
+		# Save as single document (no "---" separator)
+		config_to_save = {
+			'pipeline': composed_config['pipeline'],
+			'data_objects_spec': []
+		}
 		self.f_handler.save_dict_to_file(pipeline_fpath, config_to_save, file_format=pipeline_format)
 
 		self.console.print(f"\nCheck pipeline {pipeline_name} under: {pipeline_fpath}")
 		self.console.print(f"Check output directory under: {output_pipeline_dpath}")
 
-		include_data_objects = composed_config['pipeline']['data_attributes'].get('include_data_objects', 'spec')
+		# Get new boolean parameters with defaults
+		all_from_schema = composed_config['pipeline']['load_attributes'].get('all_from_schema', True)
+		use_data_objects_spec = composed_config['pipeline']['load_attributes'].get('use_data_objects_spec', True)
 		
-		# Backward compatibility: check for old parameter names
-		if include_data_objects is None or include_data_objects not in ('all', 'spec'):
-			# Check for old load_data_objects parameter
-			old_load_data_objects = composed_config['pipeline']['data_attributes'].get('load_data_objects')
-			if old_load_data_objects is not None:
-				# Convert old load_data_objects to new include_data_objects
-				if isinstance(old_load_data_objects, str):
-					old_load_data_objects = old_load_data_objects.lower()
-				include_data_objects = old_load_data_objects if old_load_data_objects in ('all', 'spec') else 'spec'
-			else:
-				# Check for old load_all_from_schema parameter (boolean)
-				old_load_all = composed_config['pipeline']['data_attributes'].get('load_all_from_schema')
-				if old_load_all is not None:
-					# Convert old boolean to new string format
-					if isinstance(old_load_all, str):
-						old_load_all = old_load_all.lower() == 'true'
-					include_data_objects = 'all' if old_load_all else 'spec'
-				else:
-					# Check for old load_data_objects_spec_only parameter
-					old_load_spec_only = composed_config['pipeline']['data_attributes'].get('load_data_objects_spec_only')
-					if old_load_spec_only is not None:
-						# Invert: old load_data_objects_spec_only=true means include_data_objects=spec
-						if isinstance(old_load_spec_only, str):
-							old_load_spec_only = old_load_spec_only.lower() == 'true'
-						include_data_objects = 'spec' if old_load_spec_only else 'all'
-					else:
-						# Check for even older apply_data_objects_spec parameter
-						old_apply_spec = composed_config['pipeline']['data_attributes'].get('apply_data_objects_spec')
-						if old_apply_spec is not None:
-							# Old apply_data_objects_spec=true means prefer (load all), which is include_data_objects=all
-							if isinstance(old_apply_spec, str):
-								old_apply_spec = old_apply_spec.lower() == 'true'
-							include_data_objects = 'all' if old_apply_spec else 'spec'
+		# Convert to boolean if string
+		if isinstance(all_from_schema, str):
+			all_from_schema = all_from_schema.lower() in ('true', '1', 'yes')
+		if isinstance(use_data_objects_spec, str):
+			use_data_objects_spec = use_data_objects_spec.lower() in ('true', '1', 'yes')
 		
-		# Normalize to lowercase string
-		if isinstance(include_data_objects, str):
-			include_data_objects = include_data_objects.lower()
-			if include_data_objects not in ('all', 'spec'):
-				include_data_objects = 'spec'
+		# Backward compatibility: convert old "prefer"/"strict" string values
+		old_use_data_objects_spec_str = composed_config['pipeline']['load_attributes'].get('use_data_objects_spec')
+		if isinstance(old_use_data_objects_spec_str, str) and old_use_data_objects_spec_str.lower() in ('prefer', 'strict'):
+			old_value = old_use_data_objects_spec_str.lower()
+			# Map: 'prefer' -> all_from_schema=True, use_data_objects_spec=True
+			# Map: 'strict' -> all_from_schema=False, use_data_objects_spec=True
+			if old_value == 'prefer':
+				all_from_schema = True
+				use_data_objects_spec = True
+			elif old_value == 'strict':
+				all_from_schema = False
+				use_data_objects_spec = True
 		
-		data_objects_spec = composed_config.get('data_objects_spec', [])
+		# Backward compatibility: check for old include_data_objects parameter
+		old_include_data_objects = composed_config['pipeline']['load_attributes'].get('include_data_objects')
+		if old_include_data_objects is not None:
+			if isinstance(old_include_data_objects, str):
+				old_include_data_objects = old_include_data_objects.lower()
+			# Map: 'all' -> all_from_schema=True, use_data_objects_spec=True
+			# Map: 'spec' -> all_from_schema=False, use_data_objects_spec=True
+			if old_include_data_objects == 'all':
+				all_from_schema = True
+				use_data_objects_spec = True
+			elif old_include_data_objects == 'spec':
+				all_from_schema = False
+				use_data_objects_spec = True
+		
+		# Handle data_objects_spec structure (can be array or object)
+		data_objects_spec_raw = composed_config.get('data_objects_spec', [])
+		if isinstance(data_objects_spec_raw, dict):
+			data_objects_spec = data_objects_spec_raw.get('objects', data_objects_spec_raw.get('data_objects_spec', []))
+		else:
+			data_objects_spec = data_objects_spec_raw if isinstance(data_objects_spec_raw, list) else []
 		
 		process_continue = True
-		# Check if include_data_objects='spec' and data_objects_spec is empty
-		if include_data_objects == 'spec' and len(data_objects_spec) == 0:
-			self.console.print(f"\n[bold yellow]Warning:[/bold yellow] include_data_objects='spec' and data_objects_spec[] is empty. No objects will be loaded.")
-			self.console.print(f"Either set include_data_objects='all' to load all objects from schema, or add objects to data_objects_spec[].")
+		# Validate: all_from_schema=false and use_data_objects_spec=false is invalid
+		if not all_from_schema and not use_data_objects_spec:
+			self.console.print(f"\n[bold red]Error:[/bold red] Invalid configuration - all_from_schema=false and use_data_objects_spec=false.")
+			self.console.print(f"This combination will result in no objects being loaded. Please set at least one to true.")
+			# Auto-fix: set use_data_objects_spec to true
+			use_data_objects_spec = True
+			self.console.print(f"[bold yellow]Auto-corrected:[/bold yellow] set use_data_objects_spec=true to allow loading from data_objects_spec[]")
+		
+		# Check if all_from_schema=false and data_objects_spec is empty
+		if not all_from_schema and len(data_objects_spec) == 0:
+			self.console.print(f"\n[bold yellow]Warning:[/bold yellow] all_from_schema=false and data_objects_spec[] is empty. No objects will be loaded.")
+			self.console.print(f"Either set all_from_schema=true to load all objects from schema, or add objects to data_objects_spec[].")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
-		elif include_data_objects == 'all' and len(data_objects_spec) == 0:
-			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (include_data_objects='all')")
+		elif all_from_schema and len(data_objects_spec) == 0:
+			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (all_from_schema=true).")
+			self.console.print(f"In order to load specific objects incrementally, specify them one by one, or modify the pipeline manually.")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
 
 		if process_continue:

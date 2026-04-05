@@ -5,37 +5,67 @@ All notable changes to the Petaly project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v2.01] - 2026-01-03
+## [Unreleased]
+
+## [v0.2.0]
 
 ### Added
-- Export support for BigQuery and Redshift to Parquet/JSON format
-- Load support for BigQuery and Redshift from Parquet/JSON files
-- Parquet/JSON to CSV conversion for PostgreSQL and MySQL loaders
+- **Incremental Load Support**: New incremental load feature for MySQL and PostgreSQL sources allows loading only new or updated rows based on timestamp columns. Configure per object with `load_mode: "incremental"`, `column_last_modified`, `column_primary_key`, and `batch_size`
+- `load_state.json` state tracking for resumable incremental loads
+- Separated endpoint definition from pipeline definition through reusable source and target connection references
+- `endpoint_type` parameter for reusable endpoint definitions with `source` and `target` modes
+- Export support for BigQuery and Redshift to Parquet and JSON format
+- Load support for BigQuery and Redshift from Parquet and JSON files
+- Parquet and JSON to CSV conversion for PostgreSQL and MySQL loaders
 - Support for Parquet and JSON file connectors as source and target
-- New utility script: `inspect_parquet.py` for inspecting Parquet file structure
-- Enhanced CSV parsing with manual parser for handling escaped commas in unquoted fields
+- Configurable `connections_file_path` parameter in `petaly.ini` (defaults to `pipeline_dir_path/connections.yaml`)
+- Parallel processing support with `max_workers` parameter for concurrent object processing
+- `exclude_objects` parameter in `load_attributes` to exclude specific objects from processing
+- `flow_mode` parameter (`"object"` or `"dump"`) to control processing flow
+- `null_string` and `force_null` parameters in `csv_default_settings`
+- `full_pipeline_wizard` parameter in `petaly.ini` to control wizard mode
+- Thread-safe parallel processing with thread-local database connections
+- Utility scripts:
+  - `scripts/add_pk_and_modified.sh`
+  - `scripts/check_parallel.sh`
+  - `scripts/check_postgres_connections.sh`
+  - `scripts/check_mysql_connections.sh`
+  - `scripts/inspect_parquet.py`
 
 ### Changed
-- **BREAKING:** Renamed `load_all_from_schema` → `include_data_objects` (changed from boolean to string: `"all"` or `"spec"`)
-- **BREAKING:** Removed `pipeline_attributes` section - `pipeline_name` now directly under `pipeline`
-- **BREAKING:** Renamed `object_default_settings` → `csv_default_settings`
-- **BREAKING:** Removed `is_enabled` parameter - pipelines are always enabled
-- Improved CSV to Parquet/JSON conversion with better handling of complex data types
+- **BREAKING:** Renamed `data_attributes` to `load_attributes`
+- **BREAKING:** Replaced `include_data_objects` with `all_from_schema` and `use_data_objects_spec`
+- **BREAKING:** Renamed `object_default_settings` to `csv_default_settings`
+- **BREAKING:** Removed `pipeline_attributes` nesting and moved `pipeline_name` directly under `pipeline`
+- **BREAKING:** Removed `is_enabled` parameter, pipelines are always enabled
+- **BREAKING:** Source and target endpoint definitions were separated from the pipeline file. Pipelines can now reference reusable endpoint definitions instead of configuring both endpoints inline in every pipeline
+- Defining the source endpoint inline in `source_attributes` is now deprecated in favor of reusable connection definitions referenced by `connection_name`
+- Reusable endpoint definitions can now declare whether they are source-only or target-only
+- Improved object-by-object execution flow in `MainCtl` with support for extract then load per object
+- Updated file extractors and loaders to use clearer per-object processing methods
+- Enhanced BigQuery and Redshift loaders to detect Parquet and JSON directly and improve file handling
+- Improved CSV to Parquet and JSON conversion with better handling of complex data types
 - Enhanced file connector structure (CSV, Parquet, JSON unified under `file/` directory)
-- Added `source_dir` and `object_source_dir` support for Parquet/JSON connectors
-- Streamlined CLI prompts (removed redundant questions, always use pipeline wizard)
+- Added `source_dir` and `object_source_dir` support for Parquet and JSON connectors
+- Streamlined CLI prompts and initialization flow
+- Removed YAML document separators (`---`) from generated pipeline files and standardized on a single-document format
+- Updated pipeline initialization to support `exclude_objects` and richer default load settings
+- All connection file path resolutions now respect `connections_file_path` configuration
 
 ### Fixed
-- Fixed CSV corruption issue when converting CSV with `columns_quote: none` to Parquet/JSON
-- Fixed Parquet/JSON to CSV conversion for database loaders (handles complex types, NaN values)
-- Fixed internal pandas index columns (`__index_level_0__`) causing DDL mismatches
-- Fixed row counting for Parquet/JSON files in load summaries
-- Improved JSON file reading with multiple fallback strategies for inconsistent structures
+- Fixed CSV corruption issue when converting CSV with `columns_quote: none` to Parquet or JSON
+- Improved loader row counting and per-object load summary behavior
+- Improved handling of mixed compressed and uncompressed CSV inputs for cloud loaders
 
 ### Backward Compatibility
-- Old pipelines with `pipeline_attributes` section will continue to work with deprecation warning
-- Old pipelines with `object_default_settings` will continue to work with deprecation warning
-- Old pipelines with `load_all_from_schema: true/false` will be automatically converted
+- Old pipelines with `pipeline_attributes` section continue to work with deprecation warning
+- Old pipelines with `object_default_settings` continue to work with deprecation warning
+- Old pipelines with `load_all_from_schema: true/false` are automatically converted
+- Old pipelines with `include_data_objects` are converted to the new object-selection settings
+- Old pipelines with `data_attributes` are converted to `load_attributes`
+- Pipelines can still use inline source and target attributes, but reusable endpoint definitions are now supported and preferred
+- Connections without `endpoint_type` are still accepted for backward compatibility, but new endpoint definitions should declare either `source` or `target`
+- Legacy multi-document YAML format with `---` separator is still supported
 
 ## [v0.1.0] - 2025-05-10 (BETA)
 
@@ -55,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     pipeline_attributes:
     source_attributes:
     target_attributes:
-    data_attributes:
+    load_attributes:
   ---
   data_objects_spec:
   - object_spec:   
@@ -66,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     pipeline_attributes:
     source_attributes:
     target_attributes:
-    data_attributes:
+    load_attributes:
   data_objects_spec:
   - object_spec:   
   ```
@@ -246,14 +276,3 @@ pipeline:
 - Renamed `PETALY_CONFIG_PATH` to `PETALY_CONFIG_DIR`
   - Supports multiple .ini files in directory
 - Enhanced CLI messaging
-
-### Fixed
-- Fixed templates_petaly.ini file issues
-
-## [v0.0.2-alpha] - 2024-09-26
-
-### Changed
-- Moved CSV file analysis to workspace folder
-
-## [v0.0.1-alpha] - 2024-09-25
-- Initial release

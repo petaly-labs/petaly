@@ -27,6 +27,7 @@ class TestPipeline:
         """Create a mock main_config object."""
         mock_config = MagicMock()
         mock_config.pipeline_base_dpath = temp_dir
+        mock_config.connections_file_path = None
         mock_config.global_settings = {
             'pipeline_file_format': 'yaml',
             'connections_file_format': 'yaml'
@@ -48,6 +49,7 @@ class TestPipeline:
             'connections': {
                 'postgres_source': {
                     'connector_type': 'postgres',
+                    'endpoint_type': 'source',
                     'host': 'localhost',
                     'port': 5432,
                     'database': 'test_db',
@@ -56,6 +58,7 @@ class TestPipeline:
                 },
                 'parquet_target': {
                     'connector_type': 'parquet',
+                    'endpoint_type': 'target',
                     'destination_dir': '/data/output'
                 }
             }
@@ -81,8 +84,8 @@ class TestPipeline:
                 'target_attributes': {
                     'connection_name': 'parquet_target'
                 },
-                'data_attributes': {
-                    'include_data_objects': 'spec',
+                'load_attributes': {
+                    'use_data_objects_spec': 'strict',
                     'csv_default_settings': {
                         'header': True,
                         'columns_delimiter': ','
@@ -142,7 +145,7 @@ class TestPipeline:
                 'pipeline_name': pipeline_name,
                 'source_attributes': {'connector_type': 'postgres'},
                 'target_attributes': {'connector_type': 'parquet'},
-                'data_attributes': {
+                'load_attributes': {
                     'csv_default_settings': {
                         'header': True,
                         'columns_delimiter': ','
@@ -179,15 +182,16 @@ class TestPipeline:
         assert pipeline.target_attr['connector_type'] == 'parquet'
         assert pipeline.target_connector_id == 'parquet'
     
-    def test_include_data_objects_spec(self, temp_dir, main_config_mock, pipeline_yaml, connections_yaml):
-        """Test include_data_objects='spec' parameter."""
+    def test_use_data_objects_spec_strict(self, temp_dir, main_config_mock, pipeline_yaml, connections_yaml):
+        """Test use_data_objects_spec='strict' parameter."""
         pipeline_name = 'test_pipeline'
         pipeline = Pipeline(pipeline_name, main_config_mock)
         
-        assert pipeline.include_data_objects == 'spec'
+        assert pipeline.all_from_schema is False
+        assert pipeline.use_data_objects_spec is True
     
-    def test_include_data_objects_all(self, temp_dir, main_config_mock, connections_yaml):
-        """Test include_data_objects='all' parameter."""
+    def test_use_data_objects_spec_prefer(self, temp_dir, main_config_mock, connections_yaml):
+        """Test use_data_objects_spec='prefer' parameter."""
         pipeline_name = 'test_pipeline'
         pipeline_dir = os.path.join(temp_dir, pipeline_name)
         os.makedirs(pipeline_dir, exist_ok=True)
@@ -198,8 +202,12 @@ class TestPipeline:
                 'pipeline_name': pipeline_name,
                 'source_attributes': {'connection_name': 'postgres_source'},
                 'target_attributes': {'connection_name': 'parquet_target'},
-                'data_attributes': {
-                    'include_data_objects': 'all'
+                'load_attributes': {
+                    'use_data_objects_spec': 'prefer',
+                    'csv_default_settings': {
+                        'header': True,
+                        'columns_delimiter': ','
+                    }
                 }
             }
         }
@@ -207,7 +215,8 @@ class TestPipeline:
             yaml.dump(pipeline_data, f)
         
         pipeline = Pipeline(pipeline_name, main_config_mock)
-        assert pipeline.include_data_objects == 'all'
+        assert pipeline.all_from_schema is True
+        assert pipeline.use_data_objects_spec is True
     
     def test_csv_default_settings(self, temp_dir, main_config_mock, pipeline_yaml, connections_yaml):
         """Test csv_default_settings loading."""
@@ -219,13 +228,7 @@ class TestPipeline:
         assert pipeline.csv_default_settings.get('columns_delimiter') == ','
     
     def test_backward_compatibility_load_all_from_schema(self, temp_dir, main_config_mock, connections_yaml):
-        """Test backward compatibility for load_all_from_schema (boolean).
-        
-        Note: The current implementation only checks for old parameters if include_data_objects
-        is None or invalid. Since include_data_objects defaults to 'spec', this test verifies
-        that when include_data_objects is explicitly set to an invalid value, the backward
-        compatibility kicks in.
-        """
+        """Test current fallback behavior when legacy load_all_from_schema is provided."""
         pipeline_name = 'test_pipeline'
         pipeline_dir = os.path.join(temp_dir, pipeline_name)
         os.makedirs(pipeline_dir, exist_ok=True)
@@ -236,8 +239,8 @@ class TestPipeline:
                 'pipeline_name': pipeline_name,
                 'source_attributes': {'connection_name': 'postgres_source'},
                 'target_attributes': {'connection_name': 'parquet_target'},
-                'data_attributes': {
-                    'include_data_objects': None,  # Set to None to trigger backward compatibility
+                'load_attributes': {
+                    'use_data_objects_spec': None,  # Set to None to trigger backward compatibility
                     'load_all_from_schema': True,  # Old boolean parameter
                     'csv_default_settings': {  # Required for pipeline to initialize
                         'header': True,
@@ -250,10 +253,11 @@ class TestPipeline:
             yaml.dump(pipeline_data, f)
         
         pipeline = Pipeline(pipeline_name, main_config_mock)
-        assert pipeline.include_data_objects == 'all'  # Should convert True to 'all'
+        assert pipeline.all_from_schema is True
+        assert pipeline.use_data_objects_spec is None
     
     def test_backward_compatibility_load_all_from_schema_false(self, temp_dir, main_config_mock, connections_yaml):
-        """Test backward compatibility for load_all_from_schema=False."""
+        """Test current fallback behavior for legacy load_all_from_schema=False."""
         pipeline_name = 'test_pipeline'
         pipeline_dir = os.path.join(temp_dir, pipeline_name)
         os.makedirs(pipeline_dir, exist_ok=True)
@@ -264,8 +268,12 @@ class TestPipeline:
                 'pipeline_name': pipeline_name,
                 'source_attributes': {'connection_name': 'postgres_source'},
                 'target_attributes': {'connection_name': 'parquet_target'},
-                'data_attributes': {
-                    'load_all_from_schema': False  # Old boolean parameter
+                'load_attributes': {
+                    'load_all_from_schema': False,  # Old boolean parameter
+                    'csv_default_settings': {
+                        'header': True,
+                        'columns_delimiter': ','
+                    }
                 }
             }
         }
@@ -273,7 +281,8 @@ class TestPipeline:
             yaml.dump(pipeline_data, f)
         
         pipeline = Pipeline(pipeline_name, main_config_mock)
-        assert pipeline.include_data_objects == 'spec'  # Should convert False to 'spec'
+        assert pipeline.all_from_schema is True
+        assert pipeline.use_data_objects_spec is True
     
     def test_backward_compatibility_pipeline_attributes(self, temp_dir, main_config_mock, connections_yaml):
         """Test backward compatibility for pipeline_attributes section."""
@@ -310,7 +319,7 @@ class TestPipeline:
                 'pipeline_name': pipeline_name,
                 'source_attributes': {'connection_name': 'postgres_source'},
                 'target_attributes': {'connection_name': 'parquet_target'},
-                'data_attributes': {
+                'load_attributes': {
                     'object_default_settings': {  # Old parameter name
                         'header': True,
                         'columns_delimiter': '\t'
@@ -405,3 +414,68 @@ class TestPipeline:
         assert 'connector_type' in source_attrs
         assert source_attrs['connector_type'] == 'postgres'
 
+    def test_inline_source_attributes_deprecated_warning(self, temp_dir, main_config_mock, caplog):
+        """Test warning when source is defined inline in pipeline."""
+        pipeline_name = 'test_pipeline'
+        pipeline_dir = os.path.join(temp_dir, pipeline_name)
+        os.makedirs(pipeline_dir, exist_ok=True)
+
+        pipeline_fpath = os.path.join(pipeline_dir, 'pipeline.yaml')
+        pipeline_data = {
+            'pipeline': {
+                'pipeline_name': pipeline_name,
+                'source_attributes': {
+                    'connector_type': 'postgres'
+                },
+                'target_attributes': {
+                    'connector_type': 'parquet'
+                },
+                'load_attributes': {
+                    'csv_default_settings': {
+                        'header': True,
+                        'columns_delimiter': ','
+                    }
+                }
+            }
+        }
+        with open(pipeline_fpath, 'w') as f:
+            yaml.dump(pipeline_data, f)
+
+        with caplog.at_level('WARNING'):
+            pipeline = Pipeline(pipeline_name, main_config_mock)
+
+        assert pipeline.source_connector_id == 'postgres'
+        assert "Pipeline uses inline 'source_attributes'" in caplog.text
+
+    def test_source_only_connection_cannot_be_used_as_target(self, temp_dir, main_config_mock, connections_yaml, caplog):
+        """Test source-only endpoint protection against target usage."""
+        pipeline_name = 'test_pipeline'
+        pipeline_dir = os.path.join(temp_dir, pipeline_name)
+        os.makedirs(pipeline_dir, exist_ok=True)
+
+        pipeline_fpath = os.path.join(pipeline_dir, 'pipeline.yaml')
+        pipeline_data = {
+            'pipeline': {
+                'pipeline_name': pipeline_name,
+                'source_attributes': {
+                    'connection_name': 'postgres_source'
+                },
+                'target_attributes': {
+                    'connection_name': 'postgres_source'
+                },
+                'load_attributes': {
+                    'csv_default_settings': {
+                        'header': True,
+                        'columns_delimiter': ','
+                    }
+                }
+            }
+        }
+        with open(pipeline_fpath, 'w') as f:
+            yaml.dump(pipeline_data, f)
+
+        with caplog.at_level('ERROR'):
+            pipeline = Pipeline(pipeline_name, main_config_mock)
+
+        assert pipeline.target_connector_id is None
+        assert "source-only and cannot be used as a target" in caplog.text

@@ -32,6 +32,14 @@ Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by a
 - **YAML/JSON Configuration**: Easy pipeline setup
 - **Cloud Ready**: Full support for AWS and GCP
 
+### Configuration Model
+
+- Reusable endpoint definitions can be stored separately in `connections.yaml` or `connections.json`
+- Pipelines reference those endpoints through `source_attributes.connection_name` and `target_attributes.connection_name`
+- Reusable endpoints should declare `endpoint_type: source` or `endpoint_type: target`
+- A source endpoint cannot be used as a pipeline target, which protects source systems from write operations
+- Inline `source_attributes` is still accepted for backward compatibility, but deprecated in favor of reusable source endpoint definitions
+
 
 
 
@@ -114,6 +122,46 @@ pip install -e .
 
 # Alternative: Add src to PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:$(pwd)/src
+```
+
+### Using Docker
+```bash
+# Build the image
+docker build -t petaly .
+
+# Show CLI help
+docker run --rm petaly
+```
+
+To use Petaly with files outside the container, mount your configuration and workspace directories into the container:
+
+```bash
+docker run --rm \
+  -v /absolute/path/to/petaly.ini:/workspace/petaly.ini \
+  -v /absolute/path/to/pipelines:/workspace/pipelines \
+  -v /absolute/path/to/logs:/workspace/logs \
+  -v /absolute/path/to/output:/workspace/output \
+  petaly -c /workspace/petaly.ini run -p my_pipeline
+```
+
+For interactive commands:
+
+```bash
+docker run --rm -it \
+  -v /absolute/path/to/petaly.ini:/workspace/petaly.ini \
+  -v /absolute/path/to/pipelines:/workspace/pipelines \
+  -v /absolute/path/to/logs:/workspace/logs \
+  -v /absolute/path/to/output:/workspace/output \
+  petaly -c /workspace/petaly.ini init --workspace
+```
+
+**Important:** The paths inside `petaly.ini` must match the container paths, for example:
+
+```ini
+[workspace_config]
+pipeline_dir_path=/workspace/pipelines
+logs_dir_path=/workspace/logs
+output_dir_path=/workspace/output
 ```
 
 ## Configuration
@@ -199,6 +247,8 @@ python3 -m petaly init -p csv2psql
 2. **Configure Connections** (if using connection names)
    - Set up `csv_local` connection in `connections.yaml`
    - Set up `my_postgres` connection in `connections.yaml`
+   - Set `endpoint_type: source` on readable source endpoints
+   - Set `endpoint_type: target` on writable destination endpoints
    - See [Connections Template](docs/connections.yaml-template) for details
 
 3. **Configure Pipeline**
@@ -214,8 +264,35 @@ python3 -m petaly run -p csv2psql
 
 ### Example Configuration
 
+**Endpoint Definition Note**
+- In `v0.2.0`, source and target endpoint definitions were separated from the pipeline through reusable connection definitions
+- New source and target endpoint definitions should live in `connections.yaml` or `connections.json` and be referenced with `connection_name`
+- Inline endpoint definitions inside `pipeline.yaml` are deprecated and should only be considered legacy compatibility
+
 **Using Connection Names (Recommended):**
 ```yaml
+# connections.yaml
+connections:
+  my_postgres:
+    connector_type: postgres
+    endpoint_type: source
+    database_user: postgres
+    database_password: password
+    database_host: localhost
+    database_port: 5432
+    database_name: source_db
+
+  my_bigquery:
+    connector_type: bigquery
+    endpoint_type: target
+    platform_type: gcp
+    gcp_project_id: my-project-id
+    gcp_region: EU
+    bucket_name: my-bucket
+```
+
+```yaml
+# pipeline.yaml
 pipeline:
   pipeline_name: psql2bq
   source_attributes:
@@ -225,8 +302,8 @@ pipeline:
     connection_name: my_bigquery
     database_schema: petaly_tutorial
     bucket_pipeline_prefix: petaly/{pipeline_name}
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -243,6 +320,24 @@ data_objects_spec:
 
 **CSV to PostgreSQL Example:**
 ```yaml
+# connections.yaml
+connections:
+  csv_local:
+    connector_type: csv
+    endpoint_type: source
+
+  my_postgres:
+    endpoint_type: target
+    connector_type: postgres
+    database_user: postgres
+    database_password: password
+    database_host: localhost
+    database_port: 5432
+    database_name: target_db
+```
+
+```yaml
+# pipeline.yaml
 pipeline:
   pipeline_name: csv2psql
   source_attributes:
@@ -252,8 +347,8 @@ pipeline:
   target_attributes:
     connection_name: my_postgres
     database_schema: petaly_tutorial
-  data_attributes:
-    include_data_objects: spec
+  load_attributes:
+    use_data_objects_spec: strict
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -272,6 +367,35 @@ data_objects_spec:
 ```
 
 For more examples, see [Pipeline Configuration Guide](docs/pipeline_examples.md) and [Connections Template](docs/connections.yaml-template).
+
+### Deprecated Inline Endpoint Definition
+
+Older pipelines may still define source and target endpoints directly in `pipeline.yaml`, for example:
+
+```yaml
+pipeline:
+  pipeline_name: mysql_to_postgres_incremental
+  source_attributes:
+    connector_type: mysql
+    database_user: root
+    database_password: dbpassword
+    database_host: localhost
+    database_port: 3306
+    database_name: source_db
+  target_attributes:
+    connector_type: postgres
+    database_user: postgres
+    database_password: dbpassword
+    database_host: localhost
+    database_port: 5432
+    database_name: target_db
+    database_schema: public
+  load_attributes:
+    all_from_schema: false
+    use_data_objects_spec: true
+```
+
+This style is deprecated. Prefer reusable endpoint definitions in `connections.yaml` or `connections.json`.
 
 ## Documentation
 

@@ -417,6 +417,16 @@ class FileHandler:
         gz_file_fpath = file_fpath + '.gz'
 
         try:
+            # Check if file exists before trying to compress it
+            if not os.path.isfile(file_fpath):
+                logger.warning(f"File not found, skipping compression: {file_fpath}")
+                return None
+            
+            # Check if file is already compressed
+            if file_fpath.endswith('.gz') or os.path.isfile(gz_file_fpath):
+                logger.debug(f"File already compressed or is .gz file, skipping: {file_fpath}")
+                return gz_file_fpath if os.path.isfile(gz_file_fpath) else None
+            
             with open(file_fpath, 'rb') as f_in:
                 with gzip.open(gz_file_fpath, 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
@@ -425,6 +435,9 @@ class FileHandler:
 
             return gz_file_fpath
 
+        except FileNotFoundError as e:
+            logger.warning(f"File not found during compression: {file_fpath} - {e}")
+            return None
         except gzip.BadGzipFile as e:
             logger.error(e)
             return None
@@ -456,12 +469,24 @@ class FileHandler:
         import glob
         import os
         all_files = []
-        for pattern in ['*.csv', '*.tsv', '*.txt', '*']:
+        for pattern in ['*.csv', '*.tsv', '*.txt']:
             all_files.extend(glob.glob(os.path.join(gz_dpath, pattern)))
         # Filter to only files (not directories) and exclude already compressed files
-        gz_file_list = [f for f in all_files if os.path.isfile(f) and not f.endswith('.gz')]
+        # Also check that the file actually exists and is not already compressed
+        gz_file_list = []
+        for f in all_files:
+            if os.path.isfile(f) and not f.endswith('.gz') and not os.path.isfile(f + '.gz'):
+                gz_file_list.append(f)
+        
+        if not gz_file_list:
+            logger.debug(f"No uncompressed CSV files found to compress in {gz_dpath}")
+            return
+        
+        logger.debug(f"Compressing {len(gz_file_list)} CSV files in {gz_dpath}")
         for gz_fpath in gz_file_list:
-            self.gzip_file(gz_fpath, cleanup_file)
+            result = self.gzip_file(gz_fpath, cleanup_file)
+            if result is None:
+                logger.warning(f"Failed to compress file: {gz_fpath}")
 
     def check_dict_key_exist(self, doc_dict: dict, key: str) -> bool:
         result = False

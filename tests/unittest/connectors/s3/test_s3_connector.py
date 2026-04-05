@@ -123,7 +123,7 @@ class TestS3Extractor:
             'aws_secret_access_key': 'test_secret',
             'aws_region': 'us-east-1'
         }
-        pipeline.data_attributes = {
+        pipeline.load_attributes = {
             'csv_default_settings': {}
         }
         return pipeline

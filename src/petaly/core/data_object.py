@@ -25,24 +25,25 @@ class DataObject:
         """
         data_objects = pipeline.data_objects_spec
         self.pipeline_data_object_dir = pipeline.output_object_data_dpath.format(object_name=object_name)
-        self.include_data_objects = pipeline.include_data_objects
+        self.all_from_schema = pipeline.all_from_schema
+        self.use_data_objects_spec = pipeline.use_data_objects_spec
         self.object_settings = self.format_csv_default_settings(pipeline.csv_default_settings)
         self.object_settings.update({'cleanup_linebreak_in_fields': False})
 
         data_object_spec = self.get_object_spec(data_objects, object_name)
         logger.debug(f"Data object spec: {data_object_spec}")
         if not data_object_spec:
-            # If include_data_objects is 'spec' (only mode), spec is required
-            if self.include_data_objects == 'spec':
+            # If all_from_schema is False (only load from spec), spec is required
+            if not self.all_from_schema:
                 logger.info(
-                    f"For {pipeline.source_connector_id} extract the parameters include_data_objects='spec' and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
+                    f"For {pipeline.source_connector_id} extract the parameters all_from_schema=false and specification in the data_objects_spec[] are required. Use python -m petaly init -p {pipeline.pipeline_name} --object_name table1,table2 -c your_config_dir/petaly.ini")
                 sys.exit()
 
-            # If include_data_objects is 'all' (load all) or spec is empty, check file connector requirement
+            # If all_from_schema is True (load all) or spec is empty, check file connector requirement
             if pipeline.source_connector_id in ('csv', 'parquet', 'json'):
                 logger.info(
-                    f"In case your source is a file connector ({pipeline.source_connector_id}), the parameters include_data_objects should be set to 'spec' and require the specification in the data_objects_spec[]."
-                    f"\ninclude_data_objects='spec'"
+                    f"In case your source is a file connector ({pipeline.source_connector_id}), the parameters all_from_schema should be set to false and require the specification in the data_objects_spec[]."
+                    f"\nall_from_schema=false"
                     f"\nCheck pipeline under: {pipeline.pipeline_fpath}")
 
                 sys.exit()
@@ -51,12 +52,35 @@ class DataObject:
 
         self.object_name = object_name
         self.destination_object_name = data_object_spec.get('destination_object_name')
-        self.recreate_destination_object = True if data_object_spec.get('recreate_destination_object') is True else False
+        # Handle recreate_destination_object as boolean or string
+        recreate_value = data_object_spec.get('recreate_destination_object', False)
+        if isinstance(recreate_value, str):
+            self.recreate_destination_object = recreate_value.lower() in ('true', '1', 'yes')
+        else:
+            self.recreate_destination_object = bool(recreate_value)
         self.exclude_columns = data_object_spec.get('exclude_columns')
         self.object_source_dir = data_object_spec.get('object_source_dir')
         self.file_names = data_object_spec.get('file_names')
         cleanup_linebreak_in_fields = data_object_spec.get('cleanup_linebreak_in_fields')
         self.object_settings.update({'cleanup_linebreak_in_fields': cleanup_linebreak_in_fields})
+        
+        # Incremental load parameters (per-object)
+        # Note: Incremental load is only supported for MySQL and PostgreSQL sources
+        self.load_mode = data_object_spec.get('load_mode', 'full')
+        self.column_primary_key = data_object_spec.get('column_primary_key', '')
+        self.column_last_modified = data_object_spec.get('column_last_modified', '')
+        batch_size = data_object_spec.get('batch_size')
+        self.batch_size = int(batch_size) if batch_size is not None and batch_size != '' else None
+        
+        # Validate incremental load is only used with supported sources
+        if self.load_mode == 'incremental':
+            if pipeline.source_connector_id not in ('mysql', 'postgres'):
+                logger.error(
+                    f"Incremental load mode is only supported for MySQL and PostgreSQL sources. "
+                    f"Current source connector: {pipeline.source_connector_id}. "
+                    f"Please set load_mode to 'full' or use MySQL/PostgreSQL as source."
+                )
+                sys.exit()
 
     def to_dict(self) -> dict:
         """
@@ -99,6 +123,12 @@ class DataObject:
         self.exclude_columns = [None]
         self.object_source_dir = None
         self.file_names = [None]
+        
+        # Incremental load parameters (defaults for objects without spec)
+        self.load_mode = 'full'
+        self.column_primary_key = ''
+        self.column_last_modified = ''
+        self.batch_size = None
 
     def format_csv_default_settings(self, csv_default_settings):
         """

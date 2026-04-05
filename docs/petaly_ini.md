@@ -28,6 +28,7 @@ The `[workspace_config]` section defines the core directories for Petaly's opera
 | `pipeline_dir_path` | Absolute path where all pipeline configurations are stored. This is where Petaly will create and manage your pipeline files. | Yes | `/home/user/petaly/pipelines` |
 | `logs_dir_path` | Absolute path for storing log files. Petaly will create detailed logs of all operations here. | Yes | `/home/user/petaly/logs` |
 | `output_dir_path` | Absolute path for temporary data storage during pipeline execution. This directory is used as a transition space between source and destination. | Yes | `/home/user/petaly/output` |
+| `connections_file_path` | Absolute path to the connections.yaml/json file. If not specified, defaults to `pipeline_dir_path/connections.yaml`. | No | `/home/user/petaly/connections.yaml` |
 
 ### Example
 ```ini
@@ -35,6 +36,9 @@ The `[workspace_config]` section defines the core directories for Petaly's opera
 pipeline_dir_path=/home/user/petaly/pipelines
 logs_dir_path=/home/user/petaly/logs
 output_dir_path=/home/user/petaly/output
+# Optional: Custom connections file path
+# If not specified, defaults to: pipeline_dir_path/connections.yaml
+connections_file_path=~/.petaly/connections.yaml
 ```
 
 ## Global Settings
@@ -46,13 +50,19 @@ The `[global_settings]` section controls the general behavior of Petaly.
 | Parameter | Description | Default | Options | Example |
 |-----------|-------------|---------|---------|---------|
 | `logging_mode` | Controls the verbosity of logging output. Use DEBUG for troubleshooting and INFO for normal operation. | INFO | INFO, DEBUG | `logging_mode=DEBUG` |
-| `pipeline_format` | Determines the format of pipeline configuration files. YAML is more readable, while JSON is better for integration with other tools. | yaml | yaml, json | `pipeline_format=json` |
+| `pipeline_file_format` | Determines the format of pipeline configuration files. YAML is more readable, while JSON is better for integration with other tools. | yaml | yaml, json | `pipeline_file_format=json` |
+| `connections_file_format` | Determines the format of connections configuration files. | yaml | yaml, json | `connections_file_format=json` |
+| `csv_analysis_max_size_mb` | Maximum file size (in MB) to analyze for metadata extraction when processing CSV files. Files larger than this limit will only have the first portion analyzed. Set to 0 to analyze entire file. | 10 | Integer (0 or greater) | `csv_analysis_max_size_mb=20` |
+| `full_pipeline_wizard` | Controls the pipeline initialization wizard mode. If `true`, asks all questions during pipeline initialization. If `false`, only asks questions marked as `wizard_required=true` in pipeline_meta_config.json. | true | true, false | `full_pipeline_wizard=false` |
 
 ### Example
 ```ini
 [global_settings]
 logging_mode=INFO
-pipeline_format=yaml
+pipeline_file_format=yaml
+connections_file_format=yaml
+csv_analysis_max_size_mb=10
+full_pipeline_wizard=true
 ```
 
 ## Complete Example
@@ -64,10 +74,15 @@ Here's a complete example of a `petaly.ini` file:
 pipeline_dir_path=/home/user/petaly/pipelines
 logs_dir_path=/home/user/petaly/logs
 output_dir_path=/home/user/petaly/output
+# Optional: Custom connections file path
+connections_file_path=
 
 [global_settings]
 logging_mode=INFO
-pipeline_format=yaml
+pipeline_file_format=yaml
+connections_file_format=yaml
+csv_analysis_max_size_mb=10
+full_pipeline_wizard=true
 
 ```
 
@@ -91,6 +106,11 @@ pipeline_format=yaml
    - Use YAML for better readability and manual editing
    - Use JSON if integration with other JSON-based tools is needed
    - Be consistent with the format across all pipelines
+
+5. **Pipeline Wizard**
+   - Use `full_pipeline_wizard=true` (default) for comprehensive configuration
+   - Set `full_pipeline_wizard=false` for faster pipeline creation with minimal prompts
+   - Only parameters marked as `wizard_required=true` will be prompted in short form mode
 
 ## Environment Variables
 

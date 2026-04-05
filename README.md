@@ -124,6 +124,46 @@ pip install -e .
 export PYTHONPATH=$PYTHONPATH:$(pwd)/src
 ```
 
+### Using Docker
+```bash
+# Build the image
+docker build -t petaly .
+
+# Show CLI help
+docker run --rm petaly
+```
+
+To use Petaly with files outside the container, mount your configuration and workspace directories into the container:
+
+```bash
+docker run --rm \
+  -v /absolute/path/to/petaly.ini:/workspace/petaly.ini \
+  -v /absolute/path/to/pipelines:/workspace/pipelines \
+  -v /absolute/path/to/logs:/workspace/logs \
+  -v /absolute/path/to/output:/workspace/output \
+  petaly -c /workspace/petaly.ini run -p my_pipeline
+```
+
+For interactive commands:
+
+```bash
+docker run --rm -it \
+  -v /absolute/path/to/petaly.ini:/workspace/petaly.ini \
+  -v /absolute/path/to/pipelines:/workspace/pipelines \
+  -v /absolute/path/to/logs:/workspace/logs \
+  -v /absolute/path/to/output:/workspace/output \
+  petaly -c /workspace/petaly.ini init --workspace
+```
+
+**Important:** The paths inside `petaly.ini` must match the container paths, for example:
+
+```ini
+[workspace_config]
+pipeline_dir_path=/workspace/pipelines
+logs_dir_path=/workspace/logs
+output_dir_path=/workspace/output
+```
+
 ## Configuration
 
 ### 1. Initialize Configuration

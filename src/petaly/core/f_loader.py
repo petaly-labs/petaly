@@ -4,6 +4,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import os
 import time
 from abc import ABC, abstractmethod
 
@@ -62,7 +63,7 @@ class FLoader(ABC):
             object_list = self.composer.get_object_list_from_output_dir(self.pipeline)
 
         for object_name in object_list:
-            self.load_per_object(object_name, file_to_gzip)
+            self.load_per_object(object_name, file_to_gzip=file_to_gzip)
 
         end_total_time = time.time()
         logger.info(f"Load completed, duration: {round(end_total_time - start_total_time, 2)}s")
@@ -177,3 +178,31 @@ class FLoader(ABC):
         configuration and settings.
         """
         return DataObject(self.pipeline, object_name)
+
+    def get_target_object_dir(self, object_name, data_object):
+        """Composes the destination directory for file-based targets.
+
+        Logic:
+        1. Use target_base_dir from target_attributes when available
+        2. If object_target_dir is provided, treat it as relative to target_base_dir
+        3. Fall back to legacy destination_dir for backward compatibility
+        4. If no base dir is configured, object_target_dir must be absolute
+        """
+        target_base_dir = self.pipeline.target_attr.get("target_base_dir") or self.pipeline.target_attr.get("destination_dir")
+        object_target_dir = getattr(data_object, 'object_target_dir', None)
+        dest_object_name = data_object.destination_object_name or object_name
+
+        if target_base_dir:
+            if object_target_dir:
+                relative_object_target_dir = str(object_target_dir).lstrip('/\\')
+                return os.path.join(target_base_dir, relative_object_target_dir)
+            return os.path.join(target_base_dir, self.pipeline.pipeline_name, dest_object_name)
+
+        if object_target_dir:
+            if not os.path.isabs(object_target_dir):
+                logger.error("For file targets, object_target_dir must be an absolute path when target_base_dir is not set.")
+                raise SystemExit()
+            return object_target_dir
+
+        logger.warning("The pipeline->target_attribute->target_base_dir in pipeline.yaml is not specified.")
+        raise SystemExit()

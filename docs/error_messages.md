@@ -121,7 +121,7 @@ In case your source is csv, the parameters all_from_schema should be set to fals
 - Set `all_from_schema: false`
 - Add required object specifications including:
   - object_name
-  - object_source_dir (or source_dir in source_attributes)
+  - object_source_dir (or source_base_dir in source_attributes)
   - file_names (optional, if not specified all files in directory will be processed)
 
 ### Missing Source Directory

@@ -7,6 +7,7 @@ import concurrent.futures
 import threading
 import time
 from petaly.utils.utils import sanitize_sensitive_data
+from petaly.core.data_object import DataObject
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +51,17 @@ class MainCtl():
         if object_name_list is not None:
             pipeline.data_objects_from_cli = object_name_list.split(',')
 
-        # Check flow mode: object (default) or dump
-        flow_mode = pipeline.load_attributes.get('flow_mode', 'object').lower()
+        # Check dump mode: false (default) = object flow, true = dump flow.
+        dump_mode = pipeline.load_attributes.get('dump_mode')
+        if dump_mode is None:
+            flow_mode = str(pipeline.load_attributes.get('flow_mode', 'object')).lower()
+            dump_mode = flow_mode == 'dump'
+        elif isinstance(dump_mode, str):
+            dump_mode = dump_mode.lower() in ('true', '1', 'yes')
+        else:
+            dump_mode = bool(dump_mode)
 
-        if flow_mode == 'object':
+        if not dump_mode:
             # Object flow: extract → load per object, with parallel processing support
             self.run_pipeline_end_to_end(pipeline, run_endpoint)
         else:
@@ -236,6 +244,11 @@ class MainCtl():
         if target_loader:
             from petaly.core.load_summary import LoadSummary
             load_summary = LoadSummary()
+            # Ensure pipeline-level and object-level state entries exist for all objects in scope.
+            for obj_name in object_list:
+                data_object = DataObject(pipeline, obj_name)
+                object_mode = 'incremental' if data_object.extract_load_mode == 'incremental' else 'full'
+                target_loader.load_state.ensure_object_state(obj_name, load_mode=object_mode)
         else:
             load_summary = None
 
@@ -272,14 +285,55 @@ class MainCtl():
                     # Sequential processing - reuse shared instances
                     thread_source_extractor = source_extractor
                     thread_target_loader = target_loader
-                
-                # Extract object (if source processing enabled)
-                if thread_source_extractor and (run_endpoint is None or run_endpoint == 'source'):
-                    thread_source_extractor.extract_per_object(obj_name)
 
-                # Load object (if target processing enabled)
-                if thread_target_loader and (run_endpoint is None or run_endpoint == 'target'):
-                    thread_target_loader.load_per_object(obj_name, load_summary)
+                data_object = DataObject(pipeline, obj_name)
+                run_incremental_batches = (
+                    run_endpoint is None
+                    and thread_source_extractor is not None
+                    and thread_target_loader is not None
+                    and data_object.extract_load_mode == 'incremental'
+                    and data_object.batch_size is not None
+                )
+
+                if run_incremental_batches:
+                    batch_number = 1
+                    while True:
+                        logger.info(
+                            f"[Object] Processing incremental batch {batch_number} for object: {obj_name}"
+                        )
+                        thread_source_extractor.extract_per_object(obj_name)
+
+                        loader_obj_conf = thread_target_loader.get_loader_obj_conf(obj_name)
+                        extracted_rows = thread_target_loader.count_rows_in_csv_files(
+                            loader_obj_conf.get('output_data_object_dir'),
+                            loader_obj_conf
+                        )
+
+                        if extracted_rows == 0:
+                            logger.info(
+                                f"[Object] No more incremental rows to process for object: {obj_name}. "
+                                f"Stopping after {batch_number - 1} completed batches."
+                            )
+                            break
+
+                        thread_target_loader.load_per_object(obj_name, load_summary)
+
+                        if extracted_rows < data_object.batch_size:
+                            logger.info(
+                                f"[Object] Final incremental batch detected for object: {obj_name} "
+                                f"({extracted_rows} rows < batch_size {data_object.batch_size})."
+                            )
+                            break
+
+                        batch_number += 1
+                else:
+                    # Extract object (if source processing enabled)
+                    if thread_source_extractor and (run_endpoint is None or run_endpoint == 'source'):
+                        thread_source_extractor.extract_per_object(obj_name)
+
+                    # Load object (if target processing enabled)
+                    if thread_target_loader and (run_endpoint is None or run_endpoint == 'target'):
+                        thread_target_loader.load_per_object(obj_name, load_summary)
 
                 elapsed_time = time.time() - start_time
                 if max_workers > 1:

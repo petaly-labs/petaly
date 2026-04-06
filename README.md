@@ -40,6 +40,21 @@ Petaly is an open-source ETL/ELT (Extract, Load, "Transform") tool, created by a
 - A source endpoint cannot be used as a pipeline target, which protects source systems from write operations
 - Inline `source_attributes` is still accepted for backward compatibility, but deprecated in favor of reusable source endpoint definitions
 
+### Load State and Incremental Behavior
+
+- Petaly stores pipeline-level runtime state in `load_state.json` under the pipeline directory.
+- The file is maintained for both full and incremental runs.
+- State entries are initialized for all objects in scope for the run:
+  - objects defined in `data_objects_spec[]`
+  - or, when loading from schema, all discovered/loaded objects
+- For incremental objects, `object_loaded_timestamp` is the watermark used for the next source-side filter:
+  - `WHERE column_last_modified > object_loaded_timestamp`
+
+### PostgreSQL to MySQL Timestamp Note
+
+- For PostgreSQL → MySQL loads, timestamp precision is preserved on the MySQL side.
+- Timestamp-like columns are created with fractional precision (`datetime(6)` / `timestamp(6)` where applicable) to avoid truncating milliseconds/microseconds during load.
+
 
 
 
@@ -133,11 +148,13 @@ docker build -t petaly .
 docker run --rm petaly
 ```
 
-To use Petaly with files outside the container, mount your configuration and workspace directories into the container:
+The image generates a container-ready config at `/workspace/petaly.ini` from `petaly.ini-template` during the build. You do not need a separate host-side `petaly.ini` for Docker.
+
+To use Petaly with files outside the container, mount your workspace directories and connections file into the container:
 
 ```bash
 docker run --rm \
-  -v /absolute/path/to/petaly.ini:/workspace/petaly.ini \
+  -v /absolute/path/to/connections.yaml:/workspace/connections.yaml \
   -v /absolute/path/to/pipelines:/workspace/pipelines \
   -v /absolute/path/to/logs:/workspace/logs \
   -v /absolute/path/to/output:/workspace/output \
@@ -148,18 +165,19 @@ For interactive commands:
 
 ```bash
 docker run --rm -it \
-  -v /absolute/path/to/petaly.ini:/workspace/petaly.ini \
+  -v /absolute/path/to/connections.yaml:/workspace/connections.yaml \
   -v /absolute/path/to/pipelines:/workspace/pipelines \
   -v /absolute/path/to/logs:/workspace/logs \
   -v /absolute/path/to/output:/workspace/output \
   petaly -c /workspace/petaly.ini init --workspace
 ```
 
-**Important:** The paths inside `petaly.ini` must match the container paths, for example:
+**Important:** The generated Docker config uses these container paths:
 
 ```ini
 [workspace_config]
 pipeline_dir_path=/workspace/pipelines
+connections_file_path=/workspace/connections.yaml
 logs_dir_path=/workspace/logs
 output_dir_path=/workspace/output
 ```
@@ -194,7 +212,7 @@ output_dir_path=/home/user/petaly/output
 
 [global_settings]
 logging_mode=INFO
-pipeline_format=yaml
+pipeline_file_format=yaml
 
 ```
 
@@ -246,16 +264,16 @@ python3 -m petaly init -p csv2psql
 
 2. **Configure Connections** (if using connection names)
    - Set up `csv_local` connection in `connections.yaml`
-   - Set up `my_postgres` connection in `connections.yaml`
+   - Set up `postgres_target` connection in `connections.yaml`
    - Set `endpoint_type: source` on readable source endpoints
    - Set `endpoint_type: target` on writable destination endpoints
    - See [Connections Template](docs/connections.yaml-template) for details
 
 3. **Configure Pipeline**
    - Use `csv` as source with `connection_name: csv_local`
-   - Use `postgres` as target with `connection_name: my_postgres`
+   - Use `postgres` as target with `connection_name: postgres_target`
    - Set `type_autodetection: true` for automatic type detection
-   - Configure `object_source_dir` for each data object
+   - Configure `source_base_dir` in the connection and `object_source_dir` for each data object
 
 4. **Run Pipeline**
 ```bash
@@ -273,18 +291,18 @@ python3 -m petaly run -p csv2psql
 ```yaml
 # connections.yaml
 connections:
-  my_postgres:
-    connector_type: postgres
+  postgres_source:
     endpoint_type: source
+    connector_type: postgres
     database_user: postgres
     database_password: password
     database_host: localhost
     database_port: 5432
     database_name: source_db
 
-  my_bigquery:
-    connector_type: bigquery
+  bigquery:
     endpoint_type: target
+    connector_type: bigquery
     platform_type: gcp
     gcp_project_id: my-project-id
     gcp_region: EU
@@ -296,14 +314,15 @@ connections:
 pipeline:
   pipeline_name: psql2bq
   source_attributes:
-    connection_name: my_postgres
+    connection_name: postgres_source
     database_schema: petaly_tutorial
   target_attributes:
-    connection_name: my_bigquery
+    connection_name: bigquery
     database_schema: petaly_tutorial
     bucket_pipeline_prefix: petaly/{pipeline_name}
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -323,10 +342,11 @@ data_objects_spec:
 # connections.yaml
 connections:
   csv_local:
-    connector_type: csv
     endpoint_type: source
+    connector_type: csv
+    source_base_dir: /path/to/csv
 
-  my_postgres:
+  postgres_target:
     endpoint_type: target
     connector_type: postgres
     database_user: postgres
@@ -342,13 +362,13 @@ pipeline:
   pipeline_name: csv2psql
   source_attributes:
     connection_name: csv_local
-    source_dir: /path/to/csv/folder
     type_autodetection: true
   target_attributes:
-    connection_name: my_postgres
+    connection_name: postgres_target
     database_schema: petaly_tutorial
   load_attributes:
-    use_data_objects_spec: strict
+    all_from_schema: false
+    use_data_objects_spec: true
     csv_default_settings:
       header: true
       columns_delimiter: ','
@@ -361,7 +381,7 @@ data_objects_spec:
     cleanup_linebreak_in_fields: false
     exclude_columns:
     - null
-    object_source_dir: stocks/
+    object_source_dir: stocks
     file_names:
     -
 ```

@@ -42,8 +42,8 @@ class TestConnections:
                 },
                 'csv_local': {
                     'connector_type': 'csv',
-                    'source_dir': '/data/source',
-                    'destination_dir': '/data/dest'
+                    'source_base_dir': '/data/source',
+                    'target_base_dir': '/data/dest'
                 }
             }
         }
@@ -246,4 +246,3 @@ class TestConnections:
         config = connections.load_config()
         
         assert config is None
-

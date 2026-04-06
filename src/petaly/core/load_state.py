@@ -25,6 +25,7 @@ class LoadState:
     - Track load mode (full or incremental)
     - Handle state file creation and updates atomically
     """
+    UNIX_EPOCH_TIMESTAMP = "1970-01-01T00:00:00Z"
     
     def __init__(self, pipeline):
         """
@@ -40,9 +41,79 @@ class LoadState:
         # Path structure: {output_pipeline_dpath}/{object_name}/metadata/load_state.json
         # We'll set the actual path when we know the object_name
         self._state_file_cache = {}  # Cache of state file paths per object
+        self._aggregate_state_file_path = None
         
         # In-memory state cache per object
         self._state_cache = {}
+    
+    def _get_aggregate_state_file_path(self) -> Optional[str]:
+        """Get pipeline-level incremental state file path."""
+        if self._aggregate_state_file_path is None:
+            pipeline_dpath = getattr(self.pipeline, 'pipeline_dpath', None)
+            if pipeline_dpath:
+                self._aggregate_state_file_path = os.path.join(pipeline_dpath, 'load_state.json')
+        return self._aggregate_state_file_path
+
+    def _get_legacy_aggregate_state_file_path(self) -> Optional[str]:
+        """Get legacy pipeline-level incremental state file path."""
+        pipeline_dpath = getattr(self.pipeline, 'pipeline_dpath', None)
+        if pipeline_dpath:
+            return os.path.join(pipeline_dpath, 'incremental_load.json')
+        return None
+
+    def _load_aggregate_state(self, refresh: bool = False) -> Dict[str, Any]:
+        """Load pipeline-level incremental state file."""
+        aggregate_state_path = self._get_aggregate_state_file_path()
+        legacy_path = self._get_legacy_aggregate_state_file_path()
+        if not aggregate_state_path:
+            return {}
+
+        cache_key = '__aggregate__'
+        if not refresh and cache_key in self._state_cache:
+            cached = self._state_cache.get(cache_key, {})
+            if isinstance(cached, dict):
+                return cached
+
+        source_path = None
+        if os.path.exists(aggregate_state_path):
+            source_path = aggregate_state_path
+        elif legacy_path and os.path.exists(legacy_path):
+            source_path = legacy_path
+        else:
+            return {}
+
+        try:
+            with open(source_path, 'r', encoding='utf-8') as f:
+                aggregate_state = json.load(f)
+                if not isinstance(aggregate_state, dict):
+                    aggregate_state = {}
+                self._state_cache[cache_key] = aggregate_state
+                # Migrate legacy file content to the new file name.
+                if source_path != aggregate_state_path:
+                    self._save_aggregate_state(aggregate_state)
+                return aggregate_state
+        except Exception as e:
+            logger.error(f"Error loading pipeline load state from {source_path}: {e}")
+            return {}
+
+    def _save_aggregate_state(self, aggregate_state: Dict[str, Any]):
+        """Save pipeline-level incremental state file atomically."""
+        aggregate_state_path = self._get_aggregate_state_file_path()
+        if not aggregate_state_path:
+            return
+
+        aggregate_dir = os.path.dirname(aggregate_state_path)
+        if aggregate_dir and not os.path.exists(aggregate_dir):
+            os.makedirs(aggregate_dir, exist_ok=True)
+
+        temp_file = aggregate_state_path + '.tmp'
+        with open(temp_file, 'w', encoding='utf-8') as f:
+            json.dump(aggregate_state, f, indent=2, ensure_ascii=False)
+
+        if os.name == 'nt' and os.path.exists(aggregate_state_path):
+            os.remove(aggregate_state_path)
+        os.rename(temp_file, aggregate_state_path)
+        self._state_cache['__aggregate__'] = aggregate_state
     
     def _get_state_file_path(self, object_name: str) -> str:
         """
@@ -63,20 +134,28 @@ class LoadState:
             self._state_file_cache[object_name] = state_file_path
         return self._state_file_cache[object_name]
     
-    def load_state(self, object_name: str) -> Dict[str, Any]:
+    def load_state(self, object_name: str, refresh: bool = False) -> Dict[str, Any]:
         """
         Load load state from file for a specific object.
         
         Args:
             object_name: Name of the object
+            refresh: When True, bypass the in-memory cache and reread the state file
             
         Returns:
             Dictionary containing state for the object, or default state if file doesn't exist
         """
         # Check cache first
-        if object_name in self._state_cache:
+        if not refresh and object_name in self._state_cache:
             return self._state_cache[object_name]
         
+        aggregate_state = self._load_aggregate_state(refresh=refresh)
+        if object_name in aggregate_state:
+            state = aggregate_state.get(object_name, {})
+            if isinstance(state, dict):
+                self._state_cache[object_name] = state
+                return state
+
         state_file_path = self._get_state_file_path(object_name)
         
         if not os.path.exists(state_file_path):
@@ -121,8 +200,8 @@ class LoadState:
            - Extract ALL rows (not batch_size) - full load on first run
         2. If target table exists and state file doesn't exist:
            - Read MAX(column_last_modified) from target table
-           - Create state file with load_mode="incremental" and that timestamp ONLY if table is NOT empty
-           - If table is empty, don't create state file (will be created after first batch)
+           - Create state file with load_mode="incremental" and that timestamp if table is not empty
+           - If table is empty, initialize incremental state from Unix epoch
         3. If target table exists and state file exists:
            - Use object_loaded_timestamp from JSON file
            - This continues from last successful batch
@@ -160,16 +239,23 @@ class LoadState:
                 self._create_initial_state_file(object_name, load_mode="incremental", timestamp=max_timestamp)
                 return max_timestamp
             else:
-                # Table exists but is empty or column is NULL
-                # Don't create state file - let it be created after first batch is loaded
-                logger.info(f"Table '{schema_table_name}' exists but is empty or '{column_last_modified}' is NULL. No state file created. Will extract ALL rows (full load).")
-                # Return None to extract all rows (full load), but don't create state file yet
-                return None
+                # Table exists but is empty or column is NULL.
+                # Keep incremental semantics and start from Unix epoch.
+                logger.info(
+                    f"Table '{schema_table_name}' exists but is empty or '{column_last_modified}' is NULL. "
+                    f"Initializing incremental state from Unix epoch for object '{object_name}'."
+                )
+                self._create_initial_state_file(
+                    object_name,
+                    load_mode="incremental",
+                    timestamp=self.UNIX_EPOCH_TIMESTAMP
+                )
+                return self.UNIX_EPOCH_TIMESTAMP
         
         else:
             # Case 3: Target table exists and state file exists
             # Use timestamp from state file
-            state = self.load_state(object_name)
+            state = self.load_state(object_name, refresh=True)
             timestamp = state.get('object_loaded_timestamp')
             if timestamp:
                 logger.debug(f"Using existing state file timestamp for object '{object_name}': {timestamp}")
@@ -185,12 +271,12 @@ class LoadState:
                     self._save_state_file(object_name, state)
                     return max_timestamp
                 else:
-                    # Fallback to full load (empty timestamp)
-                    state['load_mode'] = 'full'
-                    state['object_loaded_timestamp'] = None
+                    # Keep incremental semantics and start from Unix epoch.
+                    state['load_mode'] = 'incremental'
+                    state['object_loaded_timestamp'] = self.UNIX_EPOCH_TIMESTAMP
                     state['last_run'] = datetime.utcnow().isoformat() + 'Z'
                     self._save_state_file(object_name, state)
-                    return None
+                    return self.UNIX_EPOCH_TIMESTAMP
     
     def _create_initial_state_file(self, object_name: str, load_mode: str, timestamp: Optional[str] = None):
         """
@@ -224,6 +310,9 @@ class LoadState:
         """
         # Update cache
         self._state_cache[object_name] = state
+        aggregate_state = self._load_aggregate_state(refresh=True)
+        aggregate_state[object_name] = state
+        self._save_aggregate_state(aggregate_state)
         
         # Get state file path for this object
         state_file_path = self._get_state_file_path(object_name)
@@ -243,6 +332,11 @@ class LoadState:
         if os.name == 'nt':  # Windows
             if os.path.exists(state_file_path):
                 os.remove(state_file_path)
+
+            aggregate_state = self._load_aggregate_state(refresh=True)
+            if object_name in aggregate_state:
+                del aggregate_state[object_name]
+                self._save_aggregate_state(aggregate_state)
         os.rename(temp_file, state_file_path)
     
     def get_last_loaded_timestamp(self, object_name: str, schema_table_name: str = None, column_last_modified: str = None, db_connector=None) -> Optional[str]:
@@ -265,7 +359,7 @@ class LoadState:
             Last loaded timestamp string (ISO format) or None if not found
         """
         # Strategy 1: Try to read from state file first (fast, no DB query)
-        state = self.load_state(object_name)
+        state = self.load_state(object_name, refresh=bool(schema_table_name and column_last_modified and db_connector))
         timestamp = state.get('object_loaded_timestamp')
         if timestamp:
             logger.debug(f"Found last loaded timestamp for '{object_name}' in state file: {timestamp}")
@@ -390,7 +484,7 @@ class LoadState:
         """
         try:
             # Load current state for this object
-            state = self.load_state(object_name)
+            state = self.load_state(object_name, refresh=True)
             
             # Update state
             state['load_mode'] = load_mode
@@ -404,30 +498,7 @@ class LoadState:
             state['last_run'] = datetime.utcnow().isoformat() + 'Z'
             state['object_name'] = object_name  # Ensure object_name is set
             
-            # Update cache
-            self._state_cache[object_name] = state
-            
-            # Get state file path for this object
-            state_file_path = self._get_state_file_path(object_name)
-            
-            # Ensure metadata directory exists
-            metadata_dir = os.path.dirname(state_file_path)
-            if not os.path.exists(metadata_dir):
-                os.makedirs(metadata_dir, exist_ok=True)
-            
-            # Atomic write: write to temp file, then rename
-            # This ensures the state file is never corrupted even if process is killed
-            temp_file = state_file_path + '.tmp'
-            
-            with open(temp_file, 'w', encoding='utf-8') as f:
-                json.dump(state, f, indent=2, ensure_ascii=False)
-            
-            # Atomic rename (works on Unix and Windows)
-            if os.name == 'nt':  # Windows
-                # On Windows, need to remove target first if it exists
-                if os.path.exists(state_file_path):
-                    os.remove(state_file_path)
-            os.rename(temp_file, state_file_path)
+            self._save_state_file(object_name, state)
             
             logger.debug(f"Saved load state for object '{object_name}': last_timestamp={batch_end_timestamp}, rows_loaded={rows_loaded}")
             
@@ -435,6 +506,25 @@ class LoadState:
             logger.error(f"Error saving load state for object '{object_name}': {e}", exc_info=True)
             # Don't raise - we don't want to fail the entire pipeline if state save fails
             # The next run will start from the last successfully saved timestamp
+
+    def ensure_object_state(self, object_name: str, load_mode: str = "full"):
+        """
+        Ensure an object entry exists in state files.
+
+        Creates default state for the object if it does not exist yet.
+        """
+        state_file_path = self._get_state_file_path(object_name)
+        if os.path.exists(state_file_path):
+            # Ensure aggregate file has the same object as well.
+            state = self.load_state(object_name, refresh=True)
+            self._save_state_file(object_name, state)
+            return
+
+        self._create_initial_state_file(
+            object_name=object_name,
+            load_mode=load_mode,
+            timestamp=None
+        )
     
     def reset_object_state(self, object_name: str):
         """

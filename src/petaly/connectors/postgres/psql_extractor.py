@@ -53,7 +53,8 @@ class PsqlExtractor(DBExtractor):
         schema_name = extractor_obj_conf.get('source_schema_name')
         table_name = extractor_obj_conf.get('source_object_name')
         copy_to_options = self.compose_extract_options(extractor_obj_conf)
+        where_clause = extractor_obj_conf.get('where_clause', '')
         extract_to_stmt = extract_to_stmt.format_map(
-        					FormatDict(column_list=column_list, schema_name=schema_name, table_name=table_name, copy_to_options=copy_to_options))
+        					FormatDict(column_list=column_list, schema_name=schema_name, table_name=table_name, copy_to_options=copy_to_options, where_clause=where_clause))
 
         return extract_to_stmt

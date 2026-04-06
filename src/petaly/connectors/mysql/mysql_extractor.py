@@ -68,8 +68,9 @@ class MysqlExtractor(DBExtractor):
         column_list = extractor_obj_conf.get("column_list")
         schema_name = extractor_obj_conf.get("source_schema_name")
         table_name = extractor_obj_conf.get("source_object_name")
+        where_clause = extractor_obj_conf.get("where_clause", "")
 
         extract_to_stmt = extract_to_stmt.format_map(
-        					FormatDict(column_list=column_list, schema_name=schema_name, table_name=table_name, null_as=''))
+        					FormatDict(column_list=column_list, schema_name=schema_name, table_name=table_name, null_as='', where_clause=where_clause))
 
         return extract_to_stmt

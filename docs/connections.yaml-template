@@ -16,19 +16,22 @@ connections:
   csv_local:
     endpoint_type: source
     connector_type: csv
-    
+    source_base_dir: /path/to/source/csv
+  
   # Parquet File Connector
-  parquet_local:
+  parquet_local_target:
     endpoint_type: target
     connector_type: parquet
+    target_base_dir: /path/to/target/files
   
   # JSON File Connector
-  json_local:
+  json_local_target:
     endpoint_type: target
     connector_type: json
+    target_base_dir: /path/to/target/files
     
   # PostgreSQL Database Connection
-  my_postgres:
+  postgres_source:
     endpoint_type: source
     connector_type: postgres
     database_user: postgres
@@ -38,7 +41,7 @@ connections:
     database_name: your_database_name  # Replace with your database name
   
   # MySQL Database Connection
-  my_mysql:
+  mysql_source:
     endpoint_type: source
     connector_type: mysql
     database_user: root
@@ -118,7 +121,7 @@ connections:
     bucket_name: your-gcs-bucket-name  # Replace with your GCS bucket name
   
   # BigQuery Connection (Alternative)
-  my_bigquery:
+  bigquery:
     endpoint_type: target
     connector_type: bigquery
     bucket_name: your-gcs-bucket-name  # Replace with your GCS bucket name

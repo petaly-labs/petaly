@@ -1,0 +1,9 @@
+{
+  "users": {
+    "object_name": "users",
+    "load_mode": "incremental",
+    "object_loaded_timestamp": "2026-04-06T08:00:00Z",
+    "object_loaded_rows": 1000,
+    "last_run": "2026-04-06T17:32:39.939118Z"
+  }
+}

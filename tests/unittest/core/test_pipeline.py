@@ -59,7 +59,7 @@ class TestPipeline:
                 'parquet_target': {
                     'connector_type': 'parquet',
                     'endpoint_type': 'target',
-                    'destination_dir': '/data/output'
+                    'target_base_dir': '/data/output'
                 }
             }
         }

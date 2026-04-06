@@ -231,6 +231,47 @@ class TestMysqlExtractor:
         assert options['quotechar'] == '"'
         assert options['header'] is True
 
+    @patch('mysql.connector.connect')
+    @patch('petaly.utils.file_handler.FileHandler.load_file')
+    def test_compose_extract_to_stmt_includes_where_clause(self, mock_load_file, mock_connect, pipeline_mock):
+        """Test MySQL extract statement includes incremental WHERE clause when provided."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_load_file.return_value = "SELECT * FROM mock_table"
+
+        extractor = MysqlExtractor(pipeline_mock)
+        stmt = "SELECT {column_list}\nFROM {table_name}\n{where_clause};"
+        extractor_obj_conf = {
+            'column_list': '`id`, `modified_at`',
+            'source_schema_name': 'petaly_tutorial',
+            'source_object_name': 'name_basics_incr',
+            'where_clause': "WHERE `modified_at` > '1970-01-01T00:00:00Z'",
+        }
+
+        result = extractor.compose_extract_to_stmt(stmt, extractor_obj_conf)
+        assert "WHERE `modified_at` > '1970-01-01T00:00:00Z'" in result
+
+    @patch('mysql.connector.connect')
+    @patch('petaly.utils.file_handler.FileHandler.load_file')
+    def test_compose_extract_to_stmt_includes_limit_clause(self, mock_load_file, mock_connect, pipeline_mock):
+        """Test MySQL extract statement includes ORDER BY/LIMIT for incremental batches."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_load_file.return_value = "SELECT * FROM mock_table"
+
+        extractor = MysqlExtractor(pipeline_mock)
+        stmt = "SELECT {column_list}\nFROM {table_name}\n{where_clause};"
+        extractor_obj_conf = {
+            'column_list': '`id`, `modified_at`',
+            'source_schema_name': 'petaly_tutorial',
+            'source_object_name': 'name_basics_incr',
+            'where_clause': "WHERE `modified_at` > '1970-01-01T00:00:00Z'\nORDER BY `modified_at`\nLIMIT 1000",
+        }
+
+        result = extractor.compose_extract_to_stmt(stmt, extractor_obj_conf)
+        assert "ORDER BY `modified_at`" in result
+        assert "LIMIT 1000" in result
+
 class TestMysqlLoader:
     @pytest.fixture
     def pipeline_mock(self):
@@ -278,3 +319,45 @@ class TestMysqlLoader:
         assert "ESCAPED BY '\\\\'" in options
         assert "LINES TERMINATED BY '\\n'" in options
         assert "IGNORE 1 ROWS" in options 
+
+    @patch('mysql.connector.connect')
+    def test_compose_load_from_stmt_parses_postgres_timestamp_on_mysql_side(self, mock_connect, pipeline_mock):
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+
+        loader = MysqlLoader(pipeline_mock)
+        loader.f_handler = MagicMock()
+        loader.f_handler.load_file.return_value = (
+            "LOAD DATA LOCAL INFILE '{path_to_data_file}'\n"
+            "INTO TABLE {table_name}\n"
+            "{load_data_options}\n"
+            "{column_list}\n"
+            "{set_clause}\n;"
+        )
+
+        data_object = Mock()
+        loader_obj_conf = {
+            'object_settings': {
+                'columns_delimiter': ',',
+                'header': True,
+                'columns_quote': 'double'
+            },
+            'table_metadata': {
+                'columns': [
+                    {'column_name': 'id', 'data_type': 'integer'},
+                    {'column_name': 'modified_at', 'data_type': 'timestamp with time zone'}
+                ]
+            },
+            'table_ddl_dict': {
+                'table_name': 'name_basics_incr',
+                'column_list': '`id`, `modified_at`'
+            },
+            'load_from_stmt_fpath': '/tmp/load_from.sql'
+        }
+
+        stmt = loader.compose_load_from_stmt(data_object, loader_obj_conf)
+
+        assert "(@petaly_raw_modified_at" in stmt or ", @petaly_raw_modified_at" in stmt
+        assert "`id`" in stmt
+        assert "SET `modified_at` = STR_TO_DATE(" in stmt
+        assert "SUBSTRING_INDEX(@petaly_raw_modified_at, ' ', 2)" in stmt

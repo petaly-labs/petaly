@@ -20,7 +20,13 @@ COPY petaly.ini-template ./
 
 RUN python -m pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install .
+    pip install . && \
+    mkdir -p /workspace && \
+    cp petaly.ini-template /workspace/petaly.ini && \
+    sed -i 's|^pipeline_dir_path=.*|pipeline_dir_path=/workspace/pipelines|' /workspace/petaly.ini && \
+    sed -i 's|^connections_file_path=.*|connections_file_path=/workspace/connections.yaml|' /workspace/petaly.ini && \
+    sed -i 's|^logs_dir_path=.*|logs_dir_path=/workspace/logs|' /workspace/petaly.ini && \
+    sed -i 's|^output_dir_path=.*|output_dir_path=/workspace/output|' /workspace/petaly.ini
 
 ENTRYPOINT ["petaly"]
 CMD ["--help"]

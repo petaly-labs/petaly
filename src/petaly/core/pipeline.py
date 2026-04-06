@@ -105,6 +105,7 @@ class Pipeline:
         self.all_from_schema = True
         self.use_data_objects_spec = True
         self.csv_default_settings = {}
+        self.runtime_incremental_state = {}
 
         try:
             pipeline_all_obj = self.get_pipeline_entire_config()

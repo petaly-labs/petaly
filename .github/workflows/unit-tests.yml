@@ -26,4 +26,4 @@ jobs:
 
       - name: Run focused pipeline mock tests
         run: |
-          pytest -q tests/unittest/core/test_pipeline.py -k "inline_source_attributes_deprecated_warning or source_only_connection_cannot_be_used_as_target"
+          pytest -q tests/unittest/core/test_pipeline.py

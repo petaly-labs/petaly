@@ -26,6 +26,16 @@ class LoadSummary:
     def __init__(self):
         """Initialize the LoadSummary instance."""
         self.summary_list = []
+
+    def _make_entry_key(self, source_connection, source_object, target_connection, target_object):
+        return (source_connection, source_object, target_connection, target_object)
+
+    def _find_existing_entry(self, source_connection, source_object, target_connection, target_object):
+        entry_key = self._make_entry_key(source_connection, source_object, target_connection, target_object)
+        for summary in self.summary_list:
+            if summary.get('_entry_key') == entry_key:
+                return summary
+        return None
     
     def add_entry(self, source_connection, source_object, target_connection, target_object,
                    recreated, rows_loaded, duration_sec, status, start_time, end_time):
@@ -44,18 +54,46 @@ class LoadSummary:
             start_time: Start time timestamp (float or datetime)
             end_time: End time timestamp (float or datetime)
         """
-        self.summary_list.append({
-            'source_connection': source_connection,
-            'source_object': source_object,
-            'target_connection': target_connection,
-            'target_object': target_object,
-            'recreated': recreated,
-            'rows_loaded': rows_loaded,
-            'duration_sec': duration_sec,
-            'status': status,
-            'start_time': start_time,
-            'end_time': end_time
-        })
+        existing_entry = self._find_existing_entry(
+            source_connection, source_object, target_connection, target_object
+        )
+
+        if existing_entry is None:
+            self.summary_list.append({
+                '_entry_key': self._make_entry_key(source_connection, source_object, target_connection, target_object),
+                'source_connection': source_connection,
+                'source_object': source_object,
+                'target_connection': target_connection,
+                'target_object': target_object,
+                'recreated': recreated,
+                'rows_loaded': rows_loaded,
+                'duration_sec': duration_sec,
+                'status': status,
+                'start_time': start_time,
+                'end_time': end_time
+            })
+            return
+
+        existing_entry['recreated'] = bool(existing_entry.get('recreated')) or bool(recreated)
+
+        existing_rows = existing_entry.get('rows_loaded')
+        if existing_rows is None:
+            existing_entry['rows_loaded'] = rows_loaded
+        elif rows_loaded is not None:
+            existing_entry['rows_loaded'] = existing_rows + rows_loaded
+
+        existing_entry['duration_sec'] = round(
+            float(existing_entry.get('duration_sec', 0) or 0) + float(duration_sec or 0), 2
+        )
+
+        if existing_entry.get('status') != 'failed' and status == 'failed':
+            existing_entry['status'] = 'failed'
+
+        if existing_entry.get('start_time') is None or (start_time is not None and start_time < existing_entry.get('start_time')):
+            existing_entry['start_time'] = start_time
+
+        if existing_entry.get('end_time') is None or (end_time is not None and end_time > existing_entry.get('end_time')):
+            existing_entry['end_time'] = end_time
     
     def display(self):
         """
@@ -110,4 +148,3 @@ class LoadSummary:
         
         logger.info("=" * total_width)
         logger.info("")
-

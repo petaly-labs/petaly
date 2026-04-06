@@ -6,7 +6,7 @@
     "load_attributes": {
       "all_from_schema": true,
       "use_data_objects_spec": true,
-      "flow_mode": "object",
+      "dump_mode": false,
       "max_workers": 1,
       "csv_default_settings": {
         "header": true,

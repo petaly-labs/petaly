@@ -14,6 +14,7 @@ from petaly.utils.file_handler import FileHandler
 from petaly.core.object_metadata import ObjectMetadata
 from petaly.core.type_mapping import TypeMapping
 from petaly.core.data_object import DataObject
+from petaly.core.load_state import LoadState
 
 
 class DBExtractor(ABC):
@@ -46,6 +47,7 @@ class DBExtractor(ABC):
         self.m_conf = self.pipeline.m_conf
         self.type_mapping = TypeMapping(pipeline)
         self.object_metadata = ObjectMetadata(pipeline)
+        self.load_state = LoadState(pipeline)
 
         if self.m_conf.set_extractor_paths(self.pipeline.source_connector_id):
             self.connector_extract_to_stmt_fpath = self.m_conf.connector_extract_to_stmt_fpath
@@ -165,6 +167,7 @@ class DBExtractor(ABC):
         data_object = self.get_data_object(object_name)
         logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
         extractor_obj_conf.update({'object_settings': data_object.object_settings})
+        extractor_obj_conf.update({'where_clause': self.compose_incremental_where_clause(data_object)})
 
         # blob-prefix, used for storage in cloud services (e.g. Redshift (s3), Bigquery (GCS))
         blob_prefix = self.composer.compose_bucket_object_path(self.pipeline.source_attr.get('bucket_pipeline_prefix'),
@@ -206,6 +209,69 @@ class DBExtractor(ABC):
 
         logger.debug(f"Config for data extract: {extractor_obj_conf}")
         return extractor_obj_conf
+
+    def compose_incremental_where_clause(self, data_object: DataObject) -> str:
+        """Compose the query suffix for incremental extraction from the source."""
+        if data_object.extract_load_mode != 'incremental':
+            return ''
+        if not data_object.column_last_modified:
+            logger.warning(
+                f"Object '{data_object.object_name}' is configured for incremental load but column_last_modified is empty. "
+                f"Falling back to full extract."
+            )
+            return ''
+
+        runtime_incremental_state = getattr(self.pipeline, 'runtime_incremental_state', {})
+        last_loaded_timestamp = runtime_incremental_state.get(data_object.object_name)
+
+        if last_loaded_timestamp is None:
+            target_loader_class = self.m_conf.get_loader_class(self.pipeline.target_connector_id)
+            if target_loader_class is None:
+                logger.warning(
+                    f"Could not initialize target loader for incremental state lookup on object '{data_object.object_name}'. "
+                    f"Falling back to full extract."
+                )
+                return ''
+
+            target_loader = target_loader_class(self.pipeline)
+            target_table_name = data_object.destination_object_name or data_object.object_name
+            target_schema_name = self.pipeline.target_attr.get('database_schema')
+            schema_table_name = f"{target_schema_name}.{target_table_name}" if target_schema_name else target_table_name
+
+            try:
+                table_exists = target_loader.table_exists(schema_table_name) if hasattr(target_loader, 'table_exists') else False
+                last_loaded_timestamp = self.load_state.initialize_first_batch_state(
+                    object_name=data_object.object_name,
+                    schema_table_name=schema_table_name,
+                    column_last_modified=data_object.column_last_modified,
+                    db_connector=target_loader.db_connector,
+                    table_exists=table_exists
+                )
+            finally:
+                db_connector = getattr(target_loader, 'db_connector', None)
+                conn = getattr(db_connector, 'conn', None)
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+        else:
+            logger.debug(
+                f"Object '{data_object.object_name}' incremental extract will use in-memory last_loaded_timestamp={last_loaded_timestamp}"
+            )
+
+        if not last_loaded_timestamp:
+            return ''
+
+        quoted_column = f"{self.db_connector.metaquery_quote}{data_object.column_last_modified}{self.db_connector.metaquery_quote}"
+        escaped_timestamp = str(last_loaded_timestamp).replace("'", "''")
+        where_clause = f"WHERE {quoted_column} > '{escaped_timestamp}'"
+        if data_object.batch_size:
+            where_clause += f"\nORDER BY {quoted_column}\nLIMIT {int(data_object.batch_size)}"
+        logger.debug(
+            f"Object '{data_object.object_name}' incremental extract will use last_loaded_timestamp={last_loaded_timestamp}: {where_clause}"
+        )
+        return where_clause
 
     def compose_meta_query(self):
         """Composes the metadata query based on pipeline configuration.
@@ -286,8 +352,7 @@ class DBExtractor(ABC):
             col_obj = dict_obj.get('columns')
 
             for idx, val in enumerate(col_obj):
-
-                column_transformation = transformation.get(val['data_type'])
+                column_transformation = self.get_column_transformation(val, transformation)
 
                 if column_transformation is not None:
                     column_list += column_transformation.format(column_name=val['column_name']) + ","
@@ -303,6 +368,12 @@ class DBExtractor(ABC):
                                     'column_list':column_list})
 
             return extract_obj_conf
+
+    def get_column_transformation(self, column_meta, transformation):
+        """
+        Get source-side column transformation for extraction.
+        """
+        return transformation.get(column_meta.get('data_type'))
 
     def get_data_object(self, object_name):
         """Gets a DataObject instance for the specified object.

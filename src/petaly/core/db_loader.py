@@ -5,6 +5,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 import time
+import csv
+import os
 from abc import ABC, abstractmethod
 from petaly.core.composer import Composer
 from petaly.utils.utils import measure_time
@@ -13,6 +15,7 @@ from petaly.core.type_mapping import TypeMapping
 from petaly.core.object_metadata import ObjectMetadata
 from petaly.core.data_object import DataObject
 from petaly.core.load_summary import LoadSummary
+from petaly.core.load_state import LoadState
 
 
 class DBLoader(ABC):
@@ -36,6 +39,7 @@ class DBLoader(ABC):
         self.m_conf = pipeline.m_conf
         self.object_metadata = ObjectMetadata(pipeline)
         self.type_mapping = TypeMapping(self.pipeline)
+        self.load_state = LoadState(self.pipeline)
         if self.m_conf.set_loader_paths(self.pipeline.target_connector_id):
             self.connector_load_from_stmt_fpath = self.m_conf.connector_load_from_stmt_fpath
             self.connector_create_table_stmt_fpath = self.m_conf.connector_create_table_stmt_fpath
@@ -131,6 +135,33 @@ class DBLoader(ABC):
                 output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
                 rows_loaded = self.count_rows_in_csv_files(output_data_object_dir, loader_obj_conf)
 
+            data_object = self.get_data_object(object_name)
+            if data_object.extract_load_mode == 'incremental' and data_object.column_last_modified:
+                batch_end_timestamp = self.get_batch_end_timestamp_from_extracted_data(object_name, loader_obj_conf, data_object)
+                if batch_end_timestamp is None:
+                    batch_end_timestamp = self.load_state._get_max_timestamp_from_db(
+                        schema_table_name=schema_table_name,
+                        column_last_modified=data_object.column_last_modified,
+                        db_connector=self.db_connector
+                    )
+                self.load_state.save_batch_state(
+                    object_name=object_name,
+                    batch_end_timestamp=batch_end_timestamp,
+                    rows_loaded=rows_loaded or 0,
+                    load_mode="incremental"
+                )
+                if batch_end_timestamp is not None:
+                    runtime_incremental_state = getattr(self.pipeline, 'runtime_incremental_state', None)
+                    if runtime_incremental_state is not None:
+                        runtime_incremental_state[object_name] = batch_end_timestamp
+            else:
+                self.load_state.save_batch_state(
+                    object_name=object_name,
+                    batch_end_timestamp=None,
+                    rows_loaded=rows_loaded or 0,
+                    load_mode="full"
+                )
+
             end_time = time.time()
             duration_sec = round(end_time - start_time, 2)
             logger.info(f"Load object: {object_name} completed | time: {duration_sec}s")
@@ -219,6 +250,7 @@ class DBLoader(ABC):
         data_object = DataObject(self.pipeline, object_name)
         table_ddl_dict = self.compose_table_ddl(data_object, table_metadata)
         loader_obj_conf.update({'table_ddl_dict': table_ddl_dict})
+        loader_obj_conf.update({'table_metadata': table_metadata})
 
         # 4. object_spec and default_settings
         logger.debug(f"The object settings combined with default settings: {data_object.object_settings}")
@@ -294,6 +326,7 @@ class DBLoader(ABC):
 
             column_datatype_list += column_name
             column_type = type_mapping.get(column_meta.get('data_type'))
+            column_type = self._normalize_mysql_temporal_column_type(column_meta, column_type)
 
             if column_type is None:
                 logger.error(f"Type mapping doesn't exists for source-connector-id: {self.pipeline.source_connector_id}, table: {table_name}, "
@@ -328,6 +361,83 @@ class DBLoader(ABC):
 
         logger.debug(f"The DDL for table: {schema_table_name} was composed")
         return table_ddl_dict
+
+    def _normalize_mysql_temporal_column_type(self, column_meta, column_type):
+        """
+        Ensure MySQL keeps sub-second precision for timestamp-like source columns.
+
+        PostgreSQL timestamps commonly include milliseconds/microseconds.
+        MySQL DATETIME without explicit precision truncates fractional seconds.
+        """
+        if not column_type:
+            return column_type
+
+        if self.pipeline.target_connector_id != 'mysql':
+            return column_type
+
+        source_data_type = str(column_meta.get('data_type', '')).lower()
+        if source_data_type in ('timestamp', 'timestamptz', 'timestamp with time zone', 'timestamp without time zone'):
+            normalized_type = str(column_type).strip().lower()
+            if normalized_type in ('datetime', 'timestamp'):
+                return f"{normalized_type}(6)"
+
+        return column_type
+
+    def get_batch_end_timestamp_from_extracted_data(self, object_name, loader_obj_conf, data_object):
+        """
+        Read the last modified timestamp from the extracted batch file.
+
+        For incremental extracts the source query is ordered by column_last_modified,
+        so the last row in the extracted batch represents the batch-end timestamp.
+        """
+        output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
+        metadata_file = self.pipeline.output_object_metadata_fpath.format(object_name=object_name)
+        table_metadata = self.f_handler.load_file_as_dict(metadata_file, 'json') or {}
+        columns_meta_arr = table_metadata.get('columns', [])
+        ordered_columns = [column_meta.get('column_name') for column_meta in columns_meta_arr]
+
+        if not output_data_object_dir or not ordered_columns:
+            return None
+
+        last_timestamp = None
+        object_settings = loader_obj_conf.get('object_settings', {})
+        delimiter = object_settings.get('columns_delimiter', ',')
+        quotechar = '"' if object_settings.get('columns_quote', 'double') == 'double' else "'"
+        has_header = object_settings.get('header', True)
+
+        all_files = []
+        for pattern in ('*.csv', '*.tsv', '*.txt'):
+            import glob
+            all_files.extend(glob.glob(os.path.join(output_data_object_dir, pattern)))
+
+        file_list = sorted([f for f in set(all_files) if os.path.isfile(f)])
+        if not file_list:
+            return None
+
+        for path_to_data_file in file_list:
+            with open(path_to_data_file, 'r', encoding='utf-8', newline='') as csv_file:
+                if has_header:
+                    reader = csv.DictReader(csv_file, delimiter=delimiter, quotechar=quotechar)
+                    for row in reader:
+                        if row:
+                            last_timestamp = row.get(data_object.column_last_modified) or last_timestamp
+                else:
+                    reader = csv.reader(csv_file, delimiter=delimiter, quotechar=quotechar)
+                    try:
+                        column_index = ordered_columns.index(data_object.column_last_modified)
+                    except ValueError:
+                        column_index = -1
+                    if column_index < 0:
+                        continue
+                    for row in reader:
+                        if row and len(row) > column_index:
+                            last_timestamp = row[column_index] or last_timestamp
+
+        if last_timestamp:
+            logger.debug(
+                f"Derived incremental batch_end_timestamp from extracted data for object '{object_name}': {last_timestamp}"
+            )
+        return last_timestamp
 
     def get_column_type_with_precision(self, column_meta, type_mapping):
         """ This functions currently is not in use. """
@@ -470,6 +580,12 @@ class DBLoader(ABC):
             True if table exists, False otherwise
         """
         try:
+            def split_schema_table_name(full_name: str):
+                if '.' in full_name:
+                    schema_name, table_name = full_name.split('.', 1)
+                    return schema_name, table_name
+                return None, full_name
+
             # Try to query the table - if it exists, query succeeds
             # Use a simple SELECT 1 query that's fast and doesn't return data
             if self.pipeline.target_connector_id == 'bigquery':
@@ -486,6 +602,38 @@ class DBLoader(ABC):
                     result_data, request_id = self.db_connector.execute_sql(check_query, sleep_sec=1)
                     return result_data is not None
                 except Exception:
+                    return False
+            elif self.pipeline.target_connector_id == 'postgres':
+                schema_name, table_name = split_schema_table_name(schema_table_name)
+                if schema_name is None:
+                    schema_name = self.pipeline.target_attr.get('database_schema', 'public')
+                check_query = (
+                    "SELECT 1 "
+                    "FROM information_schema.tables "
+                    f"WHERE table_schema = '{schema_name}' AND table_name = '{table_name}' "
+                    "LIMIT 1"
+                )
+                try:
+                    result = self.db_connector.get_query_result(check_query)
+                    return bool(result)
+                except Exception as e:
+                    logger.debug(f"Error checking PostgreSQL table existence for '{schema_table_name}': {e}")
+                    return False
+            elif self.pipeline.target_connector_id == 'mysql':
+                schema_name, table_name = split_schema_table_name(schema_table_name)
+                if schema_name is None:
+                    schema_name = self.pipeline.target_attr.get('database_name')
+                check_query = (
+                    "SELECT 1 "
+                    "FROM information_schema.tables "
+                    f"WHERE table_schema = '{schema_name}' AND table_name = '{table_name}' "
+                    "LIMIT 1"
+                )
+                try:
+                    result = self.db_connector.get_query_result(check_query)
+                    return bool(result)
+                except Exception as e:
+                    logger.debug(f"Error checking MySQL table existence for '{schema_table_name}': {e}")
                     return False
             else:
                 # PostgreSQL, MySQL, Redshift TCP
@@ -561,4 +709,3 @@ class DBLoader(ABC):
             logger.debug(f"Could not get row count for {schema_table_name}: {e}")
             return None
     
-

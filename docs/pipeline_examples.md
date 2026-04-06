@@ -148,7 +148,7 @@ data_objects_spec:
     exclude_columns:                       # Optional
       - column1
       - column2
-    object_source_dir: /path/to/files      # For CSV sources
+    object_source_dir: incoming/files      # For file sources with source_base_dir
     file_names:                            # For CSV sources
       - file1.csv
       - file2.csv
@@ -232,14 +232,14 @@ data_objects_spec:
     object_name: stocks
     destination_object_name: stocks_new
     recreate_destination_object: true
-    object_source_dir: /path/to/csv/files
+    object_source_dir: stocks
     file_names:
       - stocks.csv
 - object_spec:
     object_name: options
     destination_object_name: options_new
     recreate_destination_object: true
-    object_source_dir: /path/to/csv/files
+    object_source_dir: options
     file_names:
       - options.csv
 ```
@@ -303,13 +303,13 @@ pipeline:
 data_objects_spec:
 - object_spec:
     object_name: users
-    load_mode: incremental
+    extract_load_mode: incremental
     column_primary_key: user_id
     column_last_modified: updated_at
     batch_size: 10000
 - object_spec:
     object_name: orders
-    load_mode: incremental
+    extract_load_mode: incremental
     column_primary_key: order_id
     column_last_modified: modified_at
     batch_size: 5000
@@ -432,7 +432,7 @@ data_objects_spec:
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
-    object_source_dir: /your-path-to-csv-folder/stocks
+    object_source_dir: stocks
     file_names:
     - 
 - object_spec:
@@ -442,7 +442,7 @@ data_objects_spec:
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
-    object_source_dir: /your-directory-path-to-csv-files
+    object_source_dir: options
     file_names:
     - options.csv
     - options2.csv
@@ -452,7 +452,7 @@ data_objects_spec:
 
 #### Postgres to CSV
 
-The following example exports tables **stocks*** and ***users** from Postgres into destination folder `destination_dir: /your-path-to-destination-folder`
+The following example exports tables **stocks*** and ***users** from Postgres into target base directory `target_base_dir: /your-path-to-destination-folder`
 It also exclude columns ***likebroadway***, ***likemusicals*** of table **users** from export.
 
 ```
@@ -468,7 +468,7 @@ pipeline:
     database_schema: petaly_schema
   target_attributes:
     connector_type: csv
-    destination_dir: /your-path-to-destination-folder
+    target_base_dir: /your-path-to-destination-folder
   load_attributes:
     all_from_schema: false
     use_data_objects_spec: true
@@ -513,7 +513,7 @@ pipeline:
     bucket_pipeline_prefix: petaly/{pipeline_name}
   target_attributes:
     connector_type: csv
-    destination_dir: /opt/petaly_labs/data/dest_data/
+    target_base_dir: /opt/petaly_labs/data/dest_data/
   load_attributes:
     all_from_schema: false
     use_data_objects_spec: true
@@ -564,7 +564,7 @@ data_objects_spec:
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
-    object_source_dir: /opt/petaly_labs/data/source_data/csv/test_data/osm_admin
+    object_source_dir: test_data/osm_admin
     file_names:
     - osm_admin.csv.gz
 
@@ -600,7 +600,7 @@ data_objects_spec:
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
-    object_source_dir: /opt/petaly_labs/data/source_data/csv/test_data/stocks
+    object_source_dir: test_data/stocks
     file_names:
       - 2013-01-08stocks.csv
       - 2013-01-09stocks.csv
@@ -646,7 +646,7 @@ data_objects_spec:
     cleanup_linebreak_in_fields: false
     exclude_columns:
     -
-    object_source_dir: /opt/petaly_labs/data/source_data/csv/test_data/stocks
+    object_source_dir: test_data/stocks
     file_names:
     -
 
@@ -743,7 +743,7 @@ pipeline:
     aws_secret_access_key:
   target_attributes:
     connector_type: csv
-    destination_dir: /opt/petaly_labs/data/dest_data
+    target_base_dir: /opt/petaly_labs/data/dest_data
   load_attributes:
     all_from_schema: false
     use_data_objects_spec: true

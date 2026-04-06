@@ -49,7 +49,7 @@ class TestCsvExtractor:
         pipeline.source_attr = {
             'connector_type': 'csv',
             'path': 'test.csv',
-            'source_dir': '/tmp/test_source'  # Add source_dir to avoid validation error
+            'source_base_dir': '/tmp/test_source'
         }
         pipeline.load_attributes = {
             'use_data_objects_spec': 'strict',
@@ -62,6 +62,8 @@ class TestCsvExtractor:
             'header': True,
             'columns_delimiter': ','
         }
+        pipeline.all_from_schema = False
+        pipeline.exclude_objects = []
         pipeline.data_objects = ['test_object']
         pipeline.data_objects_spec = [{
             'object_spec': {
@@ -148,7 +150,7 @@ class TestCsvLoader:
             'connector_type': 'csv',
             'bucket_pipeline_prefix': '',
             'path': 'test_output.csv',
-            'destination_dir': 'test_dest_dir'
+            'target_base_dir': 'test_dest_dir'
         }
         pipeline.pipeline_name = 'test_pipeline'
         pipeline.load_attributes = {
@@ -162,11 +164,14 @@ class TestCsvLoader:
             'header': True,
             'columns_delimiter': ','
         }
+        pipeline.all_from_schema = False
+        pipeline.exclude_objects = []
         pipeline.data_objects = ['test_object']
         pipeline.data_objects_spec = [{
             'object_spec': {
                 'object_name': 'test_object',
                 'object_source_dir': 'test_source_dir',
+                'object_target_dir': 'exports/test_object',
                 'file_names': ['test.csv'],
                 'source': {'path': 'test.csv'},
                 'destination': {'path': 'test_output.csv'}
@@ -181,6 +186,7 @@ class TestCsvLoader:
             'object_spec': {
                 'object_name': 'test_object',
                 'object_source_dir': 'test_source_dir',
+                'object_target_dir': 'exports/test_object',
                 'file_names': ['test.csv'],
                 'source': {'path': 'test.csv'},
                 'destination': {'path': 'test_output.csv'}

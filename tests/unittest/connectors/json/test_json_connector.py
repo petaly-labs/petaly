@@ -198,7 +198,7 @@ class TestJsonLoader:
         pipeline.m_conf.set_loader_paths = Mock(return_value=None)
         pipeline.target_attr = {
             'connector_type': 'json',
-            'destination_dir': '/tmp/test_dest'
+            'target_base_dir': '/tmp/test_dest'
         }
         pipeline.pipeline_name = 'test_pipeline'
         pipeline.load_attributes = {
@@ -238,6 +238,7 @@ class TestJsonLoader:
         mock_check_dir.return_value = (True, 1)  # Directory exists and has 1 file
         mock_data_object = Mock()
         mock_data_object.destination_object_name = None
+        mock_data_object.object_target_dir = 'exports/test_object'
         mock_get_data_object.return_value = mock_data_object
         
         loader = JsonLoader(pipeline_mock)
@@ -298,4 +299,3 @@ class TestJsonLoader:
         # Verify the copied file is JSON
         call_args = loader.f_handler.cp_file.call_args[0]
         assert call_args[0].endswith('.json')
-

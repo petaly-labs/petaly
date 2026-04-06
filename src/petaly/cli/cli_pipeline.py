@@ -89,31 +89,18 @@ class CliPipeline:
                 use_connections = False
         
         if use_connections:
-            # Use connections - ask once if user wants to use existing connections
-            # Load connections to check if any exist
-            existing_connection_names = []
-            if self.f_handler.is_file(connections_fpath):
-                file_extension = os.path.splitext(connections_fpath)[1].lower()
-                if file_extension == '.yaml':
-                    connections_config = self.f_handler.load_yaml(connections_fpath)
-                else:
-                    connections_config = self.f_handler.load_json(connections_fpath)
-                
-                connections_dict = connections_config.get('connections', {})
-                existing_connection_names = list(connections_dict.keys())
-            
-            if existing_connection_names:
-                # Show list of existing connections directly
-                self.console.print(f"\nExisting connections:")
+            source_connection_names = self.cli_menu.get_connection_names_by_type(connections_fpath, 'source')
+
+            if source_connection_names:
+                self.console.print(f"\nExisting [bold]source[/bold] connections:")
                 self.console.print(f"  0. [bold cyan]Create new connection[/bold cyan]")
-                for idx, connection_name in enumerate(existing_connection_names, 1):
+                for idx, connection_name in enumerate(source_connection_names, 1):
                     self.console.print(f"  {idx}. {connection_name}")
-                
-                # SOURCE: Select source connection
-                source_connection_name = self.cli_menu._select_connection_from_list('source', existing_connection_names, len(existing_connection_names), connections_fpath)
+
+                source_connection_name = self.cli_menu._select_connection_from_list(
+                    'source', source_connection_names, len(source_connection_names), connections_fpath
+                )
             else:
-                # No existing connections, create new ones
-                # SOURCE: Create/select source connection
                 source_connection_name = self.cli_menu.select_or_create_connection('source', connections_fpath, skip_list=True)
             
             # Set source connection reference
@@ -125,9 +112,17 @@ class CliPipeline:
             # SOURCE: Prompt for bucket_pipeline_prefix if connector needs it
             self._prompt_for_bucket_prefix_if_needed('source_attributes', source_connection_name, pipeline_name)
             
-            # TARGET: Select target connection
-            if existing_connection_names:
-                target_connection_name = self.cli_menu._select_connection_from_list('target', existing_connection_names, len(existing_connection_names), connections_fpath)
+            target_connection_names = self.cli_menu.get_connection_names_by_type(connections_fpath, 'target')
+
+            if target_connection_names:
+                self.console.print(f"\nExisting [bold]target[/bold] connections:")
+                self.console.print(f"  0. [bold cyan]Create new connection[/bold cyan]")
+                for idx, connection_name in enumerate(target_connection_names, 1):
+                    self.console.print(f"  {idx}. {connection_name}")
+
+                target_connection_name = self.cli_menu._select_connection_from_list(
+                    'target', target_connection_names, len(target_connection_names), connections_fpath
+                )
             else:
                 target_connection_name = self.cli_menu.select_or_create_connection('target', connections_fpath, skip_list=True)
             
@@ -159,21 +154,21 @@ class CliPipeline:
                 connector_name = source_connector_type.upper()
                 self.console.print(f"\n[bold]Configure {connector_name} Source Directory[/bold]")
                 source_dir = prompt.Prompt.ask(
-                    f"Enter [bold yellow]source_dir[/bold yellow] (absolute path to source {connector_name} files directory)",
+                    f"Enter [bold yellow]source_base_dir[/bold yellow] (absolute path to source {connector_name} files base directory)",
                     default=None
                 )
                 if source_dir:
-                    self.composed_pipeline_config['pipeline']['source_attributes']['source_dir'] = source_dir
+                    self.composed_pipeline_config['pipeline']['source_attributes']['source_base_dir'] = source_dir
             
             if target_connector_type in ('csv', 'parquet', 'json'):
                 connector_name = target_connector_type.upper()
                 self.console.print(f"\n[bold]Configure {connector_name} Target Directory[/bold]")
                 destination_dir = prompt.Prompt.ask(
-                    f"Enter [bold yellow]destination_dir[/bold yellow] (absolute path to destination directory)",
+                    f"Enter [bold yellow]target_base_dir[/bold yellow] (absolute path to target base directory)",
                     default=None
                 )
                 if destination_dir:
-                    self.composed_pipeline_config['pipeline']['target_attributes']['destination_dir'] = destination_dir
+                    self.composed_pipeline_config['pipeline']['target_attributes']['target_base_dir'] = destination_dir
             
             # Prompt for bucket_pipeline_prefix if connector needs it (for inline attributes)
             self._prompt_for_bucket_prefix_if_needed('source_attributes', None, pipeline_name)
@@ -212,13 +207,13 @@ class CliPipeline:
         # Exclude attributes based on connector category and connection type
         exclude_key_list = [None]
         if connector_type == 'csv':
-            # CSV connector: source_dir for source, destination_dir for target
+            # CSV connector: source_base_dir for source, target_base_dir for target
             if connection_attributes_name == 'source_attributes':
-                exclude_key_list = ['destination_dir']
+                exclude_key_list = ['target_base_dir', 'destination_dir']
             elif connection_attributes_name == 'target_attributes':
-                exclude_key_list = ['source_dir']
+                exclude_key_list = ['source_base_dir', 'source_dir']
         elif connector_category in ('file','storage') and connection_attributes_name == 'source_attributes':
-            exclude_key_list = ['destination_dir']
+            exclude_key_list = ['target_base_dir', 'destination_dir']
         
         # Exclude bucket_pipeline_prefix from assign_attributes - it will be prompted separately
         # This ensures consistent prompting for both connection-based and inline attribute flows
@@ -250,7 +245,7 @@ class CliPipeline:
     def _prompt_for_schema_if_needed(self, connection_attributes_name, connection_name):
         """
         Prompts for database_schema/dataset if the connector supports it.
-        Also prompts for file connector-specific attributes (source_dir/destination_dir).
+        Also prompts for file connector-specific attributes (source_base_dir/target_base_dir).
         Schema/dataset and file directories are pipeline-specific and should be configured in pipeline.yaml,
         not in connections.yaml.
         
@@ -292,25 +287,25 @@ class CliPipeline:
         if connector_type in ('csv', 'parquet', 'json'):
             self.console.print(f"\n[bold]Configure {connection_attributes_name.replace('_', ' ').title()}[/bold]")
             if connection_attributes_name == 'source_attributes':
-                # Prompt for source_dir when file connector is source
+                # Prompt for source_base_dir when file connector is source
                 connector_name = connector_type.upper()
                 self.console.print(f"\n[bold]Configure {connector_name} Source Directory[/bold]")
                 source_dir = prompt.Prompt.ask(
-                    f"Enter [bold yellow]source_dir[/bold yellow] (absolute path to source {connector_name} files directory)",
+                    f"Enter [bold yellow]source_base_dir[/bold yellow] (absolute path to source {connector_name} files base directory)",
                     default=None
                 )
                 if source_dir:
-                    self.composed_pipeline_config['pipeline'][connection_attributes_name]['source_dir'] = source_dir
+                    self.composed_pipeline_config['pipeline'][connection_attributes_name]['source_base_dir'] = source_dir
             elif connection_attributes_name == 'target_attributes':
-                # Prompt for destination_dir when file connector is target
+                # Prompt for target_base_dir when file connector is target
                 connector_name = connector_type.upper()
                 self.console.print(f"\n[bold]Configure {connector_name} Target Directory[/bold]")
                 destination_dir = prompt.Prompt.ask(
-                    f"Enter [bold yellow]destination_dir[/bold yellow] (absolute path to destination directory)",
+                    f"Enter [bold yellow]target_base_dir[/bold yellow] (absolute path to target base directory)",
                     default=None
                 )
                 if destination_dir:
-                    self.composed_pipeline_config['pipeline'][connection_attributes_name]['destination_dir'] = destination_dir
+                    self.composed_pipeline_config['pipeline'][connection_attributes_name]['target_base_dir'] = destination_dir
             return  # File connectors don't have database_schema, so return after prompting for directories
         
         # Check if connector supports database_schema (for database connectors)
@@ -490,4 +485,3 @@ class CliPipeline:
             Dictionary containing the composed pipeline configuration
         """
         return self.composed_pipeline_config
-

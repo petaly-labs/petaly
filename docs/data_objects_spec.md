@@ -76,15 +76,16 @@ data_objects_spec:
     exclude_columns:                       # Optional
       - column1
       - column2
-    object_source_dir: /path/to/files      # For CSV sources
+    object_source_dir: csv/files           # For file sources with source_base_dir
+    object_target_dir: exports/files       # Optional for file targets with target_base_dir
     file_names:                            # For CSV sources
       - file1.csv
       - file2.csv
-    # Incremental Load Parameters (values only relevant when load_mode: incremental)
-    load_mode: incremental                 # Options: "full" (default) or "incremental"
-    column_primary_key: id                 # Required when load_mode: incremental, can be empty for full
-    column_last_modified: modified_at     # Required when load_mode: incremental, can be empty for full
-    batch_size: 10000                      # Optional when load_mode: incremental, can be empty for full
+    # Incremental Load Parameters (values only relevant when extract_load_mode: incremental)
+    extract_load_mode: incremental         # Options: "full" (default) or "incremental"
+    column_primary_key: id                 # Required when extract_load_mode: incremental, can be empty for full
+    column_last_modified: modified_at     # Required when extract_load_mode: incremental, can be empty for full
+    batch_size: 10000                      # Optional when extract_load_mode: incremental, can be empty for full
 ```
 
 ## Configuration Options
@@ -96,12 +97,13 @@ Settings for each data object:
 - `recreate_destination_object`: Whether to recreate the target object (default: false)
 - `cleanup_linebreak_in_fields`: Handle line breaks in fields (default: false)
 - `exclude_columns`: List of columns to exclude
-- `object_source_dir`: Directory containing source files (for CSV sources)
+- `object_source_dir`: Source subdirectory relative to `source_base_dir`, or an absolute path if no base dir is configured
+- `object_target_dir`: Target subdirectory relative to `target_base_dir`, or an absolute path if no base dir is configured
 - `file_names`: List of files to process (for CSV sources)
-- `load_mode`: Load mode - `"full"` (default) or `"incremental"` (see [Incremental Load](#incremental-load))
-- `column_primary_key`: Primary key column name for incremental load (required only if `load_mode: incremental`, can be omitted/empty for `load_mode: full`)
-- `column_last_modified`: Timestamp column name for incremental load (required only if `load_mode: incremental`, can be omitted/empty for `load_mode: full`)
-- `batch_size`: Number of rows to load per batch in incremental mode (only relevant if `load_mode: incremental`, can be omitted/empty for `load_mode: full`)
+- `extract_load_mode`: Extract/load mode - `"full"` (default) or `"incremental"` (see [Incremental Load](#incremental-load))
+- `column_primary_key`: Primary key column name for incremental load (required only if `extract_load_mode: incremental`, can be omitted/empty for `extract_load_mode: full`)
+- `column_last_modified`: Timestamp column name for incremental load (required only if `extract_load_mode: incremental`, can be omitted/empty for `extract_load_mode: full`)
+- `batch_size`: Number of rows to load per batch in incremental mode (only relevant if `extract_load_mode: incremental`, can be omitted/empty for `extract_load_mode: full`)
 
 ## Examples
 
@@ -124,7 +126,7 @@ data_objects_spec:
     object_name: stocks
     destination_object_name: stocks_new
     recreate_destination_object: true
-    object_source_dir: /path/to/csv/files
+    object_source_dir: incoming/stocks
     file_names:
       - stocks.csv
 ```
@@ -155,15 +157,15 @@ Incremental load allows you to transfer only new or updated rows based on a time
 
 **Important:** 
 - Incremental load is only supported for MySQL and PostgreSQL sources.
-- When `load_mode: full` (default), the incremental load parameters (`column_primary_key`, `column_last_modified`, `batch_size`) can be omitted or left empty.
-- These parameters are only required/relevant when `load_mode: incremental`.
+- When `extract_load_mode: full` (default), the incremental load parameters (`column_primary_key`, `column_last_modified`, `batch_size`) can be omitted or left empty.
+- These parameters are only required/relevant when `extract_load_mode: incremental`.
 
 **Configuration for Incremental Load:**
 ```yaml
 data_objects_spec:
 - object_spec:
     object_name: users
-    load_mode: incremental
+    extract_load_mode: incremental
     column_primary_key: id              # Required for incremental load
     column_last_modified: modified_at   # Required for incremental load
     batch_size: 10000                   # Optional: rows per batch (enables resumable loads)
@@ -174,7 +176,7 @@ data_objects_spec:
 data_objects_spec:
 - object_spec:
     object_name: users
-    load_mode: full  # or omit load_mode entirely (defaults to "full")
+    extract_load_mode: full  # or omit extract_load_mode entirely (defaults to "full")
     # column_primary_key, column_last_modified, and batch_size can be omitted
 ```
 
@@ -210,20 +212,20 @@ pipeline:
 data_objects_spec:
 - object_spec:
     object_name: users
-    load_mode: incremental
+    extract_load_mode: incremental
     column_primary_key: user_id
     column_last_modified: updated_at
     batch_size: 10000
 - object_spec:
     object_name: orders
-    load_mode: full  # This table uses full load
+    extract_load_mode: full  # This table uses full load
 ```
 
 ## Best Practices
 
 1. **Mode Selection**
-   - Use `strict` when you need precise control over which objects to process
-   - Use `prefer` when you want to process all objects but customize some
+   - Use `all_from_schema: false` when you need precise control over which objects to process
+   - Use `all_from_schema: true` with `use_data_objects_spec: true` when you want to process all objects but customize some
 
 2. **Object Specification**
    - Use meaningful names for source and destination objects

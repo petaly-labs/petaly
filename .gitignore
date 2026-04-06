@@ -187,3 +187,6 @@ crash.log
 *.tfstate
 *.tfstate.backup
 *.lock.hcl
+
+# Local test artifacts
+MagicMock/

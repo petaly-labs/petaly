@@ -60,25 +60,34 @@ class DataObject:
             self.recreate_destination_object = bool(recreate_value)
         self.exclude_columns = data_object_spec.get('exclude_columns')
         self.object_source_dir = data_object_spec.get('object_source_dir')
+        self.object_target_dir = data_object_spec.get('object_target_dir')
         self.file_names = data_object_spec.get('file_names')
         cleanup_linebreak_in_fields = data_object_spec.get('cleanup_linebreak_in_fields')
         self.object_settings.update({'cleanup_linebreak_in_fields': cleanup_linebreak_in_fields})
         
         # Incremental load parameters (per-object)
         # Note: Incremental load is only supported for MySQL and PostgreSQL sources
-        self.load_mode = data_object_spec.get('load_mode', 'full')
+        self.extract_load_mode = data_object_spec.get('extract_load_mode', data_object_spec.get('load_mode', 'full'))
+        self.load_mode = self.extract_load_mode
         self.column_primary_key = data_object_spec.get('column_primary_key', '')
         self.column_last_modified = data_object_spec.get('column_last_modified', '')
         batch_size = data_object_spec.get('batch_size')
         self.batch_size = int(batch_size) if batch_size is not None and batch_size != '' else None
         
         # Validate incremental load is only used with supported sources
-        if self.load_mode == 'incremental':
+        if self.extract_load_mode == 'incremental':
             if pipeline.source_connector_id not in ('mysql', 'postgres'):
                 logger.error(
                     f"Incremental load mode is only supported for MySQL and PostgreSQL sources. "
                     f"Current source connector: {pipeline.source_connector_id}. "
-                    f"Please set load_mode to 'full' or use MySQL/PostgreSQL as source."
+                    f"Please set extract_load_mode to 'full' or use MySQL/PostgreSQL as source."
+                )
+                sys.exit()
+            if self.recreate_destination_object:
+                logger.error(
+                    "Incremental load cannot be combined with recreate_destination_object=true. "
+                    "Recreating the destination object would discard previously loaded rows and break incremental semantics. "
+                    "Set recreate_destination_object to false for incremental objects."
                 )
                 sys.exit()
 
@@ -122,9 +131,11 @@ class DataObject:
         self.cleanup_linebreak_in_fields = False
         self.exclude_columns = [None]
         self.object_source_dir = None
+        self.object_target_dir = None
         self.file_names = [None]
         
         # Incremental load parameters (defaults for objects without spec)
+        self.extract_load_mode = 'full'
         self.load_mode = 'full'
         self.column_primary_key = ''
         self.column_last_modified = ''

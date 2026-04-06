@@ -189,7 +189,7 @@ class CliMenu():
                 )
                 
                 # Compose connection attributes
-                connection_attributes = self.compose_connection_attributes_dict()
+                connection_attributes = self.compose_connection_attributes_dict(endpoint_type=connection_type)
                                 # Save connection to connections.yaml
                 self.save_connection_to_file(connections_fpath, connection_name, connection_attributes)
                 
@@ -209,6 +209,34 @@ class CliMenu():
                     return selection
                 else:
                     self.console.print(f"[red]connection '{selection}' not found. Please enter a valid number or connection name.[/red]")
+
+    def get_existing_connections(self, connections_fpath):
+        """Load all existing connections from file."""
+        connections_config = self.f_handler.load_json(self.m_conf.connections_skeleton_fpath)
+        if self.f_handler.is_file(connections_fpath):
+            file_extension = os.path.splitext(connections_fpath)[1].lower()
+            if file_extension == '.yaml':
+                existing_connections = self.f_handler.load_yaml(connections_fpath)
+            else:
+                existing_connections = self.f_handler.load_json(connections_fpath)
+
+            if existing_connections:
+                connections_config = existing_connections
+
+        if 'connections' in connections_config:
+            connections_dict = connections_config['connections']
+        else:
+            connections_dict = connections_config
+        return connections_dict if isinstance(connections_dict, dict) else {}
+
+    def get_connection_names_by_type(self, connections_fpath, endpoint_type):
+        """Return only connections matching the requested endpoint_type."""
+        connections_dict = self.get_existing_connections(connections_fpath)
+        return [
+            connection_name
+            for connection_name, connection_attrs in connections_dict.items()
+            if isinstance(connection_attrs, dict) and connection_attrs.get('endpoint_type') == endpoint_type
+        ]
     
     def select_or_create_connection(self, connection_type, connections_fpath, skip_list=False):
         """
@@ -222,24 +250,7 @@ class CliMenu():
         Returns:
             Name of the selected/created connection
         """
-        # Load existing connections
-        connections_config = self.f_handler.load_json(self.m_conf.connections_skeleton_fpath)
-        if self.f_handler.is_file(connections_fpath):
-            file_extension = os.path.splitext(connections_fpath)[1].lower()
-            if file_extension == '.yaml':
-                existing_connections = self.f_handler.load_yaml(connections_fpath)
-            else:
-                existing_connections = self.f_handler.load_json(connections_fpath)
-            
-            if existing_connections:
-                connections_config = existing_connections
-        
-        # Get all existing connections (flat structure)
-        if 'connections' in connections_config:
-            connections_dict = connections_config['connections']
-        else:
-            connections_dict = connections_config
-        existing_connection_names = list(connections_dict.keys())
+        existing_connection_names = self.get_connection_names_by_type(connections_fpath, connection_type)
         
         self.console.print(f"\n[bold]{self.break_line}[/bold]")
         self.console.print(f"Configure [bold]{connection_type}[/bold] connection\n")
@@ -293,17 +304,16 @@ class CliMenu():
         )
         
         # Compose connection attributes (similar to compose_connection_attributes but return dict)
-        connection_attributes = self.compose_connection_attributes_dict()
+        connection_attributes = self.compose_connection_attributes_dict(endpoint_type=connection_type)
         
         # Save connection to connections.yaml
         self.save_connection_to_file(connections_fpath, connection_name, connection_attributes)
         
         return connection_name
     
-    def compose_connection_attributes_dict(self):
+    def compose_connection_attributes_dict(self, endpoint_type=None):
         """
         Composes connection attributes and returns as dictionary (for saving to connections.yaml).
-        connections are generic and can be used as both source and target.
         Similar to compose_connection_attributes but returns dict instead of updating pipeline config.
         """
         connection_attributes_dict = {}
@@ -324,10 +334,9 @@ class CliMenu():
         connector_attributes = self.m_conf.get_connector_attributes(connector_type)
         
         # Exclude pipeline-specific attributes from connections
-        # connections should only contain connection details, not schema/dataset names, CSV directories, or bucket pipeline prefix
-        # Schema/dataset, CSV source_dir/destination_dir, and bucket_pipeline_prefix are pipeline-specific and will be configured in pipeline.yaml
+        # connections should only contain connection details, not schema/dataset names or bucket pipeline prefix
         # bucket_name stays in connections as it's part of the connection configuration
-        exclude_key_list = ['database_schema', 'source_dir', 'destination_dir', 'bucket_pipeline_prefix']  # These belong to pipeline, not connection
+        exclude_key_list = ['database_schema', 'bucket_pipeline_prefix']  # These belong to pipeline, not connection
         
         assigned_connector_attributes = self.assign_attributes(
             connector_attributes,
@@ -358,12 +367,13 @@ class CliMenu():
             )
             connection_attributes_dict.update(assigned_platform_attributes)
 
-        endpoint_type = prompt.Prompt.ask(
-            "Specify [bold green]endpoint_type[/bold green]",
-            choices=['source', 'target'],
-            default='source',
-            show_default=False
-        )
+        if endpoint_type is None:
+            endpoint_type = prompt.Prompt.ask(
+                "Specify [bold green]endpoint_type[/bold green]",
+                choices=['source', 'target'],
+                default='source',
+                show_default=False
+            )
         connection_attributes_dict.update({'endpoint_type': endpoint_type})
         
         return connection_attributes_dict

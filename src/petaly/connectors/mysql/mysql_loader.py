@@ -110,13 +110,47 @@ class MysqlLoader(DBLoader):
         table_ddl_dict = loader_obj_conf.get('table_ddl_dict')
         table_name = table_ddl_dict.get('table_name')
         load_data_options = self.compose_load_options(loader_obj_conf)
-        column_list = '' if table_ddl_dict.get('column_list') == None else '(' + table_ddl_dict.get('column_list') + ')'
+        column_list, set_clause = self.compose_load_column_mapping(loader_obj_conf)
         load_from_stmt = load_from_stmt.format_map(FormatDict(table_name=table_name,
                                                               column_list=column_list,
-                                                              load_data_options=load_data_options))
+                                                              load_data_options=load_data_options,
+                                                              set_clause=set_clause))
         load_from_file_fpath = loader_obj_conf.get('load_from_stmt_fpath')
         self.f_handler.save_file(load_from_file_fpath, load_from_stmt)
         return load_from_stmt
+
+    def compose_load_column_mapping(self, loader_obj_conf):
+        """Build MySQL LOAD DATA column mapping with target-side timestamp parsing."""
+        table_metadata = loader_obj_conf.get('table_metadata', {}) or {}
+        columns_meta_arr = table_metadata.get('columns', [])
+
+        if not columns_meta_arr:
+            table_ddl_dict = loader_obj_conf.get('table_ddl_dict', {})
+            column_list = table_ddl_dict.get('column_list')
+            return ('' if column_list is None else '(' + column_list + ')', '')
+
+        load_columns = []
+        set_assignments = []
+
+        for column_meta in columns_meta_arr:
+            column_name = self.composer.normalise_column_name(column_meta.get('column_name'))
+            quoted_column = f"`{column_name}`"
+            data_type = str(column_meta.get('data_type', '')).lower()
+
+            if data_type in ('timestamp', 'timestamptz', 'timestamp with time zone', 'timestamp without time zone'):
+                raw_var = f"@petaly_raw_{column_name}"
+                load_columns.append(raw_var)
+                set_assignments.append(
+                    f"{quoted_column} = STR_TO_DATE("
+                    f"NULLIF(TRIM(SUBSTRING_INDEX({raw_var}, ' ', 2)), ''), "
+                    f"'%Y-%m-%d %H:%i:%s.%f')"
+                )
+            else:
+                load_columns.append(quoted_column)
+
+        column_list = '(' + ', '.join(load_columns) + ')' if load_columns else ''
+        set_clause = '\nSET ' + ', '.join(set_assignments) if set_assignments else ''
+        return column_list, set_clause
 
     def drop_table(self, loader_obj_conf: dict):
 

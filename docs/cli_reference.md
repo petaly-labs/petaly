@@ -27,22 +27,22 @@ petaly show -c <connection_name>  # Shows specific connection
 ### 3. Create Connections
 ```bash
 # Create a new connection (will prompt for type: source/target)
-petaly init -c my_postgres_source
+petaly init -c postgres_source
 
 # Create another connection
-petaly init -c my_bigquery_target
+petaly init -c bigquery_target
 
 # Modify existing connection
-petaly init -c my_postgres_source
+petaly init -c postgres_source
 ```
 
 ### 4. View Connections
 ```bash
 # Show specific connection details
-petaly show -c my_postgres_source
+petaly show -c postgres_source
 
 # Show another connection
-petaly show -c my_bigquery_target
+petaly show -c bigquery_target
 ```
 
 ## Pipeline Management
@@ -97,7 +97,7 @@ petaly cleanup -p my_test_pipeline -o table1
 
 # Then test:
 petaly init --workspace
-petaly init -c my_json_connection
+petaly init -c json_target
 petaly init -p my_json_pipeline
 ```
 
@@ -174,7 +174,7 @@ Initialize Petaly workspace, connections, or pipelines.
 **Examples:**
 ```bash
 petaly init --workspace
-petaly init -c my_postgres_conn
+petaly init -c postgres_source
 petaly init -p my_pipeline -o table1,table2
 ```
 
@@ -223,4 +223,3 @@ Clean up pipeline output files.
 petaly cleanup -p my_pipeline
 petaly cleanup -p my_pipeline -o table1,table2
 ```
-

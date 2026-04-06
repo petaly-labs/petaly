@@ -15,9 +15,9 @@ Define reusable connections in `connections.yaml` and reference them in pipeline
 **In connections.yaml:**
 ```yaml
 connections:
-  my_postgres_conn:
-    connector_type: postgres
+  postgres_source:
     endpoint_type: source
+    connector_type: postgres
     database_user: user
     database_password: password
     database_host: localhost
@@ -28,7 +28,7 @@ connections:
 **In pipeline.yaml:**
 ```yaml
 source_attributes:
-  connection_name: my_postgres_conn  # Reference to connection
+  connection_name: postgres_source  # Reference to connection
   database_schema: public            # Pipeline-specific override
 ```
 

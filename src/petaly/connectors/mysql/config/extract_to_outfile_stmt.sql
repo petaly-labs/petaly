@@ -5,4 +5,5 @@ SELECT {column_list}
 INTO OUTFILE '/tmp/result.csv'
 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
-FROM {table_name};
+FROM {table_name}
+{where_clause};

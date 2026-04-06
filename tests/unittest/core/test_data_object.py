@@ -18,7 +18,8 @@ class TestDataObject:
         """Create a mock pipeline object."""
         pipeline = MagicMock()
         pipeline.output_object_data_dpath = '/output/{object_name}'
-        pipeline.use_data_objects_spec = 'strict'
+        pipeline.use_data_objects_spec = True
+        pipeline.all_from_schema = False
         pipeline.csv_default_settings = {
             'header': True,
             'columns_delimiter': ',',
@@ -54,7 +55,8 @@ class TestDataObject:
     
     def test_initialization_without_spec_all_mode(self, pipeline_mock):
         """Test DataObject initialization without spec in 'all' mode."""
-        pipeline_mock.use_data_objects_spec = 'prefer'
+        pipeline_mock.all_from_schema = True
+        pipeline_mock.use_data_objects_spec = True
         pipeline_mock.data_objects_spec = []
         
         data_object = DataObject(pipeline_mock, 'table1')
@@ -66,7 +68,8 @@ class TestDataObject:
     
     def test_initialization_without_spec_spec_mode(self, pipeline_mock):
         """Test DataObject initialization without spec in 'spec' mode should exit."""
-        pipeline_mock.use_data_objects_spec = 'strict'
+        pipeline_mock.all_from_schema = False
+        pipeline_mock.use_data_objects_spec = True
         pipeline_mock.data_objects_spec = []
         
         with pytest.raises(SystemExit):
@@ -74,7 +77,8 @@ class TestDataObject:
     
     def test_initialization_file_connector_spec_required(self, pipeline_mock):
         """Test that file connectors require spec even in 'all' mode."""
-        pipeline_mock.use_data_objects_spec = 'prefer'
+        pipeline_mock.all_from_schema = True
+        pipeline_mock.use_data_objects_spec = True
         pipeline_mock.data_objects_spec = []
         pipeline_mock.source_connector_id = 'csv'
         
@@ -168,3 +172,34 @@ class TestDataObject:
         
         assert data_object.recreate_destination_object is False
 
+    def test_extract_load_mode_new_parameter(self, pipeline_mock):
+        """Test extract_load_mode is read from object spec."""
+        pipeline_mock.data_objects_spec[0]['object_spec']['extract_load_mode'] = 'incremental'
+        pipeline_mock.data_objects_spec[0]['object_spec']['column_primary_key'] = 'id'
+        pipeline_mock.data_objects_spec[0]['object_spec']['column_last_modified'] = 'updated_at'
+
+        data_object = DataObject(pipeline_mock, 'table1')
+
+        assert data_object.extract_load_mode == 'incremental'
+        assert data_object.load_mode == 'incremental'
+
+    def test_extract_load_mode_legacy_alias(self, pipeline_mock):
+        """Test legacy load_mode is still accepted for backward compatibility."""
+        pipeline_mock.data_objects_spec[0]['object_spec']['load_mode'] = 'incremental'
+        pipeline_mock.data_objects_spec[0]['object_spec']['column_primary_key'] = 'id'
+        pipeline_mock.data_objects_spec[0]['object_spec']['column_last_modified'] = 'updated_at'
+
+        data_object = DataObject(pipeline_mock, 'table1')
+
+        assert data_object.extract_load_mode == 'incremental'
+        assert data_object.load_mode == 'incremental'
+
+    def test_incremental_load_disallows_recreate_destination_object(self, pipeline_mock):
+        """Test incremental load rejects recreate_destination_object=true."""
+        pipeline_mock.data_objects_spec[0]['object_spec']['extract_load_mode'] = 'incremental'
+        pipeline_mock.data_objects_spec[0]['object_spec']['column_primary_key'] = 'id'
+        pipeline_mock.data_objects_spec[0]['object_spec']['column_last_modified'] = 'updated_at'
+        pipeline_mock.data_objects_spec[0]['object_spec']['recreate_destination_object'] = True
+
+        with pytest.raises(SystemExit):
+            DataObject(pipeline_mock, 'table1')

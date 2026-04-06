@@ -199,6 +199,57 @@ class TestPsqlExtractor:
         assert ", QUOTE '\"'" in options
         assert ", FORCE_QUOTE *" in options
 
+    @patch('psycopg.connect')
+    @patch('petaly.utils.file_handler.FileHandler.load_file')
+    def test_compose_extract_to_stmt_includes_where_clause(self, mock_load_file, mock_connect, pipeline_mock):
+        """Test PostgreSQL extract statement includes incremental WHERE clause when provided."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_load_file.return_value = "SELECT * FROM mock_table"
+
+        extractor = PsqlExtractor(pipeline_mock)
+        stmt = "COPY (SELECT {column_list}\nFROM {schema_name}.{table_name}\n{where_clause}) TO STDOUT\nWITH (\nFORMAT CSV\n{copy_to_options}\n);"
+        extractor_obj_conf = {
+            'column_list': '"id", "modified_at"',
+            'source_schema_name': 'petaly_tutorial',
+            'source_object_name': 'name_basics_incr',
+            'where_clause': "WHERE \"modified_at\" > '1970-01-01T00:00:00Z'",
+            'object_settings': {
+                'columns_delimiter': ',',
+                'header': True,
+                'columns_quote': 'double'
+            }
+        }
+
+        result = extractor.compose_extract_to_stmt(stmt, extractor_obj_conf)
+        assert "WHERE \"modified_at\" > '1970-01-01T00:00:00Z'" in result
+
+    @patch('psycopg.connect')
+    @patch('petaly.utils.file_handler.FileHandler.load_file')
+    def test_compose_extract_to_stmt_includes_limit_clause(self, mock_load_file, mock_connect, pipeline_mock):
+        """Test PostgreSQL extract statement includes ORDER BY/LIMIT for incremental batches."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        mock_load_file.return_value = "SELECT * FROM mock_table"
+
+        extractor = PsqlExtractor(pipeline_mock)
+        stmt = "COPY (SELECT {column_list}\nFROM {schema_name}.{table_name}\n{where_clause}) TO STDOUT\nWITH (\nFORMAT CSV\n{copy_to_options}\n);"
+        extractor_obj_conf = {
+            'column_list': '"id", "modified_at"',
+            'source_schema_name': 'petaly_tutorial',
+            'source_object_name': 'name_basics_incr',
+            'where_clause': "WHERE \"modified_at\" > '1970-01-01T00:00:00Z'\nORDER BY \"modified_at\"\nLIMIT 1000",
+            'object_settings': {
+                'columns_delimiter': ',',
+                'header': True,
+                'columns_quote': 'double'
+            }
+        }
+
+        result = extractor.compose_extract_to_stmt(stmt, extractor_obj_conf)
+        assert "ORDER BY \"modified_at\"" in result
+        assert "LIMIT 1000" in result
+
 class TestPsqlLoader:
     @pytest.fixture
     def pipeline_mock(self):

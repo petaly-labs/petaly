@@ -223,7 +223,7 @@ class TestParquetLoader:
         pipeline.m_conf.set_loader_paths = Mock(return_value=None)
         pipeline.target_attr = {
             'connector_type': 'parquet',
-            'destination_dir': '/tmp/test_dest'
+            'target_base_dir': '/tmp/test_dest'
         }
         pipeline.pipeline_name = 'test_pipeline'
         pipeline.load_attributes = {
@@ -361,4 +361,3 @@ class TestParquetLoader:
         
         # Verify - .parq file should be copied
         loader.f_handler.cp_file.assert_called_once()
-

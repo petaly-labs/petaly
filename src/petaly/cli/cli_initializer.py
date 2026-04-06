@@ -275,12 +275,9 @@ class CliInitializer():
 			use_data_objects_spec = True
 			self.console.print(f"[bold yellow]Auto-corrected:[/bold yellow] set use_data_objects_spec=true to allow loading from data_objects_spec[]")
 		
-		# Check if all_from_schema=false and data_objects_spec is empty
-		if not all_from_schema and len(data_objects_spec) == 0:
-			self.console.print(f"\n[bold yellow]Warning:[/bold yellow] all_from_schema=false and data_objects_spec[] is empty. No objects will be loaded.")
-			self.console.print(f"Either set all_from_schema=true to load all objects from schema, or add objects to data_objects_spec[].")
-			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")
-		elif all_from_schema and len(data_objects_spec) == 0:
+		# When all_from_schema=false, object definition is required.
+		# Go directly to the first object definition without showing an extra warning or confirmation.
+		if all_from_schema and len(data_objects_spec) == 0:
 			self.console.print(f"\nThe parameter [bold]data_objects_spec[/bold] is empty, which means all objects will be loaded from schema (all_from_schema=true).")
 			self.console.print(f"In order to load specific objects incrementally, specify them one by one, or modify the pipeline manually.")
 			process_continue = self.cli_menu.prompt.Confirm.ask(f"Do you want to continue defining specific data objects?")

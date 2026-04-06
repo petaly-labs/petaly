@@ -26,17 +26,12 @@ class JsonLoader(FLoader):
         output_data_object_dir = loader_obj_conf.get('output_data_object_dir')
         data_object = super().get_data_object(object_name)
 
-        dest_file_dir = self.pipeline.target_attr.get("destination_dir")
-        if dest_file_dir is None:
-            logger.warning(f"The pipeline->target_attribute->destination_dir in pipeline.yaml is not specified.")
-            sys.exit()
-
         dest_object_name = object_name
         if data_object.destination_object_name is not None:
             dest_object_name = data_object.destination_object_name
 
-        # get target file directory destination_dir/object_name
-        dest_file_dpath = os.path.join(dest_file_dir, self.pipeline.pipeline_name, dest_object_name)
+        # get target file directory
+        dest_file_dpath = self.get_target_object_dir(object_name, data_object)
 
         # get target file format
         logger.debug(f"Destination file format: {self.file_format}")

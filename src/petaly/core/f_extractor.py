@@ -197,53 +197,54 @@ class FExtractor(ABC):
 
         # Validate and compose source directory for file connectors
         # Logic for source_dir and object_source_dir (complementary parameters):
-        # 1. If source_dir is empty: object_source_dir must be an absolute path
-        # 2. If source_dir is set and object_source_dir is set: final path = source_dir + / + object_source_dir
-        # 3. If object_source_dir is not set but source_dir is: final path = source_dir + / + object_name
+        # 1. If source_base_dir is empty: object_source_dir must be an absolute path
+        # 2. If source_base_dir is set and object_source_dir is set: final path = source_base_dir + / + object_source_dir
+        # 3. If object_source_dir is not set but source_base_dir is: final path = source_base_dir + / + object_name
         if self.pipeline.source_attr.get('connector_type') in ('csv', 'parquet', 'json'):
-            source_dir = self.pipeline.source_attr.get('source_dir')
+            source_dir = self.pipeline.source_attr.get('source_base_dir') or self.pipeline.source_attr.get('source_dir')
             object_source_dir = data_object.object_source_dir
             
-            # For file connectors, either source_dir in source_attributes or object_source_dir in object_spec must be set
+            # For file connectors, either source_base_dir in source_attributes or object_source_dir in object_spec must be set
             if not source_dir and not object_source_dir:
                 logger.error(f"Incorrect source configuration in file: {self.pipeline.pipeline_fpath}")
                 logger.error(f"For file connectors (CSV/Parquet/JSON) as source, you must specify either:"
-                             f"\n  1. source_dir in source_attributes (base directory for all objects), OR"
+                             f"\n  1. source_base_dir in source_attributes (base directory for all objects), OR"
                              f"\n  2. object_source_dir in object_spec (absolute path for this specific object)")
                 logger.error(f"Current configuration:"
-                             f"\n  source_attributes.source_dir: {source_dir}"
+                             f"\n  source_attributes.source_base_dir: {source_dir}"
                              f"\n  object_spec.object_source_dir: {object_source_dir}")
                 sys.exit()
             
-            # Compose final object_source_dir based on source_dir and object_source_dir
+            # Compose final object_source_dir based on source_base_dir and object_source_dir
             if source_dir:
-                # Case 1: source_dir is set
+                # Case 1: source_base_dir is set
                 if object_source_dir:
-                    # Both are set: combine them (source_dir + / + object_source_dir)
-                    final_object_source_dir = os.path.join(source_dir, object_source_dir)
-                    logger.debug(f"Combining source_dir and object_source_dir: {source_dir} + / + {object_source_dir} = {final_object_source_dir}")
+                    # Treat object_source_dir as relative to source_base_dir.
+                    relative_object_source_dir = str(object_source_dir).lstrip('/\\')
+                    final_object_source_dir = os.path.join(source_dir, relative_object_source_dir)
+                    logger.debug(f"Combining source_base_dir and object_source_dir: {source_dir} + / + {relative_object_source_dir} = {final_object_source_dir}")
                 else:
-                    # Only source_dir is set: combine source_dir + / + object_name
+                    # Only source_base_dir is set: combine source_base_dir + / + object_name
                     final_object_source_dir = os.path.join(source_dir, object_name)
-                    logger.debug(f"Combining source_dir and object_name: {source_dir} + / + {object_name} = {final_object_source_dir}")
+                    logger.debug(f"Combining source_base_dir and object_name: {source_dir} + / + {object_name} = {final_object_source_dir}")
             else:
-                # Case 2: source_dir is empty, object_source_dir must be an absolute path
+                # Case 2: source_base_dir is empty, object_source_dir must be an absolute path
                 if not object_source_dir:
                     # This should not happen due to validation above, but double-check
-                    logger.error(f"Incorrect source configuration: source_dir is empty and object_source_dir is not set")
+                    logger.error(f"Incorrect source configuration: source_base_dir is empty and object_source_dir is not set")
                     sys.exit()
                 
-                # Validate that object_source_dir is an absolute path when source_dir is empty
+                # Validate that object_source_dir is an absolute path when source_base_dir is empty
                 if not os.path.isabs(object_source_dir):
                     logger.error(f"Incorrect source configuration in file: {self.pipeline.pipeline_fpath}")
-                    logger.error(f"When source_dir is empty, object_source_dir must be an absolute path.")
+                    logger.error(f"When source_base_dir is empty, object_source_dir must be an absolute path.")
                     logger.error(f"Current configuration:"
-                                 f"\n  source_attributes.source_dir: {source_dir} (empty)"
+                                 f"\n  source_attributes.source_base_dir: {source_dir} (empty)"
                                  f"\n  object_spec.object_source_dir: {object_source_dir} (not absolute)")
                     sys.exit()
                 
                 final_object_source_dir = object_source_dir
-                logger.debug(f"Using object_source_dir as absolute path (source_dir is empty): {object_source_dir}")
+                logger.debug(f"Using object_source_dir as absolute path (source_base_dir is empty): {object_source_dir}")
             
             # Update data_object with the final composed path
             data_object.object_source_dir = final_object_source_dir
@@ -755,4 +756,3 @@ class FExtractor(ABC):
         configuration and settings.
         """
         return DataObject(self.pipeline, object_name)
-
